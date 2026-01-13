@@ -1,0 +1,1063 @@
+{
+  "calibers": {
+    ".32 S&W L": {
+      "projectiles": {
+        "98gr CHCV": {
+          "powders": {
+            "CBC 212": {
+              "min": 1.7,
+              "max": 1.9,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 216": {
+              "min": 1.4,
+              "max": 1.5,
+              "unit": "grains",
+              "velocity": 740,
+              "note": "Ref: Tabela CBC (Imagem)"
+            },
+            "CBC 250": {
+              "min": 1.7,
+              "max": 1.8,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        },
+        "98gr CHOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 1.9,
+              "max": 2.1,
+              "unit": "grains",
+              "velocity": 705,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "98gr EXPO": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.3,
+              "max": 2.6,
+              "unit": "grains",
+              "velocity": 775,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        }
+      },
+      "max_oal": "32.51 mm (1.280\")",
+      "max_case": "23.37 mm (0.920\")",
+      "proj_dia": "7.92 mm (0.312\")",
+      "base_dia": "8.53 mm (0.336\")"
+    },
+    ".32 S&W CURTO": {
+      "projectiles": {
+        "85gr CHOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 1.4,
+              "max": 1.5,
+              "unit": "grains",
+              "velocity": 680,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        }
+      }
+    },
+    ".38 S&W": {
+      "projectiles": {
+        "146gr CHOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.1,
+              "max": 2.3,
+              "unit": "grains",
+              "velocity": 690,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        }
+      }
+    },
+    ".38 SPL CURTO": {
+      "projectiles": {
+        "125gr CHOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.3,
+              "max": 2.5,
+              "unit": "grains",
+              "velocity": 673,
+              "note": "Ref: CBC Data."
+            }
+          }
+        },
+        "148gr CHCV": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.5,
+              "max": 2.7,
+              "unit": "grains",
+              "velocity": 705,
+              "note": "Ref: CBC Data."
+            }
+          }
+        }
+      },
+      "max_oal": "31.24 mm (1.230\")",
+      "max_case": "19.43 mm (0.765\")",
+      "proj_dia": "9.07 mm (0.357\")",
+      "base_dia": "9.63 mm (0.379\")"
+    },
+    ".357 MAGNUM": {
+      "projectiles": {
+        "200gr CHPP": {
+          "powders": {
+            "CBC 216": {
+              "min": 4.3,
+              "max": 4.8,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 212": {
+              "min": 5.1,
+              "max": 5.55,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 250": {
+              "min": 4.6,
+              "max": 5.1,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        },
+        "240gr CHPP": {
+          "powders": {
+            "CBC 250": {
+              "min": 4.3,
+              "max": 4.6,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        }
+      },
+      "max_oal": "40.39 mm (1.590\")",
+      "max_case": "32.77 mm (1.290\")",
+      "proj_dia": "9.07 mm (0.357\")",
+      "base_dia": "9.63 mm (0.379\")"
+    },
+    ".44 S&W SPECIAL": {
+      "projectiles": {
+        "240gr ETPP": {
+          "powders": {
+            "CBC 212": {
+              "min": 5.4,
+              "max": 5.7,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 219": {
+              "min": 6.9,
+              "max": 7.4,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 217": {
+              "min": 6.8,
+              "max": 7.25,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        }
+      },
+      "max_oal": "41.02 mm (1.615\")",
+      "max_case": "29.46 mm (1.160\")",
+      "proj_dia": "10.90 mm (0.429\")",
+      "base_dia": "11.61 mm (0.457\")"
+    },
+    ".44 - 40 WINCHESTER": {
+      "projectiles": {
+        "200gr CHPP": {
+          "powders": {
+            "CBC 217": {
+              "min": 7.5,
+              "max": 7.7,
+              "unit": "grains",
+              "velocity": 1181,
+              "note": "Ref: CBC Data."
+            },
+            "CBC 219": {
+              "min": 6.9,
+              "max": 7.7,
+              "unit": "grains",
+              "velocity": 1180,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        }
+      },
+      "max_oal": "40.44 mm (1.592\")",
+      "max_case": "33.15 mm (1.305\")",
+      "proj_dia": "10.85 mm (0.427\")",
+      "base_dia": "11.96 mm (0.471\")"
+    },
+    ".44 REM. MAGNUM": {
+      "projectiles": {
+        "200gr CHPP": {
+          "powders": {
+            "CBC 216": {
+              "min": 5.7,
+              "max": 6.2,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 212": {
+              "min": 6.25,
+              "max": 6.7,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 250": {
+              "min": 5.9,
+              "max": 6.3,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        },
+        "250gr CHPP": {
+          "powders": {
+            "CBC 250": {
+              "min": 5.1,
+              "max": 5.4,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        }
+      },
+      "max_oal": "40.89 mm (1.610\")",
+      "max_case": "32.64 mm (1.285\")",
+      "proj_dia": "10.90 mm (0.429\")",
+      "base_dia": "11.61 mm (0.457\")"
+    },
+    ".45 COLT": {
+      "projectiles": {
+        "250gr CHPP": {
+          "powders": {
+            "CBC 216": {
+              "min": 6.0,
+              "max": 6.5,
+              "unit": "grains",
+              "velocity": 800,
+              "note": "Ref: General Data (Approx). Start Low."
+            }
+          }
+        }
+      },
+      "max_oal": "40.64 mm (1.600\")",
+      "max_case": "32.64 mm (1.285\")",
+      "proj_dia": "11.48 mm (0.452\")",
+      "base_dia": "12.19 mm (0.480\")"
+    },
+    ".500 S&W MAGNUM": {
+      "projectiles": {
+        "300gr JHP": {
+          "powders": {
+            "CBC 129": {
+              "min": 40.0,
+              "max": 45.0,
+              "unit": "grains",
+              "velocity": 1600,
+              "note": "Ref: General Data (Approx). Start Low."
+            }
+          }
+        }
+      },
+      "max_oal": "57.15 mm (2.250\")",
+      "max_case": "41.28 mm (1.625\")",
+      "proj_dia": "12.70 mm (0.500\")",
+      "base_dia": "13.36 mm (0.526\")"
+    },
+    ".25 AUTO": {
+      "projectiles": {
+        "50gr ETOG": {
+          "powders": {
+            "CBC 212": {
+              "min": 2.3,
+              "max": 2.5,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 250": {
+              "min": 2.1,
+              "max": 2.25,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 216": {
+              "min": 1.0,
+              "max": 1.15,
+              "unit": "grains",
+              "velocity": 755,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        }
+      },
+      "max_oal": "23.11 mm (0.910\")",
+      "max_case": "15.62 mm (0.615\")",
+      "proj_dia": "6.37 mm (0.251\")",
+      "base_dia": "7.01 mm (0.276\")"
+    },
+    ".32 AUTO": {
+      "projectiles": {
+        "50gr ETOG": {
+          "powders": {
+            "CBC 218": {
+              "min": 3.7,
+              "max": 3.9,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 212": {
+              "min": 3.2,
+              "max": 3.3,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 219": {
+              "min": 3.55,
+              "max": 3.8,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 217": {
+              "min": 3.55,
+              "max": 3.8,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 266": {
+              "min": 4.1,
+              "max": 4.3,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        },
+        "71gr ETOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.0,
+              "max": 2.2,
+              "unit": "grains",
+              "velocity": 905,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "71gr EXPO": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.0,
+              "max": 2.2,
+              "unit": "grains",
+              "velocity": 905,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "71gr CHOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.0,
+              "max": 2.2,
+              "unit": "grains",
+              "velocity": 905,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        }
+      },
+      "max_oal": "25.02 mm (0.985\")",
+      "max_case": "17.27 mm (0.680\")",
+      "proj_dia": "7.92 mm (0.312\")",
+      "base_dia": "8.53 mm (0.336\")"
+    },
+    ".380 AUTO": {
+      "projectiles": {
+        "95gr FMJ": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.4,
+              "max": 2.8,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Web Search (RecargaClub)."
+            }
+          }
+        },
+        "95gr Lead": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.8,
+              "max": 3.2,
+              "unit": "grains",
+              "velocity": 900,
+              "note": "Ref: Web Search."
+            }
+          }
+        },
+        "90gr FMJ": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.6,
+              "max": 2.9,
+              "unit": "grains",
+              "velocity": 980,
+              "note": "Ref: Web Search."
+            }
+          }
+        },
+        "95gr ETOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.8,
+              "max": 3.1,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "95gr EXPO": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.8,
+              "max": 3.1,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "95gr ETOG (+P)": {
+          "powders": {
+            "CBC 210": {
+              "min": 4.9,
+              "max": 5.4,
+              "unit": "grains",
+              "velocity": 1015,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        },
+        "95gr EXPO (+P)": {
+          "powders": {
+            "CBC 210": {
+              "min": 4.9,
+              "max": 5.4,
+              "unit": "grains",
+              "velocity": 1015,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        }
+      },
+      "max_oal": "24.89 mm (0.980\")",
+      "max_case": "17.27 mm (0.680\")",
+      "proj_dia": "9.02 mm (0.355\")",
+      "base_dia": "9.50 mm (0.374\")"
+    },
+    ".45 AUTO": {
+      "projectiles": {
+        "200gr CSCV": {
+          "powders": {
+            "CBC 219": {
+              "min": 7.25,
+              "max": 7.7,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 266": {
+              "min": 7.7,
+              "max": 8.2,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 217": {
+              "min": 6.5,
+              "max": 6.9,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        },
+        "230gr ETOG": {
+          "powders": {
+            "CBC 266": {
+              "min": 5.7,
+              "max": 6.0,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 219": {
+              "min": 5.5,
+              "max": 5.8,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            },
+            "CBC 217": {
+              "min": 5.25,
+              "max": 5.4,
+              "unit": "grains",
+              "note": "extracted from CBC manual"
+            }
+          }
+        }
+      },
+      "max_oal": "32.39 mm (1.275\")",
+      "max_case": "22.81 mm (0.898\")",
+      "proj_dia": "11.48 mm (0.452\")",
+      "base_dia": "12.09 mm (0.476\")"
+    },
+    ".45 GAP": {
+      "projectiles": {
+        "200gr CSCV": {
+          "powders": {
+            "CBC 219": {
+              "min": 5.5,
+              "max": 6.0,
+              "unit": "grains",
+              "velocity": 900,
+              "note": "Ref: General Data (Approx)."
+            }
+          }
+        }
+      },
+      "max_oal": "27.18 mm (1.070\")",
+      "max_case": "19.18 mm (0.755\")",
+      "proj_dia": "11.48 mm (0.452\")",
+      "base_dia": "12.09 mm (0.476\")"
+    },
+    ".223 REMINGTON": {
+      "projectiles": {
+        "55gr ETPT": {
+          "powders": {
+            "CBC 102": {
+              "min": 22.0,
+              "max": 24.5,
+              "unit": "grains",
+              "velocity": 3000,
+              "note": "Ref: General 223 Data (Start Low)."
+            }
+          }
+        }
+      },
+      "max_oal": "57.40 mm (2.260\")",
+      "max_case": "44.70 mm (1.760\")",
+      "proj_dia": "5.70 mm (0.224\")",
+      "base_dia": "9.55 mm (0.376\")"
+    },
+    ".22-250 REMINGTON": {
+      "projectiles": {
+        "55gr EXPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 34.0,
+              "max": 36.3,
+              "unit": "grains",
+              "velocity": 3650,
+              "note": "Ref: CBC Data (Approx). Start Low."
+            }
+          }
+        }
+      },
+      "max_oal": "59.69 mm (2.350\")",
+      "max_case": "48.56 mm (1.912\")",
+      "proj_dia": "5.70 mm (0.224\")",
+      "base_dia": "11.96 mm (0.471\")"
+    },
+    ".243 WINCHESTER": {
+      "projectiles": {
+        "100gr EXPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 36.0,
+              "max": 39.0,
+              "unit": "grains",
+              "velocity": 2900,
+              "note": "Ref: CBC Data (Approx)."
+            }
+          }
+        }
+      },
+      "max_oal": "68.83 mm (2.710\")",
+      "max_case": "51.94 mm (2.045\")",
+      "proj_dia": "6.17 mm (0.243\")",
+      "base_dia": "11.96 mm (0.471\")"
+    },
+    ".270 WINCHESTER": {
+      "projectiles": {
+        "130gr ETPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 48.0,
+              "max": 52.0,
+              "unit": "grains",
+              "velocity": 3000,
+              "note": "Ref: CBC Data (Approx)."
+            }
+          }
+        }
+      },
+      "max_oal": "84.84 mm (3.340\")",
+      "max_case": "64.52 mm (2.540\")",
+      "proj_dia": "7.04 mm (0.277\")",
+      "base_dia": "11.96 mm (0.471\")"
+    },
+    ".300 WINCHESTER": {
+      "projectiles": {
+        "180gr ETPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 68.0,
+              "max": 72.0,
+              "unit": "grains",
+              "velocity": 3000,
+              "note": "Ref: CBC Data."
+            }
+          }
+        }
+      },
+      "max_oal": "84.84 mm (3.340\")",
+      "max_case": "66.55 mm (2.620\")",
+      "proj_dia": "7.82 mm (0.308\")",
+      "base_dia": "13.51 mm (0.532\")"
+    },
+    ".30-30 WINCHESTER": {
+      "projectiles": {
+        "150gr ETPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 30.0,
+              "max": 33.0,
+              "unit": "grains",
+              "velocity": 2200,
+              "note": "Ref: CBC Data (Approx)."
+            }
+          }
+        }
+      },
+      "max_oal": "64.77 mm (2.550\")",
+      "max_case": "51.80 mm (2.039\")",
+      "proj_dia": "7.82 mm (0.308\")",
+      "base_dia": "10.69 mm (0.421\")"
+    },
+    ".30-06 SPRING.": {
+      "projectiles": {
+        "150gr ETPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 48.0,
+              "max": 52.0,
+              "unit": "grains",
+              "velocity": 2900,
+              "note": "Ref: CBC Data."
+            }
+          }
+        },
+        "180gr ETPT": {
+          "powders": {
+            "CBC 126": {
+              "min": 45.0,
+              "max": 49.0,
+              "unit": "grains",
+              "velocity": 2700,
+              "note": "Ref: CBC Data."
+            }
+          }
+        }
+      },
+      "max_oal": "84.84 mm (3.340\")",
+      "max_case": "63.35 mm (2.494\")",
+      "proj_dia": "7.82 mm (0.308\")",
+      "base_dia": "11.96 mm (0.471\")"
+    },
+    ".308 WINCHESTER": {
+      "projectiles": {
+        "150gr ETPT": {
+          "powders": {
+            "CBC 102": {
+              "min": 40.0,
+              "max": 44.5,
+              "unit": "grains",
+              "velocity": 2700,
+              "note": "Ref: CBC Data. Start Low."
+            },
+            "CBC 126": {
+              "min": 42.5,
+              "max": 46.5,
+              "unit": "grains",
+              "velocity": 2800,
+              "note": "Ref: CBC Data. Start Low."
+            }
+          }
+        }
+      },
+      "max_oal": "71.12 mm (2.800\")",
+      "max_case": "51.18 mm (2.015\")",
+      "proj_dia": "7.82 mm (0.308\")",
+      "base_dia": "11.96 mm (0.471\")"
+    },
+    ".45-70 GOVERNEMENT": {
+      "projectiles": {
+        "300gr JHP": {
+          "powders": {
+            "CBC 129": {
+              "min": 48.0,
+              "max": 52.0,
+              "unit": "grains",
+              "velocity": 1800,
+              "note": "Ref: General Data (Approx)."
+            }
+          }
+        }
+      },
+      "max_oal": "64.77 mm (2.550\")",
+      "max_case": "53.47 mm (2.105\")",
+      "proj_dia": "11.63 mm (0.458\")",
+      "base_dia": "12.83 mm (0.505\")"
+    },
+    "9mm Luger": {
+      "projectiles": {
+        "115gr FMJ": {
+          "powders": {
+            "CBC 231": {
+              "min": 4.3,
+              "max": 4.8,
+              "unit": "grains",
+              "velocity": 1100,
+              "note": "Ref: Win 231 Data (Approx). Start low."
+            },
+            "CBC 219": {
+              "min": 0.0,
+              "max": 0.0,
+              "unit": "grains",
+              "velocity": 0,
+              "note": "Data not consistent. Check Manual."
+            }
+          }
+        },
+        "124gr FMJ": {
+          "powders": {
+            "CBC 231": {
+              "min": 3.9,
+              "max": 4.4,
+              "unit": "grains",
+              "velocity": 1050,
+              "note": "Ref: Win 231 Data (Approx). Start low."
+            }
+          }
+        },
+        "147gr FMJ": {
+          "powders": {
+            "CBC 231": {
+              "min": 3.0,
+              "max": 3.4,
+              "unit": "grains",
+              "velocity": 900,
+              "note": "Ref: Win 231 Data (Approx). Start low."
+            }
+          }
+        }
+      },
+      "max_oal": "29.69 mm (1.169\")",
+      "max_case": "19.15 mm (0.754\")",
+      "proj_dia": "9.02 mm (0.355\")",
+      "base_dia": "9.93 mm (0.391\")"
+    },
+    ".40 S&W": {
+      "projectiles": {
+        "180gr FMJ": {
+          "powders": {
+            "CBC 219": {
+              "min": 5.2,
+              "max": 5.5,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Web Search (Scribd/Forums). Use Caution."
+            }
+          }
+        },
+        "180gr Lead": {
+          "powders": {
+            "CBC 219": {
+              "min": 5.0,
+              "max": 5.3,
+              "unit": "grains",
+              "velocity": 930,
+              "note": "Ref: Web Search. Use Caution."
+            }
+          }
+        },
+        "165gr FMJ": {
+          "powders": {
+            "CBC 219": {
+              "min": 5.4,
+              "max": 5.8,
+              "unit": "grains",
+              "velocity": 1000,
+              "note": "Ref: Web Search. Use Caution."
+            }
+          }
+        }
+      },
+      "max_oal": "28.83 mm (1.135\")",
+      "max_case": "21.59 mm (0.850\")",
+      "proj_dia": "10.16 mm (0.400\")",
+      "base_dia": "10.77 mm (0.424\")"
+    },
+    ".38 SPL": {
+      "projectiles": {
+        "158gr Lead SWC": {
+          "powders": {
+            "CBC 219": {
+              "min": 3.8,
+              "max": 4.2,
+              "unit": "grains",
+              "velocity": 800,
+              "note": "Ref: Common Load."
+            }
+          }
+        },
+        "148gr CHCV": {
+          "powders": {
+            "CBC 216": {
+              "min": 2.4,
+              "max": 2.7,
+              "unit": "grains",
+              "velocity": 807,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "158gr CHOG": {
+          "powders": {
+            "CBC 216": {
+              "min": 3.5,
+              "max": 3.9,
+              "unit": "grains",
+              "velocity": 755,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "158gr CSCV": {
+          "powders": {
+            "CBC 216": {
+              "min": 3.3,
+              "max": 3.7,
+              "unit": "grains",
+              "velocity": 755,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "158gr EXPP": {
+          "powders": {
+            "CBC 207": {
+              "min": 4.9,
+              "max": 5.4,
+              "unit": "grains",
+              "velocity": 804,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "158gr EXPO": {
+          "powders": {
+            "CBC 207": {
+              "min": 4.9,
+              "max": 5.4,
+              "unit": "grains",
+              "velocity": 804,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "158gr ETPP": {
+          "powders": {
+            "CBC 207": {
+              "min": 5.0,
+              "max": 5.6,
+              "unit": "grains",
+              "velocity": 804,
+              "note": "Ref: Tabela CBC (Imagem)"
+            }
+          }
+        },
+        "125gr EXPP (+P)": {
+          "powders": {
+            "CBC 207": {
+              "min": 5.6,
+              "max": 6.2,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        },
+        "125gr EXPO (+P)": {
+          "powders": {
+            "CBC 207": {
+              "min": 5.6,
+              "max": 6.2,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        },
+        "125gr ETPP (+P)": {
+          "powders": {
+            "CBC 207": {
+              "min": 5.9,
+              "max": 6.5,
+              "unit": "grains",
+              "velocity": 950,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        },
+        "158gr EXPP (+P)": {
+          "powders": {
+            "CBC 207": {
+              "min": 5.1,
+              "max": 5.7,
+              "unit": "grains",
+              "velocity": 885,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        },
+        "158gr EXPO (+P)": {
+          "powders": {
+            "CBC 207": {
+              "min": 5.1,
+              "max": 5.7,
+              "unit": "grains",
+              "velocity": 885,
+              "note": "Ref: Tabela CBC (+P)"
+            }
+          }
+        }
+      },
+      "max_oal": "39.37 mm (1.550\")",
+      "max_case": "29.34 mm (1.155\")",
+      "proj_dia": "9.07 mm (0.357\")",
+      "base_dia": "9.63 mm (0.379\")"
+    }
+  },
+  "powders_metadata": {
+    "CBC 102": {
+      "format": "Tubular Monoperfurado",
+      "density": "860 - 920 g/l",
+      "app": "Rifle"
+    },
+    "CBC 124": {
+      "format": "Tubular Monoperfurado",
+      "density": "900 - 960 g/l",
+      "app": "Rifle"
+    },
+    "CBC 126": {
+      "format": "Tubular Monoperfurado",
+      "density": "860 - 920 g/l",
+      "app": "Rifle"
+    },
+    "CBC 207": {
+      "format": "Disco Compacto",
+      "density": "570 - 670 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 210": {
+      "format": "Disco Compacto",
+      "density": "570 - 670 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 212": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 216": {
+      "format": "Disco Poroso",
+      "density": "Min. 480 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 217": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 218": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 219": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 220": {
+      "format": "Disco Compacto",
+      "density": "570 - 670 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 222": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 231": {
+      "format": "Disco Compacto",
+      "density": "570 - 670 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 236": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 244": {
+      "format": "Disco Compacto",
+      "density": "570 - 670 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 246": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 250": {
+      "format": "Disco Compacto",
+      "density": "Min. 400 g/l",
+      "app": "Pistol/Revolver"
+    },
+    "CBC 266": {
+      "format": "Disco Poroso",
+      "density": "Min. 500 g/l",
+      "app": "Pistol/Revolver"
+    }
+  }
+}
