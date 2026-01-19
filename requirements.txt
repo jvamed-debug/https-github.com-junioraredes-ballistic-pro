@@ -1,8 +1,8 @@
-streamlit==1.40.0
+streamlit
 pandas
 sqlalchemy
 bcrypt
 opencv-python-headless
 Pillow
 reportlab
-streamlit-drawable-canvas>=0.9.0
+streamlit-drawable-canvas==0.8.0

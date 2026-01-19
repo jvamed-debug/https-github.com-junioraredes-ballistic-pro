@@ -1017,18 +1017,25 @@ with tab4:
         st.caption("Use o mouse para: **Mover** (arrastar), **Adicionar** (ferramenta círculo) ou **Remover** (selecionar e del) os impactos.")
 
         # Interactive Canvas
-        canvas_result = st_canvas(
-            fill_color="rgba(0, 255, 0, 0.5)",
-            stroke_color="red",
-            background_image=pil_image_resized,
-            initial_drawing=initial_drawing,
-            update_streamlit=True,
-            height=canvas_height,
-            width=canvas_width,
-            drawing_mode="transform", # Default to move mode
-            key=st.session_state.get("canvas_key", "canvas1"),
-            display_toolbar=True
-        )
+        # Interactive Canvas
+        # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
+        try:
+             canvas_result = st_canvas(
+                fill_color="rgba(0, 255, 0, 0.5)",
+                stroke_color="red",
+                background_image=pil_image_resized,
+                initial_drawing=initial_drawing,
+                update_streamlit=True,
+                height=canvas_height,
+                width=canvas_width,
+                drawing_mode="transform",
+                key=st.session_state.get("canvas_key", "canvas_v2"),
+                display_toolbar=True
+            )
+        except Exception as e:
+            st.error(f"Erro ao carregar editor interativo: {e}")
+            st.image(pil_image_resized, caption="Imagem Estática (Fallback)")
+            canvas_result = type('obj', (object,), {'json_data': None}) # Dummy object
 
         # Real-time Calculation based on Canvas Data
         if canvas_result.json_data is not None:
