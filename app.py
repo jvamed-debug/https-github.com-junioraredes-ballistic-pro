@@ -1046,8 +1046,7 @@ with tab4:
                 if current_objs:
                     current_objs.pop() # Remove last
                     st.session_state["saved_drawing"]["objects"] = current_objs
-                    st.session_state["canvas_key"] = str(datetime.now()) # Force refresh
-                    st.rerun()
+                    st.session_state["canvas_key"] = str(datetime.now()) # Force refresh via key change
 
         # Dynamic Key: Includes mode to force instant switch, and a timestamp to force redraws on delete
         dynamic_key = f"canvas_{mode}_{st.session_state.get('canvas_key', 'init')}"
