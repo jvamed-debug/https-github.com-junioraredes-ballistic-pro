@@ -960,6 +960,7 @@ with tab4:
     
         # Logic for Interactive Canvas
         from streamlit_drawable_canvas import st_canvas
+        from PIL import Image
         
         # Prepare initial state (background image)
         if hasattr(target_img, "seek"): target_img.seek(0)
