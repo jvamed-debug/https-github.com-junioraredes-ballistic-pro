@@ -978,8 +978,8 @@ with tab4:
                         "left": x * scale,
                         "top": y * scale,
                         "radius": 15,
-                        "fill": "rgba(0, 255, 0, 0.8)", 
-                        "stroke": "yellow", "strokeWidth": 3
+                        "fill": "rgba(255, 0, 0, 0.8)", 
+                        "stroke": "black", "strokeWidth": 2
                      })
                  
                  # Feedback to user
@@ -1000,9 +1000,10 @@ with tab4:
 
                  # 3. Save EVERYTHING to Session State
                  st.session_state["cv_results"] = results 
-                 st.session_state["canvas_state"] = {"version": "4.4.0", "objects": canvas_objs} 
+                 # We separate INIT state (fixed) from LIVE state (metrics)
+                 st.session_state["canvas_init_fixed"] = {"version": "4.4.0", "objects": canvas_objs} 
                  st.session_state["canvas_key"] = str(datetime.now()) 
-                 st.session_state["canvas_bg_b64"] = img_b64 # STRING CACHE (Super Stable)
+                 st.session_state["canvas_bg_b64"] = img_b64 
                  st.session_state["canvas_dims"] = (int(c_width), int(c_height))
                  
                  st.rerun()
@@ -1074,8 +1075,8 @@ with tab4:
              bg_image_param = None # Will produce blank canvas if not analyzed
 
         # --- STATE MANAGEMENT ---
-        if "canvas_state" not in st.session_state:
-            st.session_state["canvas_state"] = {"version": "4.4.0", "objects": []}
+        if "canvas_init_fixed" not in st.session_state:
+            st.session_state["canvas_init_fixed"] = {"version": "4.4.0", "objects": []}
 
         # Toolbar Controls
         col_tools = st.columns([3, 1])
@@ -1089,11 +1090,13 @@ with tab4:
         # Manual Delete Button (Server-Side)
         with col_tools[1]:
             if st.button("↩️ Desfazer", help="Remove o último ponto"):
-                curr = st.session_state["canvas_state"].get("objects", [])
+                # For Undo to work now, we must manipulate a state that feeds into initial_drawing OR force a key refensh.
+                # Since we decoupled, the only way to undo is to UPDATE init_fixed and RESTART canvas.
+                curr = st.session_state.get("canvas_current_state", st.session_state["canvas_init_fixed"]).get("objects", [])
                 if curr: 
                     curr.pop()
-                    st.session_state["canvas_state"]["objects"] = curr
-                    st.session_state["canvas_key"] = str(datetime.now()) # Force Remount
+                    st.session_state["canvas_init_fixed"]["objects"] = curr # Update "init"
+                    st.session_state["canvas_key"] = str(datetime.now()) # Force Full Reload with new Init
                     st.rerun()
 
 
@@ -1117,11 +1120,11 @@ with tab4:
                   w, h = st.session_state.get("canvas_dims", (600, 400))
                   bg_img_for_canvas = img_source.resize((w, h))
 
-             canvas_result = st_canvas(
-                fill_color="rgba(0, 255, 0, 0.5)",
-                stroke_color="red",
+              canvas_result = st_canvas(
+                fill_color="rgba(255, 0, 0, 0.8)",
+                stroke_color="black",
                 background_image=bg_img_for_canvas,
-                initial_drawing=st.session_state["canvas_state"], 
+                initial_drawing=st.session_state["canvas_init_fixed"], # FIX: Only load initial state ONCE
                 update_streamlit=True,
                 height=canvas_height,
                 width=canvas_width,
@@ -1130,9 +1133,10 @@ with tab4:
                 display_toolbar=True
             )
              
-             # Sync Browser Results -> Server State
+             # Sync Browser Results -> Server State (For Undo/Metrics only)
+             # We DO NOT update 'canvas_init_fixed' here, preventing the loop.
              if canvas_result and canvas_result.json_data is not None:
-                 st.session_state["canvas_state"] = canvas_result.json_data
+                 st.session_state["canvas_current_state"] = canvas_result.json_data
                  
         except Exception as e:
             st.error(f"Erro canvas: {e}")
@@ -1141,7 +1145,8 @@ with tab4:
         if canvas_result and canvas_result.json_data:
             objects_for_metrics = canvas_result.json_data["objects"]
         else:
-            objects_for_metrics = []
+            # Fallback to init if no interaction yet
+            objects_for_metrics = st.session_state["canvas_init_fixed"].get("objects", [])
 
         if 'objects_for_metrics' in locals() and objects_for_metrics is not None:
             objects = objects_for_metrics
