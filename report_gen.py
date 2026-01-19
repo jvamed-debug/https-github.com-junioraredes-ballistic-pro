@@ -122,4 +122,4 @@ def create_inspection_report(user):
 
     doc.build(elements)
     buffer.seek(0)
-    return buffer
+    return buffer.getvalue()
