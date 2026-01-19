@@ -963,9 +963,9 @@ with tab4:
                  from PIL import Image
                  pil_image_temp = Image.open(target_img).convert("RGB")
                  
-                 # Standard Canvas Width
                  c_width = 600
                  scale = c_width / pil_image_temp.size[0]
+                 c_height = pil_image_temp.size[1] * scale
                  
                  # Convert detected spots to FabricJS objects
                  canvas_objs = []
