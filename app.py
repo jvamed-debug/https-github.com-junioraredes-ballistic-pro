@@ -1096,11 +1096,31 @@ with tab4:
                     st.session_state["canvas_key"] = str(datetime.now()) # Force Remount
                     st.rerun()
 
+
+        canvas_result = None
         try:
+             # Ensure we have a PIL image for background (String causes crash in older lib)
+             bg_img_for_canvas = None
+             if "canvas_bg_b64" in st.session_state:
+                  # We have the string, but library wants PIL or URL. 
+                  # Base64 URL works in newer versions. For 0.8.0, safest is PIL image.
+                  # Let's decode or better: Use the dimension-matched blank PIL image if string fails?
+                  # Actually, let's recover the PIL image from user input or cache it properly.
+                  # Since I removed the PIL cache, let's Re-Open it here cheaply or use the one from session state if I saved it.
+                  # I saved 'canvas_bg_b64'. I should have saved 'canvas_bg_pil'.
+                  # QUICK FIX: Decode base64 back to PIL or load from file again (cached).
+                  
+                  # Re-loading from source is fast enough if cached by OS.
+                  if hasattr(target_img, "seek"): target_img.seek(0)
+                  from PIL import Image
+                  img_source = Image.open(target_img).convert("RGB")
+                  w, h = st.session_state.get("canvas_dims", (600, 400))
+                  bg_img_for_canvas = img_source.resize((w, h))
+
              canvas_result = st_canvas(
                 fill_color="rgba(0, 255, 0, 0.5)",
                 stroke_color="red",
-                background_image=bg_image_param,
+                background_image=bg_img_for_canvas,
                 initial_drawing=st.session_state["canvas_state"], 
                 update_streamlit=True,
                 height=canvas_height,
@@ -1111,16 +1131,14 @@ with tab4:
             )
              
              # Sync Browser Results -> Server State
-             if canvas_result.json_data is not None:
-                 # Standard Sync (Trust the library slightly more now that BG is stable)
+             if canvas_result and canvas_result.json_data is not None:
                  st.session_state["canvas_state"] = canvas_result.json_data
                  
         except Exception as e:
             st.error(f"Erro canvas: {e}")
             
         # Real-time Calculation based on Canvas Data
-        # Removed Manual Button, restored auto-calc
-        if canvas_result.json_data:
+        if canvas_result and canvas_result.json_data:
             objects_for_metrics = canvas_result.json_data["objects"]
         else:
             objects_for_metrics = []
