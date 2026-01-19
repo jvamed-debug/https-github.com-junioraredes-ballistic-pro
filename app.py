@@ -1018,41 +1018,65 @@ with tab4:
         # Interactive Canvas
         # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
         # Toolbar Controls
-        tool_map = {
-            "🤚 Mover": "transform",
-            "🟢 Adicionar": "circle",
-            "❌ Apagar": "transform"
-        }
+        # --- STATE MANAGEMENT ---
+        # Initialize saved state if it doesn't exist
+        if "saved_drawing" not in st.session_state:
+            st.session_state["saved_drawing"] = initial_drawing
+
+        # Toolbar Controls
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            tool_choice = st.radio(
+                "Modo de Edição:",
+                ("🤚 Mover", "🟢 Adicionar"),
+                horizontal=True,
+                label_visibility="collapsed"
+            )
         
-        tool_choice = st.radio(
-            "Modo de Edição:",
-            list(tool_map.keys()),
-            horizontal=True,
-            index=0
-        )
+        # Logic to persist data when switching tools
+        # We need to capture the current canvas state BEFORE re-rendering with a new key
+        # However, st_canvas returns data from the *browser*, so we rely on the previous run's capture.
         
-        mode = tool_map[tool_choice]
+        mode = "transform" if tool_choice == "🤚 Mover" else "circle"
         
-        if "Apagar" in tool_choice:
-            st.info("💡 **Modo Apagar**: Clique sobre um ponto para selecioná-lo e pressione **Delete** (ou Backspace) no teclado.")
-        
+        # Manual Delete Button (Server-Side)
+        with c2:
+            if st.button("↩️ Desfazer", help="Remove o último ponto adicionado"):
+                current_objs = st.session_state["saved_drawing"].get("objects", [])
+                if current_objs:
+                    current_objs.pop() # Remove last
+                    st.session_state["saved_drawing"]["objects"] = current_objs
+                    st.session_state["canvas_key"] = str(datetime.now()) # Force refresh
+                    st.rerun()
+
+        # Dynamic Key: Includes mode to force instant switch, and a timestamp to force redraws on delete
+        dynamic_key = f"canvas_{mode}_{st.session_state.get('canvas_key', 'init')}"
+
         try:
              canvas_result = st_canvas(
                 fill_color="rgba(0, 255, 0, 0.5)",
                 stroke_color="red",
                 background_image=pil_image_resized,
-                initial_drawing=initial_drawing,
+                initial_drawing=st.session_state["saved_drawing"], # ALWAYS use the saved state
                 update_streamlit=True,
                 height=canvas_height,
                 width=canvas_width,
                 drawing_mode=mode,
-                key=st.session_state.get("canvas_key", "canvas_v2"),
+                key=dynamic_key,
                 display_toolbar=True
             )
+             
+             # Sync Browser State back to Server State
+             if canvas_result.json_data is not None:
+                 # Only update if the object count changed (optimization) 
+                 # or if we are just tracking movements.
+                 st.session_state["saved_drawing"] = canvas_result.json_data
+                 
         except Exception as e:
             st.error(f"Erro ao carregar editor interativo: {e}")
             st.image(pil_image_resized, caption="Imagem Estática (Fallback)")
             canvas_result = type('obj', (object,), {'json_data': None}) # Dummy object
+
 
         # Real-time Calculation based on Canvas Data
         if canvas_result.json_data is not None:
