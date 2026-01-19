@@ -56,6 +56,26 @@ from bio_auth import save_biometrics, check_biometrics_available, clear_biometri
 import requests
 import re
 
+# --- CSS Hacks for "App-Like" Feel ---
+st.markdown("""
+<style>
+    /* Hide Streamlit Footer */
+    footer {visibility: hidden;}
+    /* Hide Deploy Button */
+    .stDeployButton {display:none;}
+    /* Safer padding for mobile */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 5rem;
+    }
+    /* Bigger Buttons */
+    .stButton button {
+        height: 3rem;
+        font-weight: bold;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 def show_ad():
     """Exibe um placeholder de anúncio se o usuário não for Premium."""
     if "user_id" in st.session_state and st.session_state["user_id"]:
@@ -429,7 +449,7 @@ if not st.session_state["authenticated"]:
                 new_cpf = st.text_input("CPF")
                 new_email = st.text_input("E-mail")
                 new_phone = st.text_input("Telefone")
-                submit = st.form_submit_button("Cadastrar")
+                submit = st.form_submit_button("Cadastrar", use_container_width=True)
                 
                 if submit:
                     if new_username and new_password:
@@ -447,7 +467,7 @@ if not st.session_state["authenticated"]:
             with st.form("recovery_form"):
                 st.subheader("Recuperação de Senha")
                 identifier = st.text_input("E-mail ou Telefone cadastrado")
-                submit = st.form_submit_button("Recuperar")
+                submit = st.form_submit_button("Recuperar", use_container_width=True)
                 
                 if submit:
                     if identifier:
@@ -626,7 +646,7 @@ with tab2:
         
         st.metric("Energia Estimada", f"{energy_j:.1f} J")
         st.metric("Carga Sugerida", f"{est_gr:.2f} grains")
-        if st.button("Aplicar Estimativa"):
+        if st.button("Aplicar Estimativa", use_container_width=True):
             st.session_state["manual_max"], st.session_state["manual_min"] = round(est_gr, 2), round(est_gr * 0.9, 2)
             st.rerun()
     else:
@@ -665,7 +685,7 @@ with tab3:
                 
                 s_notes = st.text_area("Observações Adicionais")
                 
-                if st.form_submit_button("Salvar Registro"):
+                if st.form_submit_button("Salvar Registro", use_container_width=True):
                     new_sess = ReloadSession(
                         user_id=user.id,
                         firearm_id=s_firearm[0] if s_firearm else None,
@@ -813,7 +833,7 @@ with tab3:
                 i_unit = i_col2.selectbox("Unidade", ["g", "grains", "un", "kg", "lb"])
                 i_price = i_col2.number_input("Preço da Embalagem / Lote (R$)", min_value=0.0, step=0.01)
                 
-                if st.form_submit_button("Salvar no Estoque"):
+                if st.form_submit_button("Salvar no Estoque", use_container_width=True):
                     unit_price = i_price / i_qty if i_qty > 0 else 0
                     existing = session.query(InventoryItem).filter_by(user_id=user.id, category=i_cat, name=i_name).first()
                     if existing:
@@ -952,7 +972,7 @@ with tab4:
             debug_mode = st.checkbox("Mostrar Máscara Binária (Debug)", value=False)
 
     
-        if st.button("🔍 Analisar Alvo (Auto-Detect)"):
+        if st.button("🔍 Analisar Alvo (Auto-Detect)", type="primary", use_container_width=True):
              with st.spinner("Processando..."):
                  # 1. Run CV Analysis
                  results = calculate_group_size(target_img, target_width_mm=ref_width, sensitivity=cv_sens, min_area_px=cv_min_area)
@@ -1109,7 +1129,6 @@ with tab4:
                   # Base64 URL works in newer versions. For 0.8.0, safest is PIL image.
                   # Let's decode or better: Use the dimension-matched blank PIL image if string fails?
                   # Actually, let's recover the PIL image from user input or cache it properly.
-                  # Since I removed the PIL cache, let's Re-Open it here cheaply or use the one from session state if I saved it.
                   # I saved 'canvas_bg_b64'. I should have saved 'canvas_bg_pil'.
                   # QUICK FIX: Decode base64 back to PIL or load from file again (cached).
                   
@@ -1260,7 +1279,7 @@ with tab5:
         bairro = c_bairro.text_input("Bairro", value=neigh_val)
         cidade_uf = c_cidade.text_input("Cidade/UF", value=city_val)
 
-    if st.button("Salvar Perfil Completo"):
+    if st.button("Salvar Perfil Completo", use_container_width=True):
         # Format validation (simple)
         clean_cpf = re.sub(r'\D', '', new_cpf)
         if len(clean_cpf) == 11:
@@ -1293,11 +1312,11 @@ with tab5:
     
     if is_bio_active:
         st.success("✅ Login Biométrico Ativado neste dispositivo.")
-        if st.button("Desativar Biometria"):
+        if st.button("Desativar Biometria", use_container_width=True):
             clear_biometrics()
             st.rerun()
     else:
-        if st.button("Ativar Login Biométrico"):
+        if st.button("Ativar Login Biométrico", use_container_width=True):
             save_biometrics(user.username)
             st.success("Biometria ativada para os próximos logins!")
             st.rerun()
@@ -1308,7 +1327,7 @@ with tab5:
     
     if user.is_premium:
         st.success("🌟 Você é um usuário **PREMIUM**! Aproveite o Ballistic Pro sem anúncios.")
-        if st.button("Gerenciar Assinatura (Simulação)"):
+        if st.button("Gerenciar Assinatura (Simulação)", use_container_width=True):
              st.info("Em um app real, aqui abriria o gerenciamento da App Store / Google Play.")
     else:
         st.info("Remova anúncios e apoie o projeto por um valor único.")
@@ -1319,7 +1338,7 @@ with tab5:
         - ⚡ Prioridade no Suporte
         - ☁️ Backup Automático (Em breve)
         """)
-        if p_col2.button("⭐ Virar Premium", type="primary"):
+        if p_col2.button("⭐ Virar Premium", type="primary", use_container_width=True):
             # Simulate purchase
             user.is_premium = 1
             session.commit()
