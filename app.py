@@ -960,6 +960,7 @@ with tab4:
                  # 2. Prepare Display Data immediately
                  # We need to load dimensions here to calculate scaling
                  if hasattr(target_img, "seek"): target_img.seek(0)
+                 from PIL import Image
                  pil_image_temp = Image.open(target_img).convert("RGB")
                  
                  # Standard Canvas Width
