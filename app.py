@@ -1028,7 +1028,7 @@ with tab4:
         canvas_result = st_canvas(
             fill_color="rgba(0, 255, 0, 0.5)",
             stroke_color="red",
-            background_image=bg_image_b64 if 'bg_image_b64' in locals() else bg_image,
+            background_image=pil_image_resized,
             initial_drawing=initial_drawing,
             update_streamlit=True,
             height=canvas_height,
