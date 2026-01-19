@@ -1064,7 +1064,7 @@ with tab4:
                 height=canvas_height,
                 width=canvas_width,
                 drawing_mode=mode,
-                key=dynamic_key,
+                key=st.session_state.get("canvas_key", "init"),
                 display_toolbar=True
             )
              
