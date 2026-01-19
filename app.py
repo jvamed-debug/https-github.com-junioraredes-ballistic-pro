@@ -947,8 +947,8 @@ with tab4:
         
         with st.expander("⚙️ Ajustes de Detecção (Avançado)", expanded=False):
             st.caption("Se os impactos não forem detectados corretamente, ajuste a sensibilidade.")
-            cv_sens = st.slider("Sensibilidade (Limiar de Contraste)", 0, 255, 100, help="Valores menores detectam apenas pontos muito escuros. Aumente se o alvo estiver mal iluminado.")
-            cv_min_area = st.slider("Tamanho Mínimo do Furo (pixels)", 1, 100, 10, help="Aumente para ignorar sujeira pequena. Diminua para impactos distantes.")
+            cv_sens = st.slider("Sensibilidade (Limiar de Contraste)", 0, 255, 155, help="Valores menores detectam apenas pontos muito escuros. Aumente se o alvo estiver mal iluminado (Padrão 60% = 155).")
+            cv_min_area = st.slider("Tamanho Mínimo do Furo (pixels)", 1, 200, 50, help="Aumente para ignorar sujeira. Um furo de 3mm costuma ter >50px em fotos normais.")
             debug_mode = st.checkbox("Mostrar Máscara Binária (Debug)", value=False)
 
     
