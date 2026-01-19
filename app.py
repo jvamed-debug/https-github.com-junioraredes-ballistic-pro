@@ -957,6 +957,7 @@ with tab4:
                  results = calculate_group_size(target_img, target_width_mm=ref_width, sensitivity=cv_sens, min_area_px=cv_min_area)
                  st.session_state["cv_results"] = results
                  st.session_state["canvas_key"] = str(datetime.now()) # Force redraw
+                 st.session_state["reset_canvas"] = True # Flag to overwrite manual edits with new auto-detect results
     
         # Logic for Interactive Canvas
         from streamlit_drawable_canvas import st_canvas
@@ -1019,9 +1020,11 @@ with tab4:
         # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
         # Toolbar Controls
         # --- STATE MANAGEMENT ---
-        # Initialize saved state if it doesn't exist
-        if "saved_drawing" not in st.session_state:
+        # Initialize saved state if it doesn't exist OR if reset requested
+        if "saved_drawing" not in st.session_state or st.session_state.get("reset_canvas", False):
             st.session_state["saved_drawing"] = initial_drawing
+            if "reset_canvas" in st.session_state:
+                del st.session_state["reset_canvas"]
 
         # Toolbar Controls
         c1, c2 = st.columns([3, 1])
@@ -1067,9 +1070,9 @@ with tab4:
              
              # Sync Browser State back to Server State
              if canvas_result.json_data is not None:
-                 # Only update if the object count changed (optimization) 
-                 # or if we are just tracking movements.
-                 st.session_state["saved_drawing"] = canvas_result.json_data
+                 # Only update if the content actually changed to prevent infinite loops
+                 if canvas_result.json_data != st.session_state.get("saved_drawing"):
+                     st.session_state["saved_drawing"] = canvas_result.json_data
                  
         except Exception as e:
             st.error(f"Erro ao carregar editor interativo: {e}")
