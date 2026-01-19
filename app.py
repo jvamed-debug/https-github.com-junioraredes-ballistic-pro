@@ -974,10 +974,16 @@ with tab4:
                         "originX": "center", "originY": "center",
                         "left": x * scale,
                         "top": y * scale,
-                        "radius": 10,
-                        "fill": "rgba(0, 255, 0, 0.5)", 
-                        "stroke": "red", "strokeWidth": 2
+                        "radius": 15,
+                        "fill": "rgba(0, 255, 0, 0.8)", 
+                        "stroke": "yellow", "strokeWidth": 3
                      })
+                 
+                 # Feedback to user
+                 if len(canvas_objs) == 0:
+                     st.warning("⚠️ Nenhum impacto detectado! Tente ajustar a 'Sensibilidade' ou 'Tamanho Mínimo'.")
+                 else:
+                     st.success(f"✅ {len(canvas_objs)} impactos detectados e marcados no alvo.")
                  
                  # 3. Save EVERYTHING to Session State
                  st.session_state["cv_results"] = results # Raw data (backup)
