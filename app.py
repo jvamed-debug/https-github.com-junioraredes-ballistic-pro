@@ -954,10 +954,38 @@ with tab4:
     
         if st.button("🔍 Analisar Alvo (Auto-Detect)"):
              with st.spinner("Processando..."):
+                 # 1. Run CV Analysis
                  results = calculate_group_size(target_img, target_width_mm=ref_width, sensitivity=cv_sens, min_area_px=cv_min_area)
-                 st.session_state["cv_results"] = results
-                 st.session_state["canvas_key"] = str(datetime.now()) # Force redraw
-                 st.session_state["reset_canvas"] = True # Flag to overwrite manual edits with new auto-detect results
+                 
+                 # 2. Prepare Display Data immediately
+                 # We need to load dimensions here to calculate scaling
+                 if hasattr(target_img, "seek"): target_img.seek(0)
+                 pil_image_temp = Image.open(target_img).convert("RGB")
+                 
+                 # Standard Canvas Width
+                 c_width = 600
+                 scale = c_width / pil_image_temp.size[0]
+                 
+                 # Convert detected spots to FabricJS objects
+                 canvas_objs = []
+                 for x, y in results.get("detected_shots", []):
+                     canvas_objs.append({
+                        "type": "circle",
+                        "originX": "center", "originY": "center",
+                        "left": x * scale,
+                        "top": y * scale,
+                        "radius": 10,
+                        "fill": "rgba(0, 255, 0, 0.5)", 
+                        "stroke": "red", "strokeWidth": 2
+                     })
+                 
+                 # 3. Save EVERYTHING to Session State
+                 st.session_state["cv_results"] = results # Raw data (backup)
+                 st.session_state["canvas_state"] = {"version": "4.4.0", "objects": canvas_objs} # Ready for Canvas
+                 st.session_state["canvas_key"] = str(datetime.now()) # Force New Render
+                 st.session_state["bg_image_processed"] = pil_image_temp # Cache image usage? No, Streamlit caches well.
+                 
+                 st.rerun() # Force reload to display results immediately
     
         # Logic for Interactive Canvas
         from streamlit_drawable_canvas import st_canvas
@@ -1015,51 +1043,44 @@ with tab4:
         st.markdown("#### ✏️ Edição Interativa")
         st.caption("Use o mouse para: **Mover** (arrastar), **Adicionar** (ferramenta círculo) ou **Remover** (selecionar e del) os impactos.")
 
-        # Interactive Canvas
-        # Interactive Canvas
-        # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
-        # Toolbar Controls
+        # Prepare Image for Canvas (Always needed for display)
+        if hasattr(target_img, "seek"): target_img.seek(0)
+        pil_image = Image.open(target_img).convert("RGB")
+        canvas_width = 600
+        w_percent = (canvas_width / float(pil_image.size[0]))
+        canvas_height = int((float(pil_image.size[1]) * float(w_percent)))
+        pil_image_resized = pil_image.resize((canvas_width, canvas_height))
+
         # --- STATE MANAGEMENT ---
-        # Initialize saved state if it doesn't exist OR if reset requested
-        if "saved_drawing" not in st.session_state or st.session_state.get("reset_canvas", False):
-            st.session_state["saved_drawing"] = initial_drawing
-            if "reset_canvas" in st.session_state:
-                del st.session_state["reset_canvas"]
+        # Ensure we have a valid state to display (Blank if first load and no analysis yet)
+        if "canvas_state" not in st.session_state:
+            st.session_state["canvas_state"] = {"version": "4.4.0", "objects": []}
 
         # Toolbar Controls
-        c1, c2 = st.columns([3, 1])
-        with c1:
-            tool_choice = st.radio(
-                "Modo de Edição:",
-                ("🤚 Mover", "🟢 Adicionar"),
-                horizontal=True,
-                label_visibility="collapsed"
-            )
-        
-        # Logic to persist data when switching tools
-        # We need to capture the current canvas state BEFORE re-rendering with a new key
-        # However, st_canvas returns data from the *browser*, so we rely on the previous run's capture.
-        
-        mode = "transform" if tool_choice == "🤚 Mover" else "circle"
-        
-        # Manual Delete Button (Server-Side)
-        with c2:
-            if st.button("↩️ Desfazer", help="Remove o último ponto adicionado"):
-                current_objs = st.session_state["saved_drawing"].get("objects", [])
-                if current_objs:
-                    current_objs.pop() # Remove last
-                    st.session_state["saved_drawing"]["objects"] = current_objs
-                    st.session_state["canvas_key"] = str(datetime.now()) # Force refresh via key change
+        col_tools = st.columns([3, 1])
+        with col_tools[0]:
+            tool_map = {"🤚 Mover": "transform", "🟢 Adicionar": "circle", "❌ Apagar": "transform"}
+            tool_choice = st.radio("Modo:", list(tool_map.keys()), horizontal=True, label_visibility="collapsed")
+            mode = tool_map[tool_choice]
+            if "Apagar" in tool_choice:
+                st.info("💡 Clique no ponto e tecle **Delete/Backspace**.")
 
-        # Dynamic Key: Includes mode to force instant switch, and a timestamp to force redraws on delete
-        dynamic_key = f"canvas_{mode}_{st.session_state.get('canvas_key', 'init')}"
+        # Manual Delete Button (Server-Side)
+        with col_tools[1]:
+            if st.button("↩️ Desfazer", help="Remove o último ponto"):
+                curr = st.session_state["canvas_state"].get("objects", [])
+                if curr: 
+                    curr.pop()
+                    st.session_state["canvas_state"]["objects"] = curr
+                    st.session_state["canvas_key"] = str(datetime.now()) # Force Remount
+                    st.rerun()
 
         try:
              canvas_result = st_canvas(
                 fill_color="rgba(0, 255, 0, 0.5)",
                 stroke_color="red",
                 background_image=pil_image_resized,
-                initial_drawing=st.session_state["saved_drawing"], # ALWAYS use the saved state
+                initial_drawing=st.session_state["canvas_state"], 
                 update_streamlit=True,
                 height=canvas_height,
                 width=canvas_width,
@@ -1068,16 +1089,15 @@ with tab4:
                 display_toolbar=True
             )
              
-             # Sync Browser State back to Server State
+             # Sync Browser Results -> Server State
              if canvas_result.json_data is not None:
-                 # Only update if the content actually changed to prevent infinite loops
-                 if canvas_result.json_data != st.session_state.get("saved_drawing"):
-                     st.session_state["saved_drawing"] = canvas_result.json_data
+                 if canvas_result.json_data != st.session_state["canvas_state"]:
+                     st.session_state["canvas_state"] = canvas_result.json_data
                  
         except Exception as e:
-            st.error(f"Erro ao carregar editor interativo: {e}")
-            st.image(pil_image_resized, caption="Imagem Estática (Fallback)")
-            canvas_result = type('obj', (object,), {'json_data': None}) # Dummy object
+            st.error(f"Erro canvas: {e}")
+            st.image(pil_image_resized)
+            canvas_result = type('obj', (object,), {'json_data': None})
 
 
         # Real-time Calculation based on Canvas Data
