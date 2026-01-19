@@ -1017,6 +1017,10 @@ with tab4:
         # Interactive Canvas
         # Interactive Canvas
         # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
+        # Toolbar Controls
+        tool_mode = st.radio("Ferramenta:", ["Mover/Editar", "Adicionar Disparo"], horizontal=True)
+        mode = "transform" if tool_mode == "Mover/Editar" else "circle"
+        
         try:
              canvas_result = st_canvas(
                 fill_color="rgba(0, 255, 0, 0.5)",
@@ -1026,7 +1030,7 @@ with tab4:
                 update_streamlit=True,
                 height=canvas_height,
                 width=canvas_width,
-                drawing_mode="transform",
+                drawing_mode=mode,
                 key=st.session_state.get("canvas_key", "canvas_v2"),
                 display_toolbar=True
             )
