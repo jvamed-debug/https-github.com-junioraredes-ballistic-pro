@@ -1000,13 +1000,11 @@ with tab4:
                 cx, cy = x * scale_factor, y * scale_factor
                 obj = {
                     "type": "circle",
-                    "version": "4.4.0",
                     "originX": "center",
                     "originY": "center",
                     "left": cx,
                     "top": cy,
-                    "width": 20, # Radius * 2
-                    "height": 20,
+                    "radius": 10,
                     "fill": "rgba(0, 255, 0, 0.5)",
                     "stroke": "red",
                     "strokeWidth": 2
