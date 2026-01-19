@@ -964,7 +964,7 @@ with tab4:
         
         # Prepare initial state (background image)
         if hasattr(target_img, "seek"): target_img.seek(0)
-        bg_image = Image.open(target_img)
+        bg_image = Image.open(target_img).convert("RGB")
         
         # Determine canvas dimensions relative to image aspect ratio
         canvas_width = 600
