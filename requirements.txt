@@ -4,4 +4,4 @@ sqlalchemy
 bcrypt
 opencv-python-headless
 Pillow
-fpdf
+reportlab
