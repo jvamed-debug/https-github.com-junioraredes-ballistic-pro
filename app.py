@@ -1007,7 +1007,7 @@ with tab4:
             fill_color="rgba(0, 255, 0, 0.5)",
             stroke_color="red",
             background_image=bg_image,
-            initial_drawing=initial_drawing if "canvas_key" in st.session_state else None,
+            initial_drawing=initial_drawing,
             update_streamlit=True,
             height=canvas_height,
             width=canvas_width,
