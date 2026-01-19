@@ -755,6 +755,13 @@
               "unit": "grains",
               "velocity": 0,
               "note": "Data not consistent. Check Manual."
+            },
+            "CBC 216": {
+              "min": 3.9,
+              "max": 4.3,
+              "unit": "grains",
+              "velocity": 1050,
+              "note": "Carga padr\u00e3o para treino (P\u00f3lvora R\u00e1pida)."
             }
           }
         },
@@ -766,6 +773,20 @@
               "unit": "grains",
               "velocity": 1050,
               "note": "Ref: Win 231 Data (Approx). Start low."
+            },
+            "CBC 216": {
+              "min": 3.6,
+              "max": 4.0,
+              "unit": "grains",
+              "velocity": 1020,
+              "note": "Carga padr\u00e3o para treino."
+            },
+            "CBC 219": {
+              "min": 5.8,
+              "max": 6.4,
+              "unit": "grains",
+              "velocity": 1150,
+              "note": "Carga de maior desempenho (P\u00f3lvora Lenta)."
             }
           }
         },
@@ -777,6 +798,13 @@
               "unit": "grains",
               "velocity": 900,
               "note": "Ref: Win 231 Data (Approx). Start low."
+            },
+            "CBC 216": {
+              "min": 3.2,
+              "max": 3.5,
+              "unit": "grains",
+              "velocity": 900,
+              "note": "Carga subs\u00f4nica aprox."
             }
           }
         }
@@ -792,10 +820,10 @@
           "powders": {
             "CBC 219": {
               "min": 5.2,
-              "max": 5.5,
+              "max": 5.8,
               "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Web Search (Scribd/Forums). Use Caution."
+              "velocity": 940,
+              "note": "Carga Comum IPSC Standard."
             }
           }
         },

@@ -1,30 +1,54 @@
-# Assistente de Recarga Balística
+# 🎯 Ballistic Pro - Sistema Avançado de Gestão de Recarga
 
-Esta aplicação foi desenvolvida com o Google Antigravity para auxiliar no processo de recarga de munição, fornecendo dados verificados de manuais técnicos e um modo manual seguro para cargas personalizadas.
+Bem-vindo ao **Ballistic Pro**, sua suíte completa para gestão de recarga de munições, controle de acervo e análise de performance com visão computacional.
 
-## Funcionalidades
-- **Base de Dados Verificada**: Dados extraídos automaticamente do Manual de Recarga CBC.
-- **Seleção Hierárquica**: Filtra opções por Calibre -> Projétil -> Pólvora.
-- **Modo Manual ("Outro")**: Permite entrada de dados personalizada com avisos de segurança quando a combinação não está no banco de dados.
-- **Resumo de Carga**: Exibe claramente as cargas Mínima e Máxima para referência rápida.
+## 🚀 Funcionalidades Principais
 
-## Como Executar
+*   **Gestão de Acervo**: Controle completo de armas, com alertas de vencimento de CRAF e manutenção.
+*   **Diário de Recarga Inteligente**: Registre suas cargas e o sistema dá baixa automática no estoque de insumos.
+*   **Controle de Estoque**: Monitore sua quantidade de pólvora, espoletas, projéteis e estojos, com cálculo automático de custo por munição.
+*   **Visão Computacional (Ballistic CV)**: Tire uma foto do seu alvo e o sistema calcula automaticamente o agrupamento (Group Size) e o Raio Médio.
+*   **Banco de Dados Integrado**: Já vem com cargas de referência para pólvoras CBC (216, 219, etc.) e calibres populares.
 
-1. **Instale as dependências**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+---
 
-2. **Execute a aplicação**:
-   ```bash
-   streamlit run app.py
-   ```
+## 🛠️ Instalação e Execução
 
-## Estrutura de Arquivos
-- `app.py`: Código fonte da interface Streamlit.
-- `database.json`: Banco de dados JSON extraído dos PDFs.
-- `extract_cbc.py`: Script utilizado para extrair dados do manual CBC.
-- `requirements.txt`: Lista de bibliotecas Python necessárias.
+### Pré-requisitos
+*   Python 3.10 ou superior
 
-## Aviso Legal
-Esta ferramenta é apenas para fins informativos. A recarga de munição envolve riscos de explosão e ferimentos graves. Sempre consulte os manuais oficiais do fabricante da pólvora.
+### Passo 1: Acesse a pasta do projeto
+No seu terminal, execute:
+```bash
+cd /Users/junioraredes/.gemini/antigravity/scratch/ballistic-pro/
+```
+
+### Passo 2: Instale as dependências
+```bash
+pip install -r requirements.txt
+```
+
+### Passo 3: Execute o App
+```bash
+python3 -m streamlit run app.py
+```
+*(Ou apenas execute `./run_app.sh` se preferir)*
+
+---
+
+## 👤 Login de Demonstração
+Para acessar todas as funcionalidades (incluindo Premium):
+*   **Usuário**: `atirador_pro`
+*   **Senha**: `senha123`
+
+---
+
+## 📂 Estrutura do Projeto
+*   `app.py`: Aplicação principal (Interface Gráfica).
+*   `cv_utils.py`: Módulo de Visão Computacional (OpenCV).
+*   `models.py`: Definição do Banco de Dados (SQLAlchemy).
+*   `ballistics.db`: Banco de Dados SQLite (Armazena usuários, armas e insumos).
+*   `database.json`: Catálogo de Cargas (Dados de referência de fábrica).
+
+## ⚠️ Aviso de Segurança
+A recarga de munições envolve riscos. Sempre cruze as informações deste software com os manuais oficiais dos fabricantes de pólvora. Inicie sempre com a carga mínima.

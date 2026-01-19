@@ -18,7 +18,36 @@ def load_data():
 
 db = load_data()
 
+# Ensure Database Initialization and Default User
 from models import User, Firearm, ReloadSession, InventoryItem, get_session
+import bcrypt
+
+def init_db_if_empty():
+    session = get_session()
+    try:
+        if session.query(User).count() == 0:
+            # Create Default Admin
+            from datetime import date
+            admin = User(
+                username="atirador_pro",
+                name="Atirador Demo",
+                cpf="000.000.000-00",
+                email="admin@ballisticpro.com",
+                phone="(00) 00000-0000",
+                cr_number="000000",
+                cr_expiration=date(2030, 1, 1),
+                is_premium=1
+            )
+            admin.set_password("senha123")
+            session.add(admin)
+            session.commit()
+            print("Default user 'atirador_pro' created.")
+    except Exception as e:
+        print(f"DB Init Error: {e}")
+    finally:
+        session.close()
+
+init_db_if_empty()
 from datetime import datetime
 from label_gen import create_label_pdf
 from report_gen import create_inspection_report
@@ -86,116 +115,245 @@ if "user_id" not in st.session_state:
 # Custom CSS for Modern Clean Premium Look
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
+    :root {
+        --primary-color: #2563eb;
+        --text-color: #000000; /* Pure Black for max contrast */
+        --subtext-color: #333333; /* Dark Gray, almost black */
+        --bg-color: #f4f4f5;
+        --card-bg: #ffffff;
+        --border-color: #d4d4d8;
+    }
+
     html, body, [class*="css"] {
-        font-family: 'Outfit', sans-serif;
-        background-color: #fcfcfc;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-color);
+        background-color: var(--bg-color);
     }
     
-    .main {
-        background-color: #fcfcfc;
+    .stApp {
+        background-color: var(--bg-color);
     }
-    
-    /* Premium Metric Cards */
-    .stMetric {
-        background-color: #ffffff;
-        padding: 24px;
-        border-radius: 16px;
-        border: 1px solid #f0f0f0;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-        transition: transform 0.2s ease-in-out;
-    }
-    
-    .stMetric:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
-    }
-    
-    .stMetric label {
-        color: #64748b !important;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-size: 0.75rem !important;
-        font-weight: 600 !important;
-    }
-    
-    .stMetric div[data-testid="stMetricValue"] {
-        color: #1e293b !important;
-        font-family: 'Outfit', sans-serif;
-        font-weight: 800;
-        font-size: 1.8rem !important;
-    }
-    
-    /* Clean Expander */
-    div[data-testid="stExpander"] {
-        border-radius: 12px;
-        border: 1px solid #f0f0f0;
-        background-color: #ffffff;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    
-    /* Modern Button */
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        color: #ffffff;
-        font-weight: 600;
-        text-transform: none;
-        border: none;
-        padding: 14px;
-        transition: all 0.3s;
-    }
-    
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #334155 0%, #475569 100%);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    
-    h1, h2, h3 {
-        color: #0f172a !important;
+
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
+        color: #000000 !important;
         font-weight: 800 !important;
-        letter-spacing: -0.5px;
     }
     
-    .stDivider {
-        border-bottom: 1px solid #f1f5f9;
-    }
-    
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {
-        background-color: #f8fafc;
-        border-right: 1px solid #f1f5f9;
-    }
-    
-    [data-testid="stSidebar"] .stMarkdown p {
-        color: #475569 !important;
-    }
-    
-    [data-testid="stSidebar"] div[data-testid="stExpander"] p {
-        color: #1e293b !important;
-        font-size: 0.9rem;
+    /* Force high contrast on generic text */
+    p, li, label, .stMarkdown {
+        color: #111111 !important;
     }
 
-    /* Tabs Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-        background-color: transparent;
+    /* --- METRICS FIX (CRITICAL) --- */
+    div[data-testid="stMetric"] {
+        background-color: var(--card-bg);
+        border: 2px solid var(--border-color); /* Thicker border */
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 0 rgba(0,0,0,0.1); /* Hard shadow for contrast */
+        height: auto;
+        min-height: 120px; 
+    }
+    
+    /* Label */
+    div[data-testid="stMetricLabel"] label {
+        color: #444444 !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+    }
+    
+    /* Value - Fix Overflow */
+    div[data-testid="stMetricValue"] {
+        font-size: 24px !important; /* Fixed pixel size to avoid rem scaling issues */
+        font-weight: 800 !important;
+        color: #000000 !important;
+        line-height: 1.3 !important;
+        
+        /* Force wrapping */
+        word-wrap: break-word !important; 
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+        width: 100% !important;
+    }
+    
+    /* Specific check for very small containers */
+    div[data-testid="stMetricValue"] div {
+        word-break: break-all !important; 
     }
 
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre;
-        background-color: transparent;
-        border-radius: 0px;
-        color: #64748b;
+    /* --- INPUTS & CONTROLS --- */
+    .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
+        background-color: #ffffff !important;
+        border: 2px solid #a1a1aa !important; /* High contrast border */
+        color: #000000 !important;
         font-weight: 600;
+        border-radius: 8px;
+    }
+    
+    /* Ensure text INSIDE the select box is black */
+    .stSelectbox div[data-baseweb="select"] span {
+        color: #000000 !important;
+    }
+    
+    /* Dropdown Menu (Popover) - Critical for readability */
+    div[data-baseweb="popover"], div[data-baseweb="menu"] {
+        background-color: #ffffff !important;
+        border: 2px solid #000000 !important;
+    }
+    
+    /* Dropdown Options */
+    li[data-baseweb="menu-item"] {
+        color: #000000 !important; 
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+    }
+    
+    /* Dropdown Hover/Selected State */
+    li[data-baseweb="menu-item"]:hover, li[data-baseweb="menu-item"][aria-selected="true"] {
+        background-color: #e4e4e7 !important; /* Light Gray */
+        color: #000000 !important;
     }
 
+    .stTextInput input:focus, .stNumberInput input:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Buttons - Primary Blue Style for Main Actions */
+    .stButton > button {
+        background-color: #2563eb !important; /* Primary Blue */
+        color: #ffffff !important; /* White Text - Guaranteed Contrast */
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        padding: 12px 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+    
+    .stButton > button:hover {
+        background-color: #1d4ed8 !important; /* Darker Blue */
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    .stButton > button:active {
+        transform: translateY(0);
+    }
+    
+    /* Specific styling for Form Submit buttons (Entrar, Cadastrar) to ensure they pop */
+    div[data-testid="stFormSubmitButton"] > button {
+        width: 100%;
+        font-size: 1.1rem !important;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff !important; /* Pure White */
+        border-right: 1px solid #e5e7eb !important;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.02);
+    }
+    
+    section[data-testid="stSidebar"] .stMarkdown h1, 
+    section[data-testid="stSidebar"] .stMarkdown h2, 
+    section[data-testid="stSidebar"] .stMarkdown h3 {
+        color: #111827 !important; /* Almost Black */
+    }
+    
+    /* Fix Sidebar Labels/Text and Expander Content */
+    section[data-testid="stSidebar"] p, 
+    section[data-testid="stSidebar"] li, 
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] div {
+        color: #111827 !important; /* Black text for inputs in sidebar */
+    }
+    
+    /* Specific fix for Sidebar Expander content (like Powder Details) */
+    section[data-testid="stSidebar"] div[data-testid="stExpander"] div[data-testid="stMarkdownContainer"] p,
+    section[data-testid="stSidebar"] div[data-testid="stExpander"] div[data-testid="stMarkdownContainer"] strong {
+         color: #000000 !important;
+    }
+
+    /* Force background of expander content in sidebar to be white */
+    section[data-testid="stSidebar"] div[data-testid="stExpander"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        color: #000000 !important;
+    }
+    
+    section[data-testid="stSidebar"] .streamlit-expanderContent {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        border-bottom: 2px solid #e4e4e7;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: #52525b !important;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
     .stTabs [aria-selected="true"] {
-        color: #1e293b !important;
-        border-bottom-color: #1e293b !important;
+        color: #000000 !important;
+        border-bottom: 3px solid #000000 !important;
+    }
+    
+    /* Expander - General */
+    .streamlit-expanderHeader {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-weight: 700 !important;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+    }
+    
+    /* Expander Content - General */
+    div[data-testid="stExpander"] > div[role="group"] {
+        background-color: #ffffff !important;
+    }
+    
+    /* --- LOGIN PAGE & FORM FIXES --- */
+    /* Target inputs specifically within forms to ensure they are white/readable */
+    div[data-testid="stForm"] input {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #a1a1aa !important;
+    }
+    
+    div[data-testid="stForm"] label {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Logout Button Specific - Red/Distinct to separate from inputs */
+    section[data-testid="stSidebar"] button {
+        background-color: #ef4444 !important; /* Red-500 */
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 700 !important;
+    }
+    
+    section[data-testid="stSidebar"] button:hover {
+        background-color: #dc2626 !important; /* Red-600 */
+    }
+
+    /* Alerts/Toasts */
+    .stAlert {
+        border: 1px solid rgba(0,0,0,0.1);
+        font-weight: 600;
+        background-color: #ffffff !important; /* Force white background on alerts too */
+        color: #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -786,19 +944,44 @@ with tab4:
             
         # Calibration Input
         ref_width = st.number_input("Largura Real da Imagem/Alvo (mm)", value=210.0, help="Para calibração precisa, informe a largura real da área capturada na foto (ex: 210mm para uma folha A4).")
+        
+        with st.expander("⚙️ Ajustes de Detecção (Avançado)", expanded=False):
+            st.caption("Se os impactos não forem detectados corretamente, ajuste a sensibilidade.")
+            cv_sens = st.slider("Sensibilidade (Limiar de Contraste)", 0, 255, 100, help="Valores menores detectam apenas pontos muito escuros. Aumente se o alvo estiver mal iluminado.")
+            cv_min_area = st.slider("Tamanho Mínimo do Furo (pixels)", 1, 100, 10, help="Aumente para ignorar sujeira pequena. Diminua para impactos distantes.")
+            debug_mode = st.checkbox("Mostrar Máscara Binária (Debug)", value=False)
 
         if st.button("🔍 Analisar Alvo"):
-            with st.spinner("Processando imagem..."):
-                group_mm, processed_img = calculate_group_size(target_img, target_width_mm=ref_width)
+            with st.spinner("Processando imagem com algoritmos de visão computacional..."):
+                results = calculate_group_size(target_img, target_width_mm=ref_width, sensitivity=cv_sens, min_area_px=cv_min_area)
                 
-                with col_img2:
-                    if processed_img is not None:
-                        st.image(processed_img, caption=f"Agrupamento Detectado: {group_mm:.2f} mm", use_container_width=True)
-                        st.success(f"Agrupamento Estimado: **{group_mm:.2f} mm**")
-                        st.info("Nota: Esta é uma estimativa baseada em detecção automática. Para precisão absoluta, meça com paquímetro.")
-                    else:
-                        st.error("Não foi possível detectar impactos claros na imagem. Tente uma foto com melhor contraste.")
+                processed_img = results.get("annotated_image")
+                debug_img = results.get("debug_binary")
+                group_mm = results.get("group_size_mm", 0.0)
+                mean_radius = results.get("mean_radius_mm", 0.0)
+                shot_count = results.get("shot_count", 0)
 
+                with col_img2:
+                    if debug_mode and debug_img is not None:
+                         st.image(debug_img, caption="Máscara Binária (O que o algortimo 'vê')", use_container_width=True)
+
+                    if processed_img is not None and shot_count > 0:
+                        st.image(processed_img, caption=f"Análise Completa: {shot_count} impactos detectados", use_container_width=True)
+                        
+                        st.markdown("#### 📊 Resultados da Análise")
+                        res_c1, res_c2 = st.columns(2)
+                        res_c1.metric("Agrupamento (Max Spread)", f"{group_mm:.2f} mm", help="Máxima distância entre dois impactos.")
+                        res_c2.metric("Raio Médio (Mean Radius)", f"{mean_radius:.2f} mm", help="Distância média dos impactos até o centro do grupo (MPI).")
+                        
+                        st.metric("Impactos Identificados", shot_count)
+                        
+                        st.success(f"Análise concluída com sucesso!")
+                        st.info("Nota: O sistema utiliza limiarização global. Ajuste os sliders à esquerda se necessário.")
+                    else:
+                        st.warning("Nenhum impacto claro detectado. Tente ajustar a 'Sensibilidade' ou verifique a iluminação da foto.")
+                        if processed_img is not None:
+                             st.image(processed_img, caption="Tentativa de Detecção (Sem Sucesso)", use_container_width=True)
+    
     show_ad()
     session.close()
 
