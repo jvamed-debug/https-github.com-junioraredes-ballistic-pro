@@ -961,18 +961,28 @@ with tab4:
         # Logic for Interactive Canvas
         from streamlit_drawable_canvas import st_canvas
         from PIL import Image
+        import io
+        import base64
+
+        def get_image_base64_url(img):
+            buffered = io.BytesIO()
+            img.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            return f"data:image/png;base64,{img_str}"
         
         # Prepare initial state (background image)
         if hasattr(target_img, "seek"): target_img.seek(0)
-        bg_image = Image.open(target_img).convert("RGB")
+        pil_image = Image.open(target_img).convert("RGB")
+        # Convert to Base64 to avoid streamlit version conflicts
+        bg_image = get_image_base64_url(pil_image)
         
         # Determine canvas dimensions relative to image aspect ratio
         canvas_width = 600
-        w_percent = (canvas_width / float(bg_image.size[0]))
-        canvas_height = int((float(bg_image.size[1]) * float(w_percent)))
+        w_percent = (canvas_width / float(pil_image.size[0]))
+        canvas_height = int((float(pil_image.size[1]) * float(w_percent)))
         
         # Scaling factor (Real Image Coords -> Canvas Coords)
-        scale_factor = canvas_width / bg_image.size[0]
+        scale_factor = canvas_width / pil_image.size[0]
 
         # Prepare Initial Drawings (from Auto-Detect)
         initial_drawing = {"version": "4.4.0", "objects": []}
@@ -1032,7 +1042,7 @@ with tab4:
             
             # Calculate Metrics from Final Shots
             if len(final_shots) > 0:
-                pixel_per_mm = bg_image.size[0] / ref_width
+                pixel_per_mm = pil_image.size[0] / ref_width
                 
                 # 1. MPI
                 avg_x = sum([p[0] for p in final_shots]) / len(final_shots)
