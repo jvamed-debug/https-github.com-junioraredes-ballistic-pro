@@ -1114,7 +1114,7 @@ with tab4:
                  if current_len != saved_len:
                      st.session_state["canvas_state"] = canvas_result.json_data
                  
-         except Exception as e:
+        except Exception as e:
             st.error(f"Erro canvas: {e}")
             st.image(pil_image_resized)
             canvas_result = type('obj', (object,), {'json_data': None})
