@@ -986,11 +986,14 @@ with tab4:
                  else:
                      st.success(f"✅ {len(canvas_objs)} impactos detectados e marcados no alvo.")
                  
+                 # Resize for display ONCE and Cache
+                 pil_image_resized = pil_image_temp.resize((int(c_width), int(c_height)))
+                 
                  # 3. Save EVERYTHING to Session State
                  st.session_state["cv_results"] = results # Raw data (backup)
                  st.session_state["canvas_state"] = {"version": "4.4.0", "objects": canvas_objs} # Ready for Canvas
                  st.session_state["canvas_key"] = str(datetime.now()) # Force New Render
-                 st.session_state["bg_image_processed"] = pil_image_temp # Cache image usage? No, Streamlit caches well.
+                 st.session_state["canvas_bg"] = pil_image_resized # CACHED IMAGE (Prevents flickering)
                  
                  st.rerun() # Force reload to display results immediately
     
@@ -1050,13 +1053,20 @@ with tab4:
         st.markdown("#### ✏️ Edição Interativa")
         st.caption("Use o mouse para: **Mover** (arrastar), **Adicionar** (ferramenta círculo) ou **Remover** (selecionar e del) os impactos.")
 
-        # Prepare Image for Canvas (Always needed for display)
-        if hasattr(target_img, "seek"): target_img.seek(0)
-        pil_image = Image.open(target_img).convert("RGB")
-        canvas_width = 600
-        w_percent = (canvas_width / float(pil_image.size[0]))
-        canvas_height = int((float(pil_image.size[1]) * float(w_percent)))
-        pil_image_resized = pil_image.resize((canvas_width, canvas_height))
+        # Prepare Image for Canvas (Load from Cache if available to prevent reload loop)
+        if "canvas_bg" in st.session_state:
+            pil_image_resized = st.session_state["canvas_bg"]
+            canvas_width = pil_image_resized.width
+            canvas_height = pil_image_resized.height
+        else:
+             # Fallback if page reloaded without analysis
+             if hasattr(target_img, "seek"): target_img.seek(0)
+             from PIL import Image
+             img_temp = Image.open(target_img).convert("RGB")
+             canvas_width = 600
+             w_p = (canvas_width / float(img_temp.size[0]))
+             canvas_height = int((float(img_temp.size[1]) * float(w_p)))
+             pil_image_resized = img_temp.resize((canvas_width, canvas_height))
 
         # --- STATE MANAGEMENT ---
         # Ensure we have a valid state to display (Blank if first load and no analysis yet)
@@ -1098,27 +1108,30 @@ with tab4:
              
              # Sync Browser Results -> Server State
              if canvas_result.json_data is not None:
+                 # We update state silently so 'Desfazer' has data, but we don't trigger metric recalc loops automatically
                  current_len = len(canvas_result.json_data.get("objects", []))
                  saved_len = len(st.session_state["canvas_state"].get("objects", []))
-                 
-                 # Only update main state if Number of objects changes (Add/Delete)
-                 # This avoids constant reloading when just moving/selecting (which triggers minor coordinate changes)
                  if current_len != saved_len:
                      st.session_state["canvas_state"] = canvas_result.json_data
                  
-                 # Always use LATEST json_data for metrics (Visual accuracy)
-                 # But we don't save it to session_state to avoid reruns on move.
-                 objects_for_metrics = canvas_result.json_data["objects"]
-             else:
-                 objects_for_metrics = st.session_state["canvas_state"].get("objects", [])
-                 
-        except Exception as e:
+         except Exception as e:
             st.error(f"Erro canvas: {e}")
             st.image(pil_image_resized)
             canvas_result = type('obj', (object,), {'json_data': None})
 
 
+        # Manual Calulate Button
+        st.caption("Edite os pontos acima. Quando terminar, clique abaixo para atualizar os cálculos.")
+        calc_pressed = st.button("💾 Confirmar Alterações e Calcular", type="primary")
+
         # Real-time Calculation based on Canvas Data
+        if calc_pressed or ('objects_for_metrics' not in locals()):
+            # Use data from canvas if available, otherwise saved state
+            if canvas_result.json_data:
+                objects_for_metrics = canvas_result.json_data["objects"]
+            else:
+                objects_for_metrics = st.session_state["canvas_state"].get("objects", [])
+
         if 'objects_for_metrics' in locals() and objects_for_metrics is not None:
             objects = objects_for_metrics
             final_shots = []
