@@ -959,8 +959,10 @@ with tab4:
                  
                  # 2. Prepare Display Data immediately
                  # We need to load dimensions here to calculate scaling
-                 if hasattr(target_img, "seek"): target_img.seek(0)
+                 import io
+                 import base64
                  from PIL import Image
+                 if hasattr(target_img, "seek"): target_img.seek(0)
                  pil_image_temp = Image.open(target_img).convert("RGB")
                  
                  c_width = 600
@@ -986,16 +988,24 @@ with tab4:
                  else:
                      st.success(f"✅ {len(canvas_objs)} impactos detectados e marcados no alvo.")
                  
-                 # Resize for display ONCE and Cache
+                 # Resize for display ONCE and make Base64 String (Stable)
+                 c_height = pil_image_temp.size[1] * scale
                  pil_image_resized = pil_image_temp.resize((int(c_width), int(c_height)))
                  
+                 import io
+                 buff = io.BytesIO()
+                 pil_image_resized.save(buff, format="JPEG")
+                 img_str = base64.b64encode(buff.getvalue()).decode()
+                 img_b64 = f"data:image/jpeg;base64,{img_str}"
+
                  # 3. Save EVERYTHING to Session State
-                 st.session_state["cv_results"] = results # Raw data (backup)
-                 st.session_state["canvas_state"] = {"version": "4.4.0", "objects": canvas_objs} # Ready for Canvas
-                 st.session_state["canvas_key"] = str(datetime.now()) # Force New Render
-                 st.session_state["canvas_bg"] = pil_image_resized # CACHED IMAGE (Prevents flickering)
+                 st.session_state["cv_results"] = results 
+                 st.session_state["canvas_state"] = {"version": "4.4.0", "objects": canvas_objs} 
+                 st.session_state["canvas_key"] = str(datetime.now()) 
+                 st.session_state["canvas_bg_b64"] = img_b64 # STRING CACHE (Super Stable)
+                 st.session_state["canvas_dims"] = (int(c_width), int(c_height))
                  
-                 st.rerun() # Force reload to display results immediately
+                 st.rerun()
     
         # Logic for Interactive Canvas
         from streamlit_drawable_canvas import st_canvas
@@ -1053,23 +1063,17 @@ with tab4:
         st.markdown("#### ✏️ Edição Interativa")
         st.caption("Use o mouse para: **Mover** (arrastar), **Adicionar** (ferramenta círculo) ou **Remover** (selecionar e del) os impactos.")
 
-        # Prepare Image for Canvas (Load from Cache if available to prevent reload loop)
-        if "canvas_bg" in st.session_state:
-            pil_image_resized = st.session_state["canvas_bg"]
-            canvas_width = pil_image_resized.width
-            canvas_height = pil_image_resized.height
+        # Prepare Image for Canvas (Load from Session State String)
+        if "canvas_bg_b64" in st.session_state:
+            bg_image_param = st.session_state["canvas_bg_b64"]
+            canvas_width, canvas_height = st.session_state.get("canvas_dims", (600, 400))
         else:
-             # Fallback if page reloaded without analysis
-             if hasattr(target_img, "seek"): target_img.seek(0)
-             from PIL import Image
-             img_temp = Image.open(target_img).convert("RGB")
+             # Fallback
              canvas_width = 600
-             w_p = (canvas_width / float(img_temp.size[0]))
-             canvas_height = int((float(img_temp.size[1]) * float(w_p)))
-             pil_image_resized = img_temp.resize((canvas_width, canvas_height))
+             canvas_height = 400
+             bg_image_param = None # Will produce blank canvas if not analyzed
 
         # --- STATE MANAGEMENT ---
-        # Ensure we have a valid state to display (Blank if first load and no analysis yet)
         if "canvas_state" not in st.session_state:
             st.session_state["canvas_state"] = {"version": "4.4.0", "objects": []}
 
@@ -1096,7 +1100,7 @@ with tab4:
              canvas_result = st_canvas(
                 fill_color="rgba(0, 255, 0, 0.5)",
                 stroke_color="red",
-                background_image=pil_image_resized,
+                background_image=bg_image_param,
                 initial_drawing=st.session_state["canvas_state"], 
                 update_streamlit=True,
                 height=canvas_height,
@@ -1108,29 +1112,18 @@ with tab4:
              
              # Sync Browser Results -> Server State
              if canvas_result.json_data is not None:
-                 # We update state silently so 'Desfazer' has data, but we don't trigger metric recalc loops automatically
-                 current_len = len(canvas_result.json_data.get("objects", []))
-                 saved_len = len(st.session_state["canvas_state"].get("objects", []))
-                 if current_len != saved_len:
-                     st.session_state["canvas_state"] = canvas_result.json_data
+                 # Standard Sync (Trust the library slightly more now that BG is stable)
+                 st.session_state["canvas_state"] = canvas_result.json_data
                  
         except Exception as e:
             st.error(f"Erro canvas: {e}")
-            st.image(pil_image_resized)
-            canvas_result = type('obj', (object,), {'json_data': None})
-
-
-        # Manual Calulate Button
-        st.caption("Edite os pontos acima. Quando terminar, clique abaixo para atualizar os cálculos.")
-        calc_pressed = st.button("💾 Confirmar Alterações e Calcular", type="primary")
-
+            
         # Real-time Calculation based on Canvas Data
-        if calc_pressed or ('objects_for_metrics' not in locals()):
-            # Use data from canvas if available, otherwise saved state
-            if canvas_result.json_data:
-                objects_for_metrics = canvas_result.json_data["objects"]
-            else:
-                objects_for_metrics = st.session_state["canvas_state"].get("objects", [])
+        # Removed Manual Button, restored auto-calc
+        if canvas_result.json_data:
+            objects_for_metrics = canvas_result.json_data["objects"]
+        else:
+            objects_for_metrics = []
 
         if 'objects_for_metrics' in locals() and objects_for_metrics is not None:
             objects = objects_for_metrics
