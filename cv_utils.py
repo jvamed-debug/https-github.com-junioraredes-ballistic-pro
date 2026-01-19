@@ -96,7 +96,8 @@ def calculate_group_size(uploaded_image, target_width_mm=210.0, sensitivity=128,
             "mean_radius_mm": 0.0,
             "shot_count": len(detected_shots),
             "annotated_image": annotated_img,
-            "debug_binary": thresh # Return binary for user debugging
+            "debug_binary": thresh,
+            "detected_shots": detected_shots
         }
 
         if len(detected_shots) > 0:

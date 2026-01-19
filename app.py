@@ -951,36 +951,115 @@ with tab4:
             cv_min_area = st.slider("Tamanho Mínimo do Furo (pixels)", 1, 100, 10, help="Aumente para ignorar sujeira pequena. Diminua para impactos distantes.")
             debug_mode = st.checkbox("Mostrar Máscara Binária (Debug)", value=False)
 
-        if st.button("🔍 Analisar Alvo"):
-            with st.spinner("Processando imagem com algoritmos de visão computacional..."):
-                results = calculate_group_size(target_img, target_width_mm=ref_width, sensitivity=cv_sens, min_area_px=cv_min_area)
+    
+        if st.button("🔍 Analisar Alvo (Auto-Detect)"):
+             with st.spinner("Processando..."):
+                 results = calculate_group_size(target_img, target_width_mm=ref_width, sensitivity=cv_sens, min_area_px=cv_min_area)
+                 st.session_state["cv_results"] = results
+                 st.session_state["canvas_key"] = str(datetime.now()) # Force redraw
+    
+        # Logic for Interactive Canvas
+        from streamlit_drawable_canvas import st_canvas
+        
+        # Prepare initial state (background image)
+        if hasattr(target_img, "seek"): target_img.seek(0)
+        bg_image = Image.open(target_img)
+        
+        # Determine canvas dimensions relative to image aspect ratio
+        canvas_width = 600
+        w_percent = (canvas_width / float(bg_image.size[0]))
+        canvas_height = int((float(bg_image.size[1]) * float(w_percent)))
+        
+        # Scaling factor (Real Image Coords -> Canvas Coords)
+        scale_factor = canvas_width / bg_image.size[0]
+
+        # Prepare Initial Drawings (from Auto-Detect)
+        initial_drawing = {"version": "4.4.0", "objects": []}
+        
+        if "cv_results" in st.session_state and st.session_state["cv_results"]:
+            res = st.session_state["cv_results"]
+            shots = res.get("detected_shots", [])
+            
+            for i, (x, y) in enumerate(shots):
+                # Convert to canvas coords
+                cx, cy = x * scale_factor, y * scale_factor
+                obj = {
+                    "type": "circle",
+                    "version": "4.4.0",
+                    "originX": "center",
+                    "originY": "center",
+                    "left": cx,
+                    "top": cy,
+                    "width": 20, # Radius * 2
+                    "height": 20,
+                    "fill": "rgba(0, 255, 0, 0.5)",
+                    "stroke": "red",
+                    "strokeWidth": 2
+                }
+                initial_drawing["objects"].append(obj)
+
+        st.markdown("#### ✏️ Edição Interativa")
+        st.caption("Use o mouse para: **Mover** (arrastar), **Adicionar** (ferramenta círculo) ou **Remover** (selecionar e del) os impactos.")
+
+        # Interactive Canvas
+        canvas_result = st_canvas(
+            fill_color="rgba(0, 255, 0, 0.5)",
+            stroke_color="red",
+            background_image=bg_image,
+            initial_drawing=initial_drawing if "canvas_key" in st.session_state else None,
+            update_streamlit=True,
+            height=canvas_height,
+            width=canvas_width,
+            drawing_mode="transform", # Default to move mode
+            key=st.session_state.get("canvas_key", "canvas1"),
+            display_toolbar=True
+        )
+
+        # Real-time Calculation based on Canvas Data
+        if canvas_result.json_data is not None:
+            objects = canvas_result.json_data["objects"]
+            final_shots = []
+            
+            # Extract centers from canvas objects (circles)
+            for obj in objects:
+                if obj["type"] == "circle":
+                    # Convert back to real image coordinates for accurate MM calc
+                    # Canvas (cx) / scale = Real (rx)
+                    rx = (obj["left"]) / scale_factor
+                    ry = (obj["top"]) / scale_factor
+                    final_shots.append((rx, ry))
+            
+            # Calculate Metrics from Final Shots
+            if len(final_shots) > 0:
+                pixel_per_mm = bg_image.size[0] / ref_width
                 
-                processed_img = results.get("annotated_image")
-                debug_img = results.get("debug_binary")
-                group_mm = results.get("group_size_mm", 0.0)
-                mean_radius = results.get("mean_radius_mm", 0.0)
-                shot_count = results.get("shot_count", 0)
+                # 1. MPI
+                avg_x = sum([p[0] for p in final_shots]) / len(final_shots)
+                avg_y = sum([p[1] for p in final_shots]) / len(final_shots)
+                
+                # 2. Max Spread (Group Size)
+                max_dist_px = 0
+                import numpy as np
+                if len(final_shots) >= 2:
+                    for i in range(len(final_shots)):
+                        for j in range(i + 1, len(final_shots)):
+                            dist = np.sqrt((final_shots[i][0] - final_shots[j][0])**2 + (final_shots[i][1] - final_shots[j][1])**2)
+                            if dist > max_dist_px: max_dist_px = dist
+                
+                group_mm = max_dist_px / pixel_per_mm
+                
+                # 3. Mean Radius
+                total_dist = sum([np.sqrt((p[0] - avg_x)**2 + (p[1] - avg_y)**2) for p in final_shots])
+                mean_radius_mm = (total_dist / len(final_shots)) / pixel_per_mm
 
-                with col_img2:
-                    if debug_mode and debug_img is not None:
-                         st.image(debug_img, caption="Máscara Binária (O que o algortimo 'vê')", use_container_width=True)
-
-                    if processed_img is not None and shot_count > 0:
-                        st.image(processed_img, caption=f"Análise Completa: {shot_count} impactos detectados", use_container_width=True)
-                        
-                        st.markdown("#### 📊 Resultados da Análise")
-                        res_c1, res_c2 = st.columns(2)
-                        res_c1.metric("Agrupamento (Max Spread)", f"{group_mm:.2f} mm", help="Máxima distância entre dois impactos.")
-                        res_c2.metric("Raio Médio (Mean Radius)", f"{mean_radius:.2f} mm", help="Distância média dos impactos até o centro do grupo (MPI).")
-                        
-                        st.metric("Impactos Identificados", shot_count)
-                        
-                        st.success(f"Análise concluída com sucesso!")
-                        st.info("Nota: O sistema utiliza limiarização global. Ajuste os sliders à esquerda se necessário.")
-                    else:
-                        st.warning("Nenhum impacto claro detectado. Tente ajustar a 'Sensibilidade' ou verifique a iluminação da foto.")
-                        if processed_img is not None:
-                             st.image(processed_img, caption="Tentativa de Detecção (Sem Sucesso)", use_container_width=True)
+                st.markdown("#### 📊 Resultados (Tempo Real)")
+                res_c1, res_c2, res_c3 = st.columns(3)
+                res_c1.metric("Agrupamento", f"{group_mm:.2f} mm")
+                res_c2.metric("Raio Médio", f"{mean_radius_mm:.2f} mm")
+                res_c3.metric("Impactos", len(final_shots))
+                
+            else:
+                st.warning("Adicione impactos (círculos) no alvo para calcular.")
     
     show_ad()
     session.close()

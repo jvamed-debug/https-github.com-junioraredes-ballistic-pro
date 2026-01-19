@@ -5,3 +5,4 @@ bcrypt
 opencv-python-headless
 Pillow
 reportlab
+streamlit-drawable-canvas
