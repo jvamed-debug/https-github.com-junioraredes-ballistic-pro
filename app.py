@@ -1018,8 +1018,23 @@ with tab4:
         # Interactive Canvas
         # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
         # Toolbar Controls
-        tool_mode = st.radio("Ferramenta:", ["Mover/Editar", "Adicionar Disparo"], horizontal=True)
-        mode = "transform" if tool_mode == "Mover/Editar" else "circle"
+        # Toolbar Controls
+        col_tools = st.columns(4)
+        tool_choice = st.radio(
+            "Escolha a Ferramenta:", 
+            ("🤚 Mover/Selecionar", "🟢 Criar Novo", "🔧 Editar/Ajustar", "❌ Apagar"),
+            horizontal=True,
+            help="Selecione o modo de interação com o alvo."
+        )
+        
+        mode = "transform" # Default
+        if "Criar" in tool_choice:
+            mode = "circle"
+        elif "Apagar" in tool_choice:
+            mode = "transform"
+            st.warning("⚠️ Para apagar: Clique no círculo para selecioná-lo e então pressione a tecla **DELETE** no seu teclado.")
+        else:
+            mode = "transform" # Mover and Editar use the same transform mode
         
         try:
              canvas_result = st_canvas(
