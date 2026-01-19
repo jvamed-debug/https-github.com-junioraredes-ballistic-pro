@@ -4,7 +4,7 @@ import os
 
 # Set page config
 st.set_page_config(
-    page_title="Assistente de Recarga Balística",
+    page_title="Ballistic Pro",
     page_icon="🎯",
     layout="wide"
 )
