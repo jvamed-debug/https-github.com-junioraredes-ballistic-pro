@@ -1018,23 +1018,23 @@ with tab4:
         # Interactive Canvas
         # Note: Using try-except to handle potential cloud-specific image loading issues gracefully
         # Toolbar Controls
-        # Toolbar Controls
-        col_tools = st.columns(4)
+        tool_map = {
+            "🤚 Mover": "transform",
+            "🟢 Adicionar": "circle",
+            "❌ Apagar": "transform"
+        }
+        
         tool_choice = st.radio(
-            "Escolha a Ferramenta:", 
-            ("🤚 Mover/Selecionar", "🟢 Criar Novo", "🔧 Editar/Ajustar", "❌ Apagar"),
+            "Modo de Edição:",
+            list(tool_map.keys()),
             horizontal=True,
-            help="Selecione o modo de interação com o alvo."
+            index=0
         )
         
-        mode = "transform" # Default
-        if "Criar" in tool_choice:
-            mode = "circle"
-        elif "Apagar" in tool_choice:
-            mode = "transform"
-            st.warning("⚠️ Para apagar: Clique no impacto para selecioná-lo e use **Backspace/Delete**. Ou use o ícone de **Lixeira** na barra de ferramentas do editor (canto esquerdo).")
-        else:
-            mode = "transform" # Mover and Editar use the same transform mode
+        mode = tool_map[tool_choice]
+        
+        if "Apagar" in tool_choice:
+            st.info("💡 **Modo Apagar**: Clique sobre um ponto para selecioná-lo e pressione **Delete** (ou Backspace) no teclado.")
         
         try:
              canvas_result = st_canvas(
