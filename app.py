@@ -1120,11 +1120,11 @@ with tab4:
                   w, h = st.session_state.get("canvas_dims", (600, 400))
                   bg_img_for_canvas = img_source.resize((w, h))
 
-              canvas_result = st_canvas(
+             canvas_result = st_canvas(
                 fill_color="rgba(255, 0, 0, 0.8)",
                 stroke_color="black",
                 background_image=bg_img_for_canvas,
-                initial_drawing=st.session_state["canvas_init_fixed"], # FIX: Only load initial state ONCE
+                initial_drawing=st.session_state["canvas_init_fixed"], 
                 update_streamlit=True,
                 height=canvas_height,
                 width=canvas_width,
