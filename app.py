@@ -1098,8 +1098,19 @@ with tab4:
              
              # Sync Browser Results -> Server State
              if canvas_result.json_data is not None:
-                 if canvas_result.json_data != st.session_state["canvas_state"]:
+                 current_len = len(canvas_result.json_data.get("objects", []))
+                 saved_len = len(st.session_state["canvas_state"].get("objects", []))
+                 
+                 # Only update main state if Number of objects changes (Add/Delete)
+                 # This avoids constant reloading when just moving/selecting (which triggers minor coordinate changes)
+                 if current_len != saved_len:
                      st.session_state["canvas_state"] = canvas_result.json_data
+                 
+                 # Always use LATEST json_data for metrics (Visual accuracy)
+                 # But we don't save it to session_state to avoid reruns on move.
+                 objects_for_metrics = canvas_result.json_data["objects"]
+             else:
+                 objects_for_metrics = st.session_state["canvas_state"].get("objects", [])
                  
         except Exception as e:
             st.error(f"Erro canvas: {e}")
@@ -1108,8 +1119,8 @@ with tab4:
 
 
         # Real-time Calculation based on Canvas Data
-        if canvas_result.json_data is not None:
-            objects = canvas_result.json_data["objects"]
+        if 'objects_for_metrics' in locals() and objects_for_metrics is not None:
+            objects = objects_for_metrics
             final_shots = []
             
             # Extract centers from canvas objects (circles)
