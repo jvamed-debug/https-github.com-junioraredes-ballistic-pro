@@ -973,11 +973,6 @@ with tab4:
         # Prepare initial state (background image)
         if hasattr(target_img, "seek"): target_img.seek(0)
         pil_image = Image.open(target_img).convert("RGB")
-        # Convert to Base64 to avoid streamlit version conflicts
-        bg_image = get_image_base64_url(pil_image)
-        
-        if hasattr(target_img, "seek"): target_img.seek(0)
-        pil_image = Image.open(target_img).convert("RGB")
         
         # Determine canvas dimensions relative to image aspect ratio
         canvas_width = 600
@@ -989,9 +984,6 @@ with tab4:
 
         # Resize for display
         pil_image_resized = pil_image.resize((canvas_width, canvas_height))
-
-        # Convert to Base64 to avoid streamlit version conflicts
-        bg_image_b64 = get_image_base64_url(pil_image_resized)
         
         # We need to inform scale factors elsewhere or use original pil_image size for calculations
         # The logic below already uses 'scale_factor' derived from original PIL image vs canvas width, so calculations remain valid locally.
