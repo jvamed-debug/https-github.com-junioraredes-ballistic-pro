@@ -1032,7 +1032,7 @@ with tab4:
             mode = "circle"
         elif "Apagar" in tool_choice:
             mode = "transform"
-            st.warning("⚠️ Para apagar: Clique no círculo para selecioná-lo e então pressione a tecla **DELETE** no seu teclado.")
+            st.warning("⚠️ Para apagar: Clique no impacto para selecioná-lo e use **Backspace/Delete**. Ou use o ícone de **Lixeira** na barra de ferramentas do editor (canto esquerdo).")
         else:
             mode = "transform" # Mover and Editar use the same transform mode
         
