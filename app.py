@@ -1440,3 +1440,9 @@ display_pow = selected_powder if selected_powder != "Outro" else locals().get('m
 st.markdown("---")
 st.caption("© 2026 BALLISTIC TACTICAL ASSISTANT | FIELD READY SYSTEM")
 
+# Connection Status Indicator (Subtle)
+if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
+    st.caption("☁️ Status: **Conectado (Supabase)**")
+else:
+    st.caption("💾 Status: **Modo Local (SQLite)**")
+
