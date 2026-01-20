@@ -488,6 +488,8 @@ if st.sidebar.button("Sair / Logout"):
     clear_biometrics() # Clear biometrics on explicit logout
     st.rerun()
 
+st.toast("📱 Versão Mobile Otimizada Carregada", icon="🚀")
+
 with st.expander("🛡️ Protocolo de Segurança e Termos"):
     st.info("""
     **Aviso:** A recarga de munição exige atenção absoluta. 
@@ -527,7 +529,7 @@ with st.expander("⚙️ Configuração da Recarga (Calibre/Componentes)", expan
     c_col1, c_col2, c_col3 = st.columns(3)
     
     with c_col1:
-        selected_caliber = st.selectbox("Selecione o Calibre", calibers)
+        selected_caliber = st.selectbox("Selecione o Calibre", calibers, key="sel_cal_v2")
 
     # 2. Projectile Selection
     projectiles = []
@@ -537,7 +539,7 @@ with st.expander("⚙️ Configuração da Recarga (Calibre/Componentes)", expan
     projectiles.append("Outro")
     
     with c_col2:
-        selected_projectile = st.selectbox("Selecione o Projétil", projectiles)
+        selected_projectile = st.selectbox("Selecione o Projétil", projectiles, key="sel_proj_v2")
 
     # 3. Powder Selection (Filtered by Projectile)
     available_powders = set()
@@ -553,7 +555,7 @@ with st.expander("⚙️ Configuração da Recarga (Calibre/Componentes)", expan
     powders_list.append("Outro")
     
     with c_col3:
-        selected_powder = st.selectbox("Selecione a Pólvora", powders_list)
+        selected_powder = st.selectbox("Selecione a Pólvora", powders_list, key="sel_pow_v2")
 
     # Display Powder Info (Inline)
     powder_meta = db.get("powders_metadata", {}).get(selected_powder)
