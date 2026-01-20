@@ -79,7 +79,23 @@ class InventoryItem(Base):
     user = relationship("User", back_populates="inventory")
 
 # Database setup
-engine = create_engine('sqlite:///ballistics.db')
+import streamlit as st
+import os
+
+# Try to get DB URL from Streamlit Secrets (Production - Supabase)
+try:
+    if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
+        DATABASE_URL = st.secrets["supabase"]["db_url"]
+        # Fix for some postgres dialects expecting postgresql:// instead of postgres://
+        if DATABASE_URL.startswith("postgres://"):
+            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    else:
+        raise Exception("No secrets found")
+except:
+    # Fallback to Local SQLite
+    DATABASE_URL = 'sqlite:///ballistics.db'
+
+engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
