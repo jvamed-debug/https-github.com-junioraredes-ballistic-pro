@@ -503,55 +503,62 @@ for item in user_inv:
     categories_count[item.category] = categories_count.get(item.category, 0) + 1
 session.close()
 
-db_col1, db_col2, db_col3, db_col4 = st.columns(4)
-db_col1.metric("Investimento Total", f"R$ {total_investment:.2f}")
-db_col2.metric("Itens em Estoque", len(user_inv))
-db_col3.metric("Pólvoras", categories_count.get("Pólvora", 0))
-db_col4.metric("Projéteis/Espoletas", categories_count.get("Projétil", 0) + categories_count.get("Espoleta", 0))
+# Stock Metrics (Moved to Bottom as requested)
+# Use placeholders variables here if needed later, but the display logic will move.
+total_inv_val = total_investment
+inv_count = len(user_inv)
+pow_count = categories_count.get("Pólvora", 0)
+proj_count = categories_count.get("Projétil", 0) + categories_count.get("Espoleta", 0)
 
 st.divider()
 
-# Sidebar for Selection
-st.sidebar.header("Configuração de Carga")
+# Sidebar for Selection -> MOVED TO MAIN AREA
+# Configuration in Expander for Mobile Usability
+with st.expander("⚙️ Configuração da Recarga (Calibre/Componentes)", expanded=True):
+    # Initialize manual variables
+    manual_caliber, manual_projectile, manual_powder = "N/A", "N/A", "N/A"
+    
+    # 1. Caliber Selection
+    calibers = list(db["calibers"].keys())
+    # Safely sort if not empty
+    if calibers: calibers.sort()
+    calibers.append("Outro")
+    
+    c_col1, c_col2, c_col3 = st.columns(3)
+    
+    with c_col1:
+        selected_caliber = st.selectbox("Selecione o Calibre", calibers)
 
-# Initialize manual variables
-manual_caliber, manual_projectile, manual_powder = "N/A", "N/A", "N/A"
+    # 2. Projectile Selection
+    projectiles = []
+    if selected_caliber != "Outro" and selected_caliber in db["calibers"]:
+        projectiles = list(db["calibers"][selected_caliber]["projectiles"].keys())
+        projectiles.sort()
+    projectiles.append("Outro")
+    
+    with c_col2:
+        selected_projectile = st.selectbox("Selecione o Projétil", projectiles)
 
-# 1. Caliber Selection
-calibers = list(db["calibers"].keys())
-calibers.sort()
-calibers.append("Outro")
-selected_caliber = st.sidebar.selectbox("Selecione o Calibre", calibers)
+    # 3. Powder Selection (Filtered by Projectile)
+    available_powders = set()
+    if selected_caliber != "Outro" and selected_projectile != "Outro":
+        try:
+            proj_data = db["calibers"][selected_caliber]["projectiles"][selected_projectile]
+            available_powders.update(proj_data["powders"].keys())
+        except KeyError:
+            pass
 
-# 2. Projectile Selection
-projectiles = []
-if selected_caliber != "Outro" and selected_caliber in db["calibers"]:
-    projectiles = list(db["calibers"][selected_caliber]["projectiles"].keys())
-    projectiles.sort()
-projectiles.append("Outro")
-selected_projectile = st.sidebar.selectbox("Selecione o Projétil", projectiles)
+    powders_list = list(available_powders)
+    powders_list.sort()
+    powders_list.append("Outro")
+    
+    with c_col3:
+        selected_powder = st.selectbox("Selecione a Pólvora", powders_list)
 
-# 3. Powder Selection (Filtered by Projectile)
-available_powders = set()
-if selected_caliber != "Outro" and selected_projectile != "Outro":
-    try:
-        proj_data = db["calibers"][selected_caliber]["projectiles"][selected_projectile]
-        available_powders.update(proj_data["powders"].keys())
-    except KeyError:
-        pass
-
-powders_list = list(available_powders)
-powders_list.sort()
-powders_list.append("Outro")
-selected_powder = st.sidebar.selectbox("Selecione a Pólvora", powders_list)
-
-# Display Powder Info (if available)
-powder_meta = db.get("powders_metadata", {}).get(selected_powder)
-if powder_meta:
-    with st.sidebar.expander("ℹ️ Detalhes da Pólvora", expanded=True):
-        st.markdown(f"**Formato:** {powder_meta.get('format', 'N/A')}")
-        st.markdown(f"**Densidade:** {powder_meta.get('density', 'N/A')}")
-        st.markdown(f"**Aplicação:** {powder_meta.get('app', 'N/A')}")
+    # Display Powder Info (Inline)
+    powder_meta = db.get("powders_metadata", {}).get(selected_powder)
+    if powder_meta:
+        st.caption(f"ℹ️ **{selected_powder}**: {powder_meta.get('app', 'N/A')} ({powder_meta.get('format', 'N/A')})")
 
 # Logic for Mode
 # Check if the specific combination exists in DB
@@ -578,11 +585,11 @@ with tab1:
         st.markdown("#### 📏 Dimensões do Calibre (SAAMI)")
         img_col, data_col = st.columns([1, 2])
         with img_col:
-            image_path = "/Users/junioraredes/.gemini/antigravity/brain/06aa0d14-da33-45b0-80f6-4b95dbb92417/cartridge_technical_drawing_v2_1768246991029.png"
+            image_path = "cartridge_diagram.png"
             if os.path.exists(image_path):
                 st.image(image_path, caption="Esquema de Medidas (Genérico)", use_container_width=True)
             else:
-                st.caption("Esquema de Medidas (Genérico)")
+                st.info("Imagem técnica indisponível.")
         with data_col:
             d1, d2 = st.columns(2)
             with d1:
@@ -1436,6 +1443,15 @@ st.divider()
 display_cal = selected_caliber if selected_caliber != "Outro" else locals().get('manual_caliber', 'MANUAL')
 display_proj = selected_projectile if selected_projectile != "Outro" else locals().get('manual_projectile', 'MANUAL')
 display_pow = selected_powder if selected_powder != "Outro" else locals().get('manual_powder', 'MANUAL')
+
+# Stock Dashboard (Moved to Bottom)
+st.divider()
+st.markdown("### 📦 Resumo do Estoque")
+db_col1, db_col2, db_col3, db_col4 = st.columns(4)
+db_col1.metric("Investimento", f"R$ {total_inv_val:.2f}")
+db_col2.metric("Itens", inv_count)
+db_col3.metric("Pólvoras", pow_count)
+db_col4.metric("Projéteis", proj_count)
 
 st.markdown("---")
 st.caption("© 2026 BALLISTIC TACTICAL ASSISTANT | FIELD READY SYSTEM")
