@@ -6,13 +6,13 @@ def apply_custom_styles():
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
     
     :root {
-        --bg-deep: #060606;
-        --bg-card: #0f172a;
+        --bg-deep: #0f172a;
+        --bg-card: #1e293b;
         --accent-cyan: #00f2ff;
         --accent-orange: #ff4d00;
         --text-main: #f8fafc;
-        --text-dim: #94a3b8;
-        --border-sharp: 1px solid rgba(0, 242, 255, 0.2);
+        --text-dim: #cbd5e1;
+        --border-sharp: 1px solid rgba(0, 242, 255, 0.3);
     }
 
     html, body, [class*="css"] {
@@ -22,22 +22,22 @@ def apply_custom_styles():
 
     /* Global Dark Theme Overrides */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-deep) 100%);
+        background: radial-gradient(circle at 50% 0%, #334155 0%, var(--bg-deep) 100%);
         background-attachment: fixed;
     }
 
     /* Sidebar - High End Glass */
     [data-testid="stSidebar"] {
-        background-color: rgba(6, 6, 6, 0.9) !important;
+        background-color: rgba(15, 23, 42, 0.95) !important;
         backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     /* Sharp Metric HUD Styling */
     .stMetric {
-        background: rgba(15, 23, 42, 0.8) !important;
+        background: rgba(30, 41, 59, 0.6) !important;
         padding: 1.2rem !important;
-        border-radius: 2px !important;
+        border-radius: 4px !important;
         border: var(--border-sharp) !important;
         border-left: 4px solid var(--accent-cyan) !important;
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
