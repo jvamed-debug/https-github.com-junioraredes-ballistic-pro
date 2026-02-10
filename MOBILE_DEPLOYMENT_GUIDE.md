@@ -1,4 +1,4 @@
-# Guia de Publicação Mobile: Ballistic Pro 📱🎯
+?# Guia de Publicação Mobile: Ballistic Pro 📱🎯
 
 Este guia cobre a publicação nas lojas (Apple/Google) e a estratégia de monetização (Ads + Premium).
 

@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from contextlib import contextmanager
 import bcrypt
 
 Base = declarative_base()
@@ -100,4 +101,9 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 def get_session():
+    """
+    Retorna uma nova sessão do SQLAlchemy.
+    O chamador é responsável por fechar a sessão usando session.close().
+    """
     return Session()
+
