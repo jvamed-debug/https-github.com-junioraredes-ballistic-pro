@@ -85,21 +85,30 @@ class InventoryItem(Base):
 import streamlit as st
 import os
 
-# Try to get DB URL from Streamlit Secrets (Production - Supabase)
-try:
-    if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
-        DATABASE_URL = st.secrets["supabase"]["db_url"]
-        # Fix for some postgres dialects expecting postgresql:// instead of postgres://
-        if DATABASE_URL.startswith("postgres://"):
-            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    else:
-        raise Exception("No secrets found")
-except:
-    # Fallback to Local SQLite
-    DATABASE_URL = 'sqlite:///ballistics.db'
+def create_db_engine():
+    # Try to get DB URL from Streamlit Secrets (Production - Supabase)
+    db_url = 'sqlite:///ballistics.db'
+    try:
+        if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
+            db_url = st.secrets["supabase"]["db_url"]
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+    except:
+        pass
+    
+    return create_engine(db_url)
 
-engine = create_engine(DATABASE_URL)
-Base.metadata.create_all(engine)
+# Initialize engine with resilience
+engine = create_db_engine()
+
+# Try to create tables, if it fails (e.g. remote DB unreachable), fallback to SQLite
+try:
+    Base.metadata.create_all(engine)
+except Exception as e:
+    st.warning("⚠️ Conexão com Banco Remoto falhou. Usando Banco de Dados Local.")
+    engine = create_engine('sqlite:///ballistics.db')
+    Base.metadata.create_all(engine)
+
 Session = sessionmaker(bind=engine)
 
 def get_session():
