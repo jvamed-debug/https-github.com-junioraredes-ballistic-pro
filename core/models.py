@@ -72,8 +72,10 @@ class InventoryItem(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     
     category = Column(String, nullable=False) # Polvora, Projetil, Espoleta, Estojo
-    name = Column(String, nullable=False)
-    quantity = Column(Float, nullable=False)
+    name = Column(String(100), nullable=False)
+    batch_number = Column(String(50), nullable=True)
+    expiration_date = Column(Date, nullable=True)
+    quantity = Column(Float, default=0.0)
     unit = Column(String, nullable=False) # g, grains, un
     price_unit = Column(Float, default=0.0) # Preço por unidade (ou por g/grain/un)
     
@@ -106,4 +108,33 @@ def get_session():
     O chamador é responsável por fechar a sessão usando session.close().
     """
     return Session()
+
+def init_db_if_empty():
+    """
+    Inicializa o banco de dados com um usuário administrador padrão caso esteja vazio.
+    """
+    session = get_session()
+    try:
+        if session.query(User).count() == 0:
+            from datetime import date
+            # Tenta buscar a senha do administrador via secrets, caso contrário usa o padrão
+            admin_pass = st.secrets.get("admin_password", "senha123")
+            admin = User(
+                username="atirador_pro",
+                name="Atirador Demo",
+                cpf="000.000.000-00",
+                email="admin@ballisticpro.com",
+                phone="(00) 00000-0000",
+                cr_number="000000",
+                cr_expiration=date(2030, 1, 1),
+                is_premium=1
+            )
+            admin.set_password(admin_pass)
+            session.add(admin)
+            session.commit()
+            print("Usuário padrão 'atirador_pro' criado.")
+    except Exception as e:
+        print(f"Erro na inicialização do Banco: {e}")
+    finally:
+        session.close()
 

@@ -1,0 +1,100 @@
+{
+  "project": ".",
+  "timestamp": "2026-02-09T20:04:39.438664",
+  "scan_type": "all",
+  "scans": {
+    "dependencies": {
+      "tool": "dependency_scanner",
+      "findings": [],
+      "status": "[OK] Supply chain checks passed"
+    },
+    "secrets": {
+      "tool": "secret_scanner",
+      "findings": [
+        {
+          "file": "scan_results.json",
+          "type": "Bearer Token",
+          "severity": "critical",
+          "count": 1
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "type": "Bearer Token",
+          "severity": "critical",
+          "count": 1
+        }
+      ],
+      "status": "[!!] CRITICAL: Secrets exposed!",
+      "scanned_files": 43,
+      "by_severity": {
+        "critical": 2,
+        "high": 0,
+        "medium": 0
+      }
+    },
+    "code_patterns": {
+      "tool": "pattern_scanner",
+      "findings": [
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 63,
+          "pattern": "eval() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "(r'eval\\s*\\(', \"eval() usage\", \"critical\", \"Code Injection risk\"),"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 64,
+          "pattern": "exec() usage",
+          "severity": "critical",
+          "category": "Code Injection risk",
+          "snippet": "(r'exec\\s*\\(', \"exec() usage\", \"critical\", \"Code Injection risk\"),"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 70,
+          "pattern": "dangerouslySetInnerHTML",
+          "severity": "high",
+          "category": "XSS risk",
+          "snippet": "(r'dangerouslySetInnerHTML', \"dangerouslySetInnerHTML\", \"high\", \"XSS risk\"),"
+        },
+        {
+          "file": ".agent/skills/vulnerability-scanner/scripts/security_scan.py",
+          "line": 80,
+          "pattern": "Insecure flag",
+          "severity": "medium",
+          "category": "Security disabled",
+          "snippet": "(r'--insecure', \"Insecure flag\", \"medium\", \"Security disabled\"),"
+        }
+      ],
+      "status": "[!!] CRITICAL: 2 dangerous patterns",
+      "scanned_files": 39,
+      "by_category": {
+        "Code Injection risk": 2,
+        "XSS risk": 1,
+        "Security disabled": 1
+      }
+    },
+    "configuration": {
+      "tool": "config_scanner",
+      "findings": [
+        {
+          "issue": "No security headers configuration found",
+          "severity": "medium",
+          "recommendation": "Configure CSP, HSTS, X-Frame-Options headers"
+        }
+      ],
+      "status": "[?] Minor configuration issues",
+      "checks": {
+        "security_headers_config": false
+      }
+    }
+  },
+  "summary": {
+    "total_findings": 7,
+    "critical": 4,
+    "high": 1,
+    "overall_status": "[!!] CRITICAL ISSUES FOUND"
+  }
+}
