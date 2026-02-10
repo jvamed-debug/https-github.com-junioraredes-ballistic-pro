@@ -1,10 +1,11 @@
 streamlit
 pandas
-sqlalchemy
+numpy
+SQLAlchemy
 bcrypt
 opencv-python-headless
 Pillow
 reportlab
 streamlit-drawable-canvas==0.8.0
 psycopg2-binary
-SQLAlchemy
+requests
