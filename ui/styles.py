@@ -1,6 +1,5 @@
 def apply_custom_styles():
     st.markdown("""
-    st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
     
