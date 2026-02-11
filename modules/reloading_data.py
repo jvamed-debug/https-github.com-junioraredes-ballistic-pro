@@ -32,8 +32,12 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
                     break
             
             if image_path:
-                st.markdown(f"<p style='color: #94a3b8; font-size: 0.7rem; font-family: \"JetBrains Mono\", monospace; margin-bottom: 5px;'>DIAGRAMA TÉCNICO: {selected_caliber}</p>", unsafe_allow_html=True)
-                st.image(image_path, use_container_width=False)
+                st.markdown(f"""
+                    <div style='background: white; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); text-align: center;'>
+                        <p style='color: #64748b; font-size: 0.6rem; font-family: "JetBrains Mono", monospace; margin: 0 0 5px 0; text-align: left;'>ESQUEMA TÉCNICO: {selected_caliber}</p>
+                        <img src='app/static/{image_path}' style='max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: -webkit-optimize-contrast;'>
+                    </div>
+                """, unsafe_allow_html=True)
             else:
                 st.info("Esquema técnico indisponível.")
         
