@@ -18,9 +18,9 @@ def show_logbook_and_inventory():
     with log_tab:
         st.markdown("### 📔 REGISTRO DE OPERAÇÕES (LOGBOOK)")
         st.markdown("""
-            <div style='background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 4px; border-left: 3px solid var(--accent-focus); margin-bottom: 20px;'>
-                <p style='color: var(--text-dim); font-size: 0.8rem; margin: 0;'>
-                    <b>HISTÓRICO TÉCNICO:</b> Registro cronológico de sessões de recarga e validação de lotes.
+            <div style='background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-primary); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                <p style='color: var(--text-light); font-size: 0.8rem; margin: 0;'>
+                    <b style='color: var(--accent-primary);'>HISTÓRICO TÉCNICO:</b> Registro cronológico de sessões de recarga e validação de lotes.
                 </p>
             </div>
         """, unsafe_allow_html=True)
@@ -30,9 +30,9 @@ def show_logbook_and_inventory():
     with inv_tab:
         st.markdown("### 📦 ESTOQUE DE INSUMOS (INVENTORY)")
         st.markdown("""
-            <div style='background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 4px; border-left: 3px solid var(--accent-focus); margin-bottom: 20px;'>
-                <p style='color: var(--text-dim); font-size: 0.8rem; margin: 0;'>
-                    <b>GESTÃO DE MATERIAIS:</b> Controle quantitativo de pólvoras, espoletas e projéteis.
+            <div style='background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-primary); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                <p style='color: var(--text-light); font-size: 0.8rem; margin: 0;'>
+                    <b style='color: var(--accent-primary);'>GESTÃO DE MATERIAIS:</b> Controle quantitativo de pólvoras, espoletas e projéteis.
                 </p>
             </div>
         """, unsafe_allow_html=True)

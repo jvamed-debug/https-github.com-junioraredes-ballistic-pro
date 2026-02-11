@@ -39,8 +39,8 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
         
         with data_col:
             st.markdown(f"""
-                <div style='border-bottom: 2px solid var(--accent-focus); padding-bottom: 5px; margin-bottom: 15px;'>
-                    <span style='font-family: "JetBrains Mono", monospace; color: var(--accent-focus); font-size: 0.9rem; font-weight: 700;'>CALIBRE: {selected_caliber}</span>
+                <div style='border-bottom: 2px solid var(--accent-primary); padding-bottom: 5px; margin-bottom: 15px;'>
+                    <span style='font-family: "JetBrains Mono", monospace; color: var(--accent-primary); font-size: 0.9rem; font-weight: 700;'>CALIBRE: {selected_caliber}</span>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -52,12 +52,12 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
                 st.metric("CASE MAX", max_case)
                 st.metric("BASE DIA", base_dia)
                 
-            st.markdown("""
-            <div style='background: rgba(146, 64, 14, 0.05); padding: 12px; border-radius: 4px; border-left: 4px solid var(--accent-warn); margin-top: 15px;'>
-                <p style='color: var(--accent-warn); font-family: "JetBrains Mono", monospace; font-size: 0.7rem; font-weight: 700; margin: 0;'>
+            st.markdown(f"""
+            <div style='background: rgba(245, 158, 11, 0.05); padding: 12px; border-radius: 4px; border-left: 4px solid var(--warning-base); margin-top: 15px;'>
+                <p style='color: var(--warning-base); font-family: "JetBrains Mono", monospace; font-size: 0.7rem; font-weight: 700; margin: 0;'>
                     [VIGILÂNCIA DE SEGURANÇA]
                 </p>
-                <p style='color: var(--text-dim); font-size: 0.75rem; margin: 5px 0 0 0;'>
+                <p style='color: var(--text-light); font-size: 0.75rem; margin: 5px 0 0 0;'>
                     Medidas nominais SAAMI. Verifique o HEADSPACE da arma antes de operar.
                 </p>
             </div>
@@ -67,9 +67,9 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
 
     if is_manual_mode:
         st.markdown(f"""
-        <div style='background: rgba(146, 64, 14, 0.1); padding: 15px; border-radius: 4px; border: 1px solid var(--accent-warn); margin-bottom: 20px;'>
-            <span style='color: var(--accent-warn); font-family: "JetBrains Mono", monospace; font-weight: 700;'>[⚠️ AVISO: MODO MANUAL ATIVO]</span><br>
-            <span style='color: var(--text-dim); font-size: 0.85rem;'>Componentes não validados em conjunto pelo banco de dados oficial. Opere com cautela técnica.</span>
+        <div style='background: rgba(245, 158, 11, 0.08); padding: 15px; border-radius: 8px; border: 1px solid var(--warning-base); margin-bottom: 20px;'>
+            <span style='color: var(--warning-base); font-family: "JetBrains Mono", monospace; font-weight: 700;'>[⚠️ AVISO: MODO MANUAL ATIVO]</span><br>
+            <span style='color: var(--text-light); font-size: 0.85rem;'>Componentes não validados em conjunto pelo banco de dados oficial. Opere com cautela técnica.</span>
         </div>
         """, unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -82,9 +82,9 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             st.number_input("Carga Máx (grains)", key="man_max_val", step=0.1)
     else:
         st.markdown(f"""
-        <div style='background: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 4px; border: 1px solid var(--accent-focus); margin-bottom: 20px; border-left: 5px solid var(--accent-focus);'>
-            <span style='color: var(--accent-focus); font-family: "JetBrains Mono", monospace; font-weight: 700;'>[✅ DADOS TÉCNICOS VERIFICADOS]</span><br>
-            <span style='color: var(--text-dim); font-size: 0.85rem;'>Integridade confirmada. Parâmetros carregados com sucesso do Database Ballistic Pro.</span>
+        <div style='background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--success-base); margin-bottom: 20px; border-left: 5px solid var(--success-base);'>
+            <span style='color: var(--success-base); font-family: "JetBrains Mono", monospace; font-weight: 700;'>[✅ DADOS TÉCNICOS VERIFICADOS]</span><br>
+            <span style='color: var(--text-light); font-size: 0.85rem;'>Integridade confirmada. Parâmetros carregados com sucesso do Database Ballistic Pro.</span>
         </div>
         """, unsafe_allow_html=True)
         load_data = db["calibers"][selected_caliber]["projectiles"][selected_projectile]["powders"][selected_powder]

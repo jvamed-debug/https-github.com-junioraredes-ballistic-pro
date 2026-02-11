@@ -6,185 +6,167 @@ def apply_custom_styles():
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
     
     :root {
-        --bg-deep: #0a0b10;
-        --bg-card: #15171e;
-        --accent-cyan: #334155; /* Muted Slate */
-        --accent-focus: #3b82f6; /* Professional Signal Blue */
-        --accent-warn: #92400e; /* Muted Amber */
-        --text-main: #f1f5f9;
-        --text-dim: #94a3b8;
-        --border-sharp: 1px solid rgba(255, 255, 255, 0.08);
+        --bg-main: #f8fafc;
+        --bg-sidebar: #0f172a;
+        --card-bg: #ffffff;
+        --accent-primary: #2563eb;
+        --accent-secondary: #64748b;
+        --text-header: #0f172a;
+        --text-body: #334155;
+        --text-light: #64748b;
+        --border-color: #e2e8f0;
+        --success-base: #10b981;
+        --warning-base: #f59e0b;
     }
 
+    /* Layout & Base */
     html, body, [class*="css"] {
         font-family: 'Outfit', sans-serif;
-        color: var(--text-main);
+        color: var(--text-body);
     }
 
-    /* Global Dark Theme Overrides */
     .stApp {
-        background-color: var(--bg-deep);
-        background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-deep) 100%);
-        background-attachment: fixed;
+        background-color: var(--bg-main);
     }
 
-    /* Sidebar - High End Glass */
+    /* Sidebar - Professional Dark Contrast */
     [data-testid="stSidebar"] {
-        background-color: rgba(15, 23, 42, 0.95) !important;
-        backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: var(--bg-sidebar) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] h3 {
+        color: #f8fafc !important;
     }
 
-    /* Sharp Metric HUD Styling */
+    /* Professional Metrics */
     .stMetric {
-        background: rgba(255, 255, 255, 0.02) !important;
-        padding: 1.2rem !important;
-        border-radius: 4px !important;
-        border: var(--border-sharp) !important;
-        border-top: 2px solid var(--accent-focus) !important;
-        transition: all 0.3s ease;
+        background: var(--card-bg) !important;
+        padding: 1.5rem !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
     .stMetric:hover {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(255, 255, 255, 0.2) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
     }
 
     .stMetric [data-testid="stMetricValue"] {
-        color: var(--text-main) !important;
+        color: var(--accent-primary) !important;
         font-weight: 700 !important;
-        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.8rem !important;
     }
     
     .stMetric [data-testid="stMetricLabel"] {
-        font-weight: 500 !important;
+        color: var(--text-light) !important;
+        font-weight: 600 !important;
         text-transform: uppercase;
-        font-size: 0.7rem !important;
-        letter-spacing: 2px;
-        color: var(--text-dim) !important;
+        font-size: 0.75rem !important;
+        letter-spacing: 0.5px;
     }
 
-    /* Tabs Styling - Tactical Pods */
+    /* Tabs - Clean Modern */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: rgba(255, 255, 255, 0.02);
-        padding: 5px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        gap: 24px;
+        background-color: transparent;
+        border-bottom: 2px solid var(--border-color);
+        padding: 0;
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 45px;
+        height: 50px;
         background-color: transparent !important;
         border: none !important;
-        padding: 0 24px !important;
-        color: var(--text-dim) !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease;
+        padding: 0 10px !important;
+        color: var(--text-light) !important;
+        font-weight: 500 !important;
+        transition: color 0.2s ease;
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: var(--accent-focus) !important;
-        color: white !important;
-        border-radius: 4px !important;
+        color: var(--accent-primary) !important;
+        border-bottom: 2px solid var(--accent-primary) !important;
     }
 
-    /* Expander Styling */
+    /* Expander - Card Style */
     .stExpander {
-        background: rgba(15, 23, 42, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 4px !important;
-        margin-bottom: 1.5rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .stExpander summary {
-        font-weight: 700 !important;
-        color: var(--accent-cyan) !important;
+        font-weight: 600 !important;
+        color: var(--text-header) !important;
     }
 
-    /* Buttons - Sober & Professional */
-    .stButton > button {
-        background: var(--bg-card);
-        color: var(--text-main);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.6rem 1.5rem;
+    /* Technical Hud - Engineering Schematic Style */
+    .tech-hud {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-top: 4px solid var(--accent-primary);
+        padding: 2rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Image Display - Document/Lab Style */
+    .stImage img {
+        background: #ffffff;
+        padding: 10px;
+        border: 1px solid var(--border-color);
         border-radius: 4px;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+    }
+
+    /* Buttons - Solid Primary */
+    .stButton > button {
+        background-color: var(--accent-primary);
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 6px;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.2s ease;
+        transition: background-color 0.2s ease, transform 0.1s ease;
     }
     
     .stButton > button:hover {
-        background: var(--accent-focus);
-        border-color: var(--accent-focus);
-        color: white;
+        background-color: #1d4ed8;
+        transform: translateY(-1px);
     }
 
     /* Auth Card */
     .auth-card {
-        background: var(--bg-card);
-        padding: 3.5rem;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        background: white;
+        padding: 3rem;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
     }
 
-    /* Technical Specs Card (Muted Blueprint) */
-    .tech-hud {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-left: 3px solid var(--accent-focus);
-        padding: 24px;
-        border-radius: 4px;
-        margin-top: 20px;
-        position: relative;
+    /* General Inputs */
+    .stTextInput input, .stSelectbox select, .stNumberInput input {
+        border-radius: 6px !important;
+        border: 1px solid var(--border-color) !important;
     }
     
-    .tech-hud::before {
-        content: 'VERIFIED DATA';
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.6rem;
-        color: var(--text-dim);
-        opacity: 0.6;
-    }
-
-    /* Images */
-    .stImage img {
-        border-radius: 4px;
-        border: 1px solid rgba(0, 242, 255, 0.3);
-        image-rendering: -webkit-optimize-contrast; /* Focus on sharpness */
-        image-rendering: crisp-edges;
-    }
-
-    /* Selectbox Overrides */
-    div[data-baseweb="select"] {
-        border-radius: 4px !important;
-    }
-
-    /* Better Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-deep); }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 0; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
-
-    /* Custom Info Boxes */
     .stAlert {
-        background: rgba(0, 242, 255, 0.05) !important;
-        border: 1px solid rgba(0, 242, 255, 0.2) !important;
-        border-radius: 2px !important;
+        border-radius: 8px !important;
+        border: 1px solid transparent !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 def show_header():
     st.markdown("""
-        <div style='text-align: center; padding: 2.5rem 0 3.5rem 0; background: radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%);'>
-            <h1 style='color: white; font-size: 4rem; font-weight: 900; margin-bottom: 0; letter-spacing: -2px;'>BALLISTIC PRO</h1>
-            <p style='color: var(--accent-focus); font-size: 0.9rem; font-weight: 600; letter-spacing: 5px; text-transform: uppercase; margin-top: -5px;'>Technical Precision Operations</p>
-            <div style='width: 60px; height: 2px; background: var(--accent-focus); margin: 20px auto; opacity: 0.6;'></div>
+        <div style='text-align: center; padding: 2rem 0 3rem 0;'>
+            <h1 style='color: #0f172a; font-size: 3.5rem; font-weight: 950; margin-bottom: 0; letter-spacing: -2px;'>BALLISTIC PRO</h1>
+            <p style='color: #64748b; font-size: 0.85rem; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; margin-top: -5px;'>Engineering & Precision Interface</p>
+            <div style='width: 40px; height: 3px; background: #2563eb; margin: 1.5rem auto;'></div>
         </div>
     """, unsafe_allow_html=True)

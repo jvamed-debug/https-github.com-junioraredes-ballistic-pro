@@ -38,9 +38,9 @@ def show_performance_tab(user_id):
     # 2. Advanced CV Analysis
     st.markdown("#### 🔘 SCANNER DE ALVO & BALÍSTICA COMPUTACIONAL")
     st.markdown("""
-        <div style='background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 4px; border-left: 3px solid var(--accent-focus); margin-bottom: 20px;'>
-            <p style='color: var(--text-dim); font-size: 0.8rem; margin: 0;'>
-                <b style='color: var(--accent-focus);'>ANÁLISE AVANÇADA:</b> Calibração via visão computacional (OpenCV). 
+        <div style='background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+            <p style='color: var(--text-light); font-size: 0.8rem; margin: 0;'>
+                <b style='color: var(--accent-primary);'>ANÁLISE AVANÇADA:</b> Calibração via visão computacional (OpenCV). 
                 Detecção de POI e agrupamento submétrico.
             </p>
         </div>

@@ -16,11 +16,11 @@ def show_profile():
     
     st.markdown("### 👤 PERFIL DO ATIRADOR (CREDENTIALS)")
     st.markdown("""
-        <div style='background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 25px; border-left: 4px solid var(--accent-focus);'>
-            <p style='color: var(--accent-focus); font-family: "JetBrains Mono", monospace; font-size: 0.75rem; font-weight: 700; margin: 0;'>
+        <div style='background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+            <p style='color: var(--accent-primary); font-family: "JetBrains Mono", monospace; font-size: 0.75rem; font-weight: 700; margin: 0;'>
                 [IDENTIFICAÇÃO OPERACIONAL]
             </p>
-            <p style='color: var(--text-dim); font-size: 0.85rem; margin: 5px 0 0 0;'>
+            <p style='color: var(--text-light); font-size: 0.85rem; margin: 5px 0 0 0;'>
                 Mantenha seus dados atualizados conforme a legislação vigente (Decreto 11.615/2023). 
                 Estes dados são criptografados localmente.
             </p>
