@@ -18,9 +18,9 @@ def show_logbook_and_inventory():
     with log_tab:
         st.markdown("### 📔 REGISTRO DE OPERAÇÕES (LOGBOOK)")
         st.markdown("""
-            <div style='background: rgba(0, 242, 255, 0.03); padding: 12px; border-radius: 4px; border-left: 3px solid #00f2ff; margin-bottom: 20px;'>
-                <p style='color: #94a3b8; font-size: 0.8rem; margin: 0;'>
-                    <b>AUDITORIA TÁTICA:</b> Histórico completo de sessões de recarga e validação de lotes.
+            <div style='background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 4px; border-left: 3px solid var(--accent-focus); margin-bottom: 20px;'>
+                <p style='color: var(--text-dim); font-size: 0.8rem; margin: 0;'>
+                    <b>HISTÓRICO TÉCNICO:</b> Registro cronológico de sessões de recarga e validação de lotes.
                 </p>
             </div>
         """, unsafe_allow_html=True)
@@ -30,8 +30,8 @@ def show_logbook_and_inventory():
     with inv_tab:
         st.markdown("### 📦 ESTOQUE DE INSUMOS (INVENTORY)")
         st.markdown("""
-            <div style='background: rgba(0, 242, 255, 0.03); padding: 12px; border-radius: 4px; border-left: 3px solid #00f2ff; margin-bottom: 20px;'>
-                <p style='color: #94a3b8; font-size: 0.8rem; margin: 0;'>
+            <div style='background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 4px; border-left: 3px solid var(--accent-focus); margin-bottom: 20px;'>
+                <p style='color: var(--text-dim); font-size: 0.8rem; margin: 0;'>
                     <b>GESTÃO DE MATERIAIS:</b> Controle quantitativo de pólvoras, espoletas e projéteis.
                 </p>
             </div>

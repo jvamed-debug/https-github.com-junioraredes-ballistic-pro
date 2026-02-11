@@ -6,13 +6,14 @@ def apply_custom_styles():
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
     
     :root {
-        --bg-deep: #0f172a;
-        --bg-card: #1e293b;
-        --accent-cyan: #00f2ff;
-        --accent-orange: #ff4d00;
-        --text-main: #f8fafc;
-        --text-dim: #cbd5e1;
-        --border-sharp: 1px solid rgba(0, 242, 255, 0.3);
+        --bg-deep: #0a0b10;
+        --bg-card: #15171e;
+        --accent-cyan: #334155; /* Muted Slate */
+        --accent-focus: #3b82f6; /* Professional Signal Blue */
+        --accent-warn: #92400e; /* Muted Amber */
+        --text-main: #f1f5f9;
+        --text-dim: #94a3b8;
+        --border-sharp: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     html, body, [class*="css"] {
@@ -22,7 +23,8 @@ def apply_custom_styles():
 
     /* Global Dark Theme Overrides */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #334155 0%, var(--bg-deep) 100%);
+        background-color: var(--bg-deep);
+        background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-deep) 100%);
         background-attachment: fixed;
     }
 
@@ -35,33 +37,30 @@ def apply_custom_styles():
 
     /* Sharp Metric HUD Styling */
     .stMetric {
-        background: rgba(30, 41, 59, 0.6) !important;
+        background: rgba(255, 255, 255, 0.02) !important;
         padding: 1.2rem !important;
         border-radius: 4px !important;
         border: var(--border-sharp) !important;
-        border-left: 4px solid var(--accent-cyan) !important;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        border-top: 2px solid var(--accent-focus) !important;
+        transition: all 0.3s ease;
     }
     
     .stMetric:hover {
-        background: rgba(15, 23, 42, 1) !important;
-        border-color: var(--accent-cyan) !important;
-        box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
-        transform: scale(1.02);
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
     }
 
     .stMetric [data-testid="stMetricValue"] {
-        color: var(--accent-cyan) !important;
-        font-weight: 900 !important;
+        color: var(--text-main) !important;
+        font-weight: 700 !important;
         font-family: 'JetBrains Mono', monospace;
-        letter-spacing: -1px;
     }
     
     .stMetric [data-testid="stMetricLabel"] {
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         text-transform: uppercase;
-        font-size: 0.75rem !important;
-        letter-spacing: 1px;
+        font-size: 0.7rem !important;
+        letter-spacing: 2px;
         color: var(--text-dim) !important;
     }
 
@@ -85,9 +84,9 @@ def apply_custom_styles():
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: var(--accent-cyan) !important;
-        color: var(--bg-deep) !important;
-        border-radius: 8px !important;
+        background-color: var(--accent-focus) !important;
+        color: white !important;
+        border-radius: 4px !important;
     }
 
     /* Expander Styling */
@@ -103,65 +102,62 @@ def apply_custom_styles():
         color: var(--accent-cyan) !important;
     }
 
-    /* Buttons - Hard Action */
+    /* Buttons - Sober & Professional */
     .stButton > button {
-        background: transparent;
-        color: var(--accent-cyan);
-        border: 1px solid var(--accent-cyan);
-        padding: 0.8rem 2rem;
-        border-radius: 2px;
-        font-weight: 700;
+        background: var(--bg-card);
+        color: var(--text-main);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.6rem 1.5rem;
+        border-radius: 4px;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        transition: all 0.2s ease;
     }
     
     .stButton > button:hover {
-        background: var(--accent-cyan);
-        color: var(--bg-deep);
-        box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+        background: var(--accent-focus);
+        border-color: var(--accent-focus);
+        color: white;
     }
 
     /* Auth Card */
     .auth-card {
-        background: rgba(10, 10, 10, 0.95);
+        background: var(--bg-card);
         padding: 3.5rem;
-        border-radius: 4px;
-        border: 2px solid var(--accent-cyan);
-        box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
 
-    /* Technical Specs Card (Blueprint HUD) */
+    /* Technical Specs Card (Muted Blueprint) */
     .tech-hud {
-        background: rgba(6, 6, 6, 0.8);
+        background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-right: 4px solid var(--accent-cyan);
+        border-left: 3px solid var(--accent-focus);
         padding: 24px;
         border-radius: 4px;
         margin-top: 20px;
         position: relative;
-        overflow: hidden;
     }
     
     .tech-hud::before {
-        content: 'SCANNING...';
+        content: 'VERIFIED DATA';
         position: absolute;
         top: 10px;
         right: 15px;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.6rem;
-        color: var(--accent-cyan);
-        opacity: 0.5;
-        animation: blink 1s infinite;
+        color: var(--text-dim);
+        opacity: 0.6;
     }
-
-    @keyframes blink { 50% { opacity: 0; } }
 
     /* Images */
     .stImage img {
-        border-radius: 2px;
-        filter: grayscale(0.2) contrast(1.1);
-        border: 1px solid rgba(0, 242, 255, 0.2);
+        border-radius: 4px;
+        border: 1px solid rgba(0, 242, 255, 0.3);
+        image-rendering: -webkit-optimize-contrast; /* Focus on sharpness */
+        image-rendering: crisp-edges;
     }
 
     /* Selectbox Overrides */
@@ -186,14 +182,9 @@ def apply_custom_styles():
 
 def show_header():
     st.markdown("""
-        <div style='text-align: center; padding: 2.5rem 0 3.5rem 0; background: radial-gradient(circle at center, rgba(0, 242, 255, 0.08) 0%, transparent 70%);'>
-            <h1 style='background: linear-gradient(90deg, #00f2ff, #ffffff, #00f2ff); background-size: 200% auto; animation: shine 4s linear infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 4.5rem; font-weight: 900; margin-bottom: 0; letter-spacing: -3px;'>BALLISTIC PRO</h1>
-            <p style='color: #94a3b8; font-size: 1rem; font-weight: 700; letter-spacing: 6px; text-transform: uppercase; margin-top: -5px; opacity: 0.8;'>Precison Reloading Interface</p>
-            <div style='width: 100px; height: 1px; background: #00f2ff; margin: 15px auto; opacity: 0.3;'></div>
+        <div style='text-align: center; padding: 2.5rem 0 3.5rem 0; background: radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%);'>
+            <h1 style='color: white; font-size: 4rem; font-weight: 900; margin-bottom: 0; letter-spacing: -2px;'>BALLISTIC PRO</h1>
+            <p style='color: var(--accent-focus); font-size: 0.9rem; font-weight: 600; letter-spacing: 5px; text-transform: uppercase; margin-top: -5px;'>Technical Precision Operations</p>
+            <div style='width: 60px; height: 2px; background: var(--accent-focus); margin: 20px auto; opacity: 0.6;'></div>
         </div>
-        <style>
-            @keyframes shine {
-                to { background-position: 200% center; }
-            }
-        </style>
     """, unsafe_allow_html=True)

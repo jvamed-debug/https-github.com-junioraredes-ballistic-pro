@@ -27,7 +27,7 @@ def show_performance_tab(user_id):
         c1, c2 = st.columns(2)
         with c1:
             st.caption("📈 TENDÊNCIA DE AGRUPAMENTO (MOA/mm)")
-            st.line_chart(df.set_index("Data")["Agrupamento (mm)"], color="#00f2ff")
+            st.line_chart(df.set_index("Data")["Agrupamento (mm)"], color="#3b82f6")
         with c2:
             st.caption("📉 CONSISTÊNCIA BALÍSTICA (SD/Velocidade)")
             st.bar_chart(df.set_index("Data")["SD"], color="#334155")
@@ -38,9 +38,9 @@ def show_performance_tab(user_id):
     # 2. Advanced CV Analysis
     st.markdown("#### 🔘 SCANNER DE ALVO & BALÍSTICA COMPUTACIONAL")
     st.markdown("""
-        <div style='background: rgba(0, 242, 255, 0.03); padding: 10px; border-radius: 4px; border-left: 3px solid #00f2ff; margin-bottom: 20px;'>
-            <p style='color: #94a3b8; font-size: 0.8rem; margin: 0;'>
-                <b>MODO PREMIUM ATIVO:</b> Calibração automática via visão computacional (OpenCV). 
+        <div style='background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 4px; border-left: 3px solid var(--accent-focus); margin-bottom: 20px;'>
+            <p style='color: var(--text-dim); font-size: 0.8rem; margin: 0;'>
+                <b style='color: var(--accent-focus);'>ANÁLISE AVANÇADA:</b> Calibração via visão computacional (OpenCV). 
                 Detecção de POI e agrupamento submétrico.
             </p>
         </div>

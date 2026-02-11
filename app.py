@@ -49,10 +49,10 @@ show_header()
 
 # Sidebar Setup
 st.sidebar.markdown(f"""
-    <div style='text-align: center; padding: 1.5rem 0; background: rgba(0, 242, 255, 0.03); border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.1); margin-bottom: 2rem;'>
-        <div style='width: 12px; height: 12px; background: #00f2ff; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 10px #00f2ff;'></div>
-        <span style='color: #00f2ff; font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 700;'>SISTEMA OPERACIONAL</span>
-        <h3 style='color: white; margin-top: 10px; font-weight: 900; letter-spacing: -1px;'>OPERADOR {st.session_state.get("user_id", "N/A")}</h3>
+    <div style='text-align: center; padding: 1.5rem 0; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 2rem;'>
+        <div style='width: 10px; height: 10px; background: var(--accent-focus); border-radius: 50%; display: inline-block; margin-right: 8px; opacity: 0.8;'></div>
+        <span style='color: var(--accent-focus); font-family: "JetBrains Mono", monospace; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;'>Sistema Ativo</span>
+        <h3 style='color: white; margin-top: 8px; font-weight: 700; font-size: 1.2rem;'>OPERADOR {st.session_state.get("user_id", "N/A")}</h3>
     </div>
 """, unsafe_allow_html=True)
 
