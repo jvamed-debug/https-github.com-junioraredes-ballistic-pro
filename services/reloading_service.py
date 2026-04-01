@@ -1,5 +1,6 @@
 import streamlit as st
-from core.models import get_session, User, InventoryItem, ReloadSession
+from core.models import managed_session, User, InventoryItem, ReloadSession
+
 
 class ReloadingService:
     @staticmethod
@@ -7,15 +8,14 @@ class ReloadingService:
         """
         Calculates the estimated cost per round based on current inventory pricing.
         """
-        db = get_session()
-        try:
+        with managed_session() as db:
             # 1. Powder Cost
             powder = db.query(InventoryItem).filter(
-                InventoryItem.user_id == user_id, 
-                InventoryItem.category == "Pólvora", 
+                InventoryItem.user_id == user_id,
+                InventoryItem.category == "Pólvora",
                 InventoryItem.name.ilike(f"%{session_data.powder}%")
             ).first()
-            
+
             p_cost = 0
             if powder:
                 grains_per_unit = 1.0 if powder.unit.lower() == "grains" else 15.4324
@@ -24,8 +24,8 @@ class ReloadingService:
             # 2. Other Components
             def get_price(cat, name):
                 item = db.query(InventoryItem).filter(
-                    InventoryItem.user_id == user_id, 
-                    InventoryItem.category == cat, 
+                    InventoryItem.user_id == user_id,
+                    InventoryItem.category == cat,
                     InventoryItem.name.ilike(f"%{name}%")
                 ).first()
                 return item.price_unit if item else 0
@@ -35,17 +35,15 @@ class ReloadingService:
             case_cost = get_price("Estojo", session_data.case)
 
             return p_cost + proj_cost + prim_cost + case_cost
-        finally:
-            db.close()
 
     @staticmethod
     def deduct_inventory(session_data, user_id):
         """
         Deducts components from inventory based on a reloading session.
+        managed_session() handles commit/rollback/close automatically.
         """
-        db = get_session()
         messages = []
-        try:
+        with managed_session() as db:
             # Powder
             if session_data.powder:
                 item = db.query(InventoryItem).filter(
@@ -65,7 +63,7 @@ class ReloadingService:
                 ("Espoleta", session_data.primer),
                 ("Estojo", session_data.case)
             ]
-            
+
             for cat, name in components:
                 if name:
                     item = db.query(InventoryItem).filter(
@@ -76,11 +74,5 @@ class ReloadingService:
                     if item:
                         item.quantity -= session_data.quantity
                         messages.append(f"Subtraído {session_data.quantity}un de {item.name}")
-            
-            db.commit()
-            return True, messages
-        except Exception as e:
-            db.rollback()
-            return False, [str(e)]
-        finally:
-            db.close()
+
+        return True, messages

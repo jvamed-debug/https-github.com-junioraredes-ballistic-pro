@@ -1,7 +1,7 @@
 import streamlit as st
 import re
 import requests
-from core.models import get_session, User, Firearm
+from core.models import managed_session, User, Firearm
 from ui.styles import apply_custom_styles
 from bio_auth import save_biometrics, clear_biometrics, check_biometrics_available
 from report_gen import create_inspection_report
@@ -11,9 +11,23 @@ def show_profile():
         st.warning("Por favor, faça login.")
         return
 
-    session = get_session()
-    user = session.query(User).get(st.session_state["user_id"])
-    
+    user_id = st.session_state["user_id"]
+
+    # Load user data into plain dict to avoid DetachedInstanceError
+    with managed_session() as session:
+        user = session.get(User, user_id)
+        if not user:
+            st.error("Usuário não encontrado.")
+            return
+        u = {
+            "name": user.name or "",
+            "cpf": user.cpf or "",
+            "cr_number": user.cr_number or "",
+            "email": user.email or "",
+            "phone": user.phone or "",
+            "cr_expiration": user.cr_expiration,
+        }
+
     st.markdown("### 👤 PERFIL DO ATIRADOR (CREDENTIALS)")
     st.markdown("""
         <div style='background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
@@ -29,14 +43,14 @@ def show_profile():
     
     u_col1, u_col2 = st.columns(2)
     with u_col1:
-        new_name = st.text_input("Nome Completo", value=user.name or "")
-        new_cpf = st.text_input("CPF (XXX.XXX.XXX-XX)", value=user.cpf or "", max_chars=14)
-        new_cr = st.text_input("CR (Certificado de Registro)", value=user.cr_number or "")
+        new_name = st.text_input("Nome Completo", value=u["name"])
+        new_cpf = st.text_input("CPF (XXX.XXX.XXX-XX)", value=u["cpf"], max_chars=14)
+        new_cr = st.text_input("CR (Certificado de Registro)", value=u["cr_number"])
     
     with u_col2:
-        new_email = st.text_input("E-mail", value=user.email or "")
-        new_phone = st.text_input("Telefone (XX) XXXXX-XXXX", value=user.phone or "", max_chars=15)
-        new_cr_exp = st.date_input("Validade do CR", value=user.cr_expiration or None, format="DD/MM/YYYY")
+        new_email = st.text_input("E-mail", value=u["email"])
+        new_phone = st.text_input("Telefone (XX) XXXXX-XXXX", value=u["phone"], max_chars=15)
+        new_cr_exp = st.date_input("Validade do CR", value=u["cr_expiration"], format="DD/MM/YYYY")
         
         st.markdown("---")
         st.caption("📍 Endereço do Acervo")
@@ -57,7 +71,7 @@ def show_profile():
                             st.session_state["addr_city"] = f"{data.get('localidade')}/{data.get('uf')}"
                             st.toast("Endereço sincronizado!", icon="🗺️")
                             st.rerun()
-                except:
+                except Exception:
                     st.error("Erro ao buscar CEP")
         
         logradouro = st.text_input("Logradouro", value=st.session_state.get("addr_street", ""), key="addr_street_key")
@@ -71,28 +85,61 @@ def show_profile():
         cidade_uf = c_cidade.text_input("Cidade/UF", value=st.session_state.get("addr_city", ""), key="addr_city_key")
 
     if st.button("Salvar Perfil Completo", use_container_width=True):
-        # Validation & Save logic
-        user.name = new_name
-        user.cpf = new_cpf
-        user.cr_number = new_cr
-        user.cr_expiration = new_cr_exp
-        user.email = new_email
-        user.phone = new_phone
-        
         full_address = f"{logradouro}, {numero}"
-        if complemento: full_address += f", {complemento}"
+        if complemento:
+            full_address += f", {complemento}"
         full_address += f", {bairro} - {cidade_uf}, CEP: {cep}"
-        user.address_acervo = full_address
 
-        session.commit()
+        with managed_session() as session:
+            user = session.get(User, user_id)
+            if user:
+                user.name = new_name
+                user.cpf = new_cpf
+                user.cr_number = new_cr
+                user.cr_expiration = new_cr_exp
+                user.email = new_email
+                user.phone = new_phone
+                user.address_acervo = full_address
         st.success("Perfil atualizado!")
     
     st.divider()
-    # Firearms management section...
     st.markdown("### 🔫 Minhas Armas (Acervo)")
-    # (Rest of firearms logic here)
-    session.close()
-
-if __name__ == "__main__":
-    apply_custom_styles()
-    show_profile()
+    # List existing firearms
+    with managed_session() as db:
+        firearms = db.query(Firearm).filter_by(user_id=user_id).all()
+        if firearms:
+            for f in firearms:
+                cols = st.columns([3, 2, 2, 1])
+                cols[0].markdown(f"**{f.model}** – Série: {f.serial_number}")
+                cols[1].markdown(f"Calibre: {f.caliber}")
+                cols[2].markdown(f"Validade: {f.expiration_date}")
+                if cols[3].button("🗑️", key=f"del_{f.id}"):
+                    with managed_session() as db_del:
+                        db_del.delete(f)
+                        st.success("Arma removida.")
+                    st.rerun()
+        else:
+            st.info("Nenhuma arma cadastrada.")
+    # Form to add new firearm
+    with st.expander("➕ Adicionar Arma", expanded=False):
+        with st.form("new_firearm_form"):
+            m_model = st.text_input("Modelo")
+            m_serial = st.text_input("Número de Série")
+            m_caliber = st.text_input("Calibre")
+            m_exp = st.date_input("Data de Validade")
+            submit_f = st.form_submit_button("Salvar Arma")
+            if submit_f:
+                with managed_session() as db3:
+                    new_f = Firearm(
+                        user_id=user_id,
+                        model=m_model,
+                        serial_number=m_serial,
+                        caliber=m_caliber,
+                        expiration_date=m_exp
+                    )
+                    db3.add(new_f)
+                    st.success("Arma adicionada.")
+                st.rerun()
+    if __name__ == "__main__":
+        apply_custom_styles()
+        show_profile()

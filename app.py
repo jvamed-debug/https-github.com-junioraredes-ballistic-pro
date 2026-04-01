@@ -37,6 +37,7 @@ if not st.session_state["authenticated"]:
                     if user:
                         st.session_state["authenticated"] = True
                         st.session_state["user_id"] = user.id
+                        st.session_state["user_name"] = user.name or user.username
                         st.rerun()
                     else:
                         st.error("Credenciais inválidas.")
@@ -52,12 +53,13 @@ st.sidebar.markdown(f"""
     <div style='text-align: center; padding: 1.5rem 0; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 2rem;'>
         <div style='width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);'></div>
         <span style='color: #94a3b8; font-family: "JetBrains Mono", monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;'>Sessão Ativa</span>
-        <h3 style='color: white; margin-top: 8px; font-weight: 700; font-size: 1.1rem;'>OPERADOR {st.session_state.get("user_id", "N/A")}</h3>
+        <h3 style='color: white; margin-top: 8px; font-weight: 700; font-size: 1.1rem;'>OPERADOR {st.session_state.get("user_name", "N/A")}</h3>
     </div>
 """, unsafe_allow_html=True)
 
 if st.sidebar.button("🚪 Logout", use_container_width=True):
-    st.session_state["authenticated"] = False
+    for key in ["authenticated", "user_id", "user_name", "cv_stats"]:
+        st.session_state.pop(key, None)
     st.rerun()
 
 st.sidebar.divider()

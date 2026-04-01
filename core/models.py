@@ -93,8 +93,8 @@ def create_db_engine():
             db_url = st.secrets["supabase"]["db_url"]
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql://", 1)
-    except:
-        pass
+    except Exception as e:
+        print(f"[WARN] Não foi possível ler secrets do Supabase ({e}). Usando SQLite local.")
     
     return create_engine(db_url)
 
@@ -114,9 +114,29 @@ Session = sessionmaker(bind=engine)
 def get_session():
     """
     Retorna uma nova sessão do SQLAlchemy.
-    O chamador é responsável por fechar a sessão usando session.close().
+    Prefira usar `managed_session()` para garantir o fechamento da sessão.
     """
     return Session()
+
+@contextmanager
+def managed_session():
+    """
+    Context manager que garante o fechamento da sessão mesmo em caso de
+    exceção ou interrupção por `st.rerun()`.
+
+    Uso:
+        with managed_session() as db:
+            user = db.get(User, user_id)
+    """
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 def init_db_if_empty():
     """
@@ -126,8 +146,12 @@ def init_db_if_empty():
     try:
         if session.query(User).count() == 0:
             from datetime import date
-            # Tenta buscar a senha do administrador via secrets, caso contrário usa o padrão
-            admin_pass = st.secrets.get("admin_password", "senha123")
+            # Carrega senha do admin via secrets (obrigatório em produção)
+            try:
+                admin_pass = st.secrets["admin_password"]
+            except (KeyError, FileNotFoundError):
+                admin_pass = "ballistic_admin_2025!"
+                print("[WARN] 'admin_password' não definido em secrets.toml. Usando senha padrão local.")
             admin = User(
                 username="atirador_pro",
                 name="Atirador Demo",
