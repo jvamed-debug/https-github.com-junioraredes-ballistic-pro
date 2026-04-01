@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, date
 from core.models import managed_session, User, ReloadSession, InventoryItem, Firearm
 from services.reloading_service import ReloadingService
 from label_gen import create_label_pdf
@@ -30,10 +30,12 @@ def show_logbook_and_inventory():
         """, unsafe_allow_html=True)
         # Render Logbook entries (reload sessions)
         with managed_session() as db:
-            sessions = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.timestamp.desc()).limit(20).all()
+            sessions = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(20).all()
             if sessions:
                 for s in sessions:
-                    st.markdown(f"**{s.timestamp.strftime('%Y-%m-%d %H:%M')}** – {s.caliber} – {s.powder_weight}g – {s.projectile_weight}g – {s.velocity} m/s")
+                    s_date = s.date.strftime('%Y-%m-%d') if s.date else "—"
+                    s_vel = f"{s.velocity_avg} m/s" if s.velocity_avg else "—"
+                    st.markdown(f"**{s_date}** – {s.caliber} – Pólvora: {s.powder or '—'} ({s.charge or 0}g) – Projétil: {s.projectile or '—'} – {s_vel}")
             else:
                 st.info("Nenhuma sessão de recarga registrada ainda.")
         # Form to add new reload session
@@ -41,21 +43,29 @@ def show_logbook_and_inventory():
             with st.form("new_reload_form"):
                 r_col1, r_col2 = st.columns(2)
                 r_caliber = r_col1.text_input("Calibre")
-                r_powder = r_col1.number_input("Peso da Pólvora (g)", min_value=0.0)
-                r_proj = r_col2.number_input("Peso do Projétil (g)", min_value=0.0)
-                r_vel = r_col2.number_input("Velocidade (m/s)", min_value=0)
-                # Save reload session with correct model fields
-                if submit:
+                r_powder = r_col1.text_input("Pólvora (nome/tipo)")
+                r_charge = r_col1.number_input("Carga (grains)", min_value=0.0, step=0.1)
+                r_proj = r_col2.text_input("Projétil (nome/tipo)")
+                r_vel = r_col2.number_input("Velocidade Média (m/s)", min_value=0.0, step=1.0)
+                r_qty = r_col2.number_input("Quantidade", min_value=0, step=1)
+                r_notes = st.text_area("Observações")
+                submit = st.form_submit_button("Salvar Sessão")
+                if submit and r_caliber:
                     with managed_session() as db2:
                         new_sess = ReloadSession(
                             user_id=user_id,
+                            date=date.today(),
                             caliber=r_caliber,
-                            powder=r_powder,
-                            projectile=r_proj,
-                            velocity_avg=r_vel,
-                            notes=r_notes,
-                            timestamp=datetime.utcnow()
+                            powder=r_powder if r_powder else None,
+                            charge=r_charge if r_charge > 0 else None,
+                            projectile=r_proj if r_proj else None,
+                            velocity_avg=r_vel if r_vel > 0 else None,
+                            quantity=r_qty if r_qty > 0 else None,
+                            notes=r_notes if r_notes else None,
                         )
+                        db2.add(new_sess)
+                    st.success("Sessão de recarga salva!")
+                    st.rerun()
 
     with inv_tab:
         st.markdown("### 📦 ESTOQUE DE INSUMOS (INVENTORY)")

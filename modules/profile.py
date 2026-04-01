@@ -104,42 +104,59 @@ def show_profile():
     
     st.divider()
     st.markdown("### 🔫 Minhas Armas (Acervo)")
-    # List existing firearms
+    # List existing firearms — serialize to dicts to avoid DetachedInstanceError
+    firearms_data = []
     with managed_session() as db:
         firearms = db.query(Firearm).filter_by(user_id=user_id).all()
-        if firearms:
-            for f in firearms:
-                cols = st.columns([3, 2, 2, 1])
-                cols[0].markdown(f"**{f.model}** – Série: {f.serial_number}")
-                cols[1].markdown(f"Calibre: {f.caliber}")
-                cols[2].markdown(f"Validade: {f.expiration_date}")
-                if cols[3].button("🗑️", key=f"del_{f.id}"):
-                    with managed_session() as db_del:
-                        db_del.delete(f)
-                        st.success("Arma removida.")
-                    st.rerun()
-        else:
-            st.info("Nenhuma arma cadastrada.")
+        for f in firearms:
+            firearms_data.append({
+                "id": f.id,
+                "model": f.model or "—",
+                "sigma": f.sigma or "—",
+                "craf": f.craf or "—",
+                "serial": f.serial or "—",
+                "expiration": str(f.expiration) if f.expiration else "—",
+            })
+
+    if firearms_data:
+        for fd in firearms_data:
+            cols = st.columns([3, 2, 2, 1])
+            cols[0].markdown(f"**{fd['model']}** – Série: {fd['serial']}")
+            cols[1].markdown(f"SIGMA: {fd['sigma']} | CRAF: {fd['craf']}")
+            cols[2].markdown(f"Validade: {fd['expiration']}")
+            if cols[3].button("🗑️", key=f"del_{fd['id']}"):
+                with managed_session() as db_del:
+                    firearm_to_del = db_del.get(Firearm, fd['id'])
+                    if firearm_to_del:
+                        db_del.delete(firearm_to_del)
+                st.success("Arma removida.")
+                st.rerun()
+    else:
+        st.info("Nenhuma arma cadastrada.")
+
     # Form to add new firearm
     with st.expander("➕ Adicionar Arma", expanded=False):
         with st.form("new_firearm_form"):
             m_model = st.text_input("Modelo")
             m_serial = st.text_input("Número de Série")
-            m_caliber = st.text_input("Calibre")
+            m_sigma = st.text_input("SIGMA")
+            m_craf = st.text_input("CRAF")
             m_exp = st.date_input("Data de Validade")
             submit_f = st.form_submit_button("Salvar Arma")
-            if submit_f:
+            if submit_f and m_model:
                 with managed_session() as db3:
                     new_f = Firearm(
                         user_id=user_id,
                         model=m_model,
-                        serial_number=m_serial,
-                        caliber=m_caliber,
-                        expiration_date=m_exp
+                        serial=m_serial if m_serial else None,
+                        sigma=m_sigma if m_sigma else None,
+                        craf=m_craf if m_craf else None,
+                        expiration=m_exp,
                     )
                     db3.add(new_f)
-                    st.success("Arma adicionada.")
+                st.success("Arma adicionada.")
                 st.rerun()
-    if __name__ == "__main__":
-        apply_custom_styles()
-        show_profile()
+
+if __name__ == "__main__":
+    apply_custom_styles()
+    show_profile()
