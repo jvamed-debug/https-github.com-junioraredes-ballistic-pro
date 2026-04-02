@@ -145,20 +145,22 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
 
         with data_col:
             # Helper to format metric values with inches conversion
+            import re
             def fmt_dim(val):
-                if val == "N/A":
+                if val == "N/A" or not val:
                     return "—", ""
-                v_str = str(val).replace(" ", "")
-                # Extract just the mm part and inches if present
-                if "(" in v_str:
-                    parts = v_str.split("(")
-                    mm_part = parts[0].strip().replace("mm", "").strip()
-                    inch_part = parts[1].replace(")", "").replace('"', '').strip()
-                    return f'{mm_part} <span class="unit">mm</span>', f'({inch_part}")'
-                elif "mm" in v_str:
-                    mm_part = v_str.replace("mm", "").strip()
-                    return f'{mm_part} <span class="unit">mm</span>', ""
+                v_str = str(val).strip()
+                # Try to extract number + mm + optional inches
+                # Format: "32.51 mm (1.280\")" or "32.51 mm" or just "32.51"
+                mm_match = re.search(r'([\d.]+)\s*mm', v_str)
+                inch_match = re.search(r'\(([\d.]+)', v_str)
+                
+                if mm_match:
+                    mm_val = mm_match.group(1)
+                    inch_str = f'({inch_match.group(1)}")' if inch_match else ""
+                    return f'{mm_val} <span class="unit">mm</span>', inch_str
                 else:
+                    # No mm found, just return the raw value
                     return str(val), ""
 
             oal_val, oal_inch = fmt_dim(max_oal)
