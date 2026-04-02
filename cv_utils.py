@@ -101,33 +101,82 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
                 pixel_per_mm = calib_px_mm
                 auto_calib_marker = coin_data
 
-        # --- 2. Hole Detection ---
+        # --- 2. Hole Detection (strict filtering to avoid false positives) ---
+        # Bullet holes are dark, roughly circular, and have distinct edges
         _, thresh = cv2.threshold(blurred, sensitivity, 255, cv2.THRESH_BINARY_INV)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=1)
         
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         detected_shots = []
         annotated_img = img_np.copy()
         
-        img_area = img_np.shape[0] * img_np.shape[1]
-        max_valid_area = img_area * 0.05
+        img_h, img_w = img_np.shape[:2]
+        img_area = img_h * img_w
+        max_valid_area = img_area * 0.03  # Max 3% of image (was 5%)
+        min_valid_area = max(min_area_px, 80)  # Minimum area to avoid noise
+        edge_margin = int(min(img_h, img_w) * 0.02)  # 2% margin from edges
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if min_area_px < area < max_valid_area:
-                perimeter = cv2.arcLength(cnt, True)
-                if perimeter == 0: continue
-                circularity = 4 * np.pi * (area / (perimeter * perimeter))
-                hull = cv2.convexHull(cnt)
-                solidity = float(area)/cv2.contourArea(hull) if cv2.contourArea(hull) > 0 else 0
+            if area < min_valid_area or area > max_valid_area:
+                continue
 
-                if circularity > 0.4 and solidity > 0.6:
-                    M = cv2.moments(cnt)
-                    if M["m00"] != 0:
-                        cX, cY = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-                        detected_shots.append((cX, cY))
-                        cv2.drawContours(annotated_img, [cnt], -1, (255, 165, 0), 2)
+            perimeter = cv2.arcLength(cnt, True)
+            if perimeter == 0:
+                continue
+
+            # Shape metrics
+            circularity = 4 * np.pi * (area / (perimeter * perimeter))
+            hull = cv2.convexHull(cnt)
+            hull_area = cv2.contourArea(hull)
+            solidity = float(area) / hull_area if hull_area > 0 else 0
+
+            # Bounding box aspect ratio (bullet holes are roughly circular)
+            x_r, y_r, w_r, h_r = cv2.boundingRect(cnt)
+            aspect_ratio = float(w_r) / h_r if h_r > 0 else 0
+
+            # FILTER 1: Shape must be circular-ish (stricter thresholds)
+            if circularity < 0.55 or solidity < 0.7:
+                continue
+
+            # FILTER 2: Aspect ratio must be close to 1:1 (not elongated like text)
+            if aspect_ratio < 0.4 or aspect_ratio > 2.5:
+                continue
+
+            # FILTER 3: Reject detections too close to image edges
+            M = cv2.moments(cnt)
+            if M["m00"] == 0:
+                continue
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+
+            if cX < edge_margin or cX > (img_w - edge_margin):
+                continue
+            if cY < edge_margin or cY > (img_h - edge_margin):
+                continue
+
+            # FILTER 4: Dark-center validation — bullet holes have dark interiors
+            # Sample the average intensity inside the contour
+            mask = np.zeros(gray.shape, dtype=np.uint8)
+            cv2.drawContours(mask, [cnt], -1, 255, -1)
+            mean_intensity = cv2.mean(gray, mask=mask)[0]
+
+            # Bullet holes should be significantly darker than the surrounding area
+            # Sample surrounding area intensity
+            dilated_mask = cv2.dilate(mask, kernel, iterations=3)
+            ring_mask = cv2.subtract(dilated_mask, mask)
+            surround_intensity = cv2.mean(gray, mask=ring_mask)[0] if cv2.countNonZero(ring_mask) > 0 else 200
+
+            # The hole interior should be at least 30 intensity units darker than surroundings
+            intensity_diff = surround_intensity - mean_intensity
+            if intensity_diff < 25:
+                continue
+
+            # Passed all filters — this is likely a real bullet hole
+            detected_shots.append((cX, cY))
+            cv2.drawContours(annotated_img, [cnt], -1, (255, 165, 0), 2)
 
         # --- 3. Multi-Group Logic ---
         shot_groups = group_shots(detected_shots, dist_threshold_px=pixel_per_mm * 100) # 10cm threshold
