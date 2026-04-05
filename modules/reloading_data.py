@@ -133,8 +133,12 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
                     break
 
             if image_path:
-                st.markdown(f"""<p class='img-label'>DIAGRAMA SAAMI · {selected_caliber}</p>""", unsafe_allow_html=True)
+                st.markdown(f"""
+                <p class='img-label'>DIAGRAMA SAAMI · {selected_caliber}</p>
+                <div class="img-frame">
+                """, unsafe_allow_html=True)
                 st.image(image_path, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
             else:
                 st.markdown(f"""
                 <div style='background: rgba(15,23,42,0.6); border: 1px dashed rgba(100,116,139,0.3); border-radius: 8px; padding: 40px 20px; text-align: center;'>
