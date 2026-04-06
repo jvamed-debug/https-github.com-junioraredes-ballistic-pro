@@ -118,13 +118,31 @@ def create_db_engine():
 # Initialize engine with resilience
 engine = create_db_engine()
 
+def ensure_schema_compliance(engine):
+    """Garante que o esquema do banco de dados esteja atualizado com as últimas colunas."""
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    
+    # 1. Verificar colunas de inventory_items
+    columns = [c['name'] for c in inspector.get_columns('inventory_items')]
+    if 'price_unit' not in columns and 'price_total' in columns:
+        with engine.begin() as conn:
+            # SQLite não suporta RENAME COLUMN em versões < 3.25, usa ALTER ADD como fallback
+            try:
+                conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
+            except Exception:
+                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN price_unit FLOAT DEFAULT 0.0"))
+                conn.execute(text("UPDATE inventory_items SET price_unit = price_total / quantity WHERE quantity > 0"))
+
 # Try to create tables, if it fails
 try:
     Base.metadata.create_all(engine)
+    ensure_schema_compliance(engine)
 except Exception as e:
-    st.warning("⚠️ Conexão com Banco Remoto falhou. Usando Banco de Dados Local.")
+    st.warning("⚠️ Erro ao inicializar o esquema. Tentando Banco Local...")
     engine = create_engine('sqlite:///ballistics.db')
     Base.metadata.create_all(engine)
+    ensure_schema_compliance(engine)
 
 Session = sessionmaker(bind=engine)
 
