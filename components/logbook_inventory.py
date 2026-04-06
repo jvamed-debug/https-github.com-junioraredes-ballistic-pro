@@ -11,11 +11,6 @@ def show_logbook_and_inventory():
 
     user_id = st.session_state["user_id"]
 
-    # --- Lógica de escrita separada da renderização ---
-    # O rerun é feito APÓS fechar a sessão, evitando vazamentos.
-    _needs_rerun = _handle_inventory_form(user_id)
-
-    # --- Renderização ---
     st.markdown('<div class="tech-hud">', unsafe_allow_html=True)
     log_tab, inv_tab = st.tabs(["📔 Sessões de Recarga", "📦 Estoque de Insumos"])
 
@@ -28,131 +23,134 @@ def show_logbook_and_inventory():
                 </p>
             </div>
         """, unsafe_allow_html=True)
-        # Render Logbook entries (reload sessions)
+        
         with managed_session() as db:
             sessions = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(20).all()
             if sessions:
                 for s in sessions:
-                    s_date = s.date.strftime('%Y-%m-%d') if s.date else "—"
-                    s_vel = f"{s.velocity_avg} m/s" if s.velocity_avg else "—"
-                    st.markdown(f"**{s_date}** – {s.caliber} – Pólvora: {s.powder or '—'} ({s.charge or 0}g) – Projétil: {s.projectile or '—'} – {s_vel}")
+                    s_date = s.date.strftime('%d/%m/%Y') if s.date else "—"
+                    st.markdown(f"""
+                        <div style='background: rgba(255,255,255,0.02); padding: 10px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;'>
+                            <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> | 
+                            <b>{s.caliber}</b> | 
+                            <span style='color: #475569;'>{s.quantity or 0}un</span> | 
+                            <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.info("Nenhuma sessão de recarga registrada ainda.")
-        # Form to add new reload session
+
         with st.expander("➕ Nova Sessão de Recarga", expanded=False):
-            with st.form("new_reload_form"):
+            with st.form("new_reload_form", clear_on_submit=True):
                 r_col1, r_col2 = st.columns(2)
-                r_caliber = r_col1.text_input("Calibre")
-                r_powder = r_col1.text_input("Pólvora (nome/tipo)")
+                r_caliber = r_col1.text_input("Calibre", placeholder="Ex: 9mm")
+                r_powder = r_col1.text_input("Pólvora", placeholder="Ex: IMR 4064")
                 r_charge = r_col1.number_input("Carga (grains)", min_value=0.0, step=0.1)
-                r_proj = r_col2.text_input("Projétil (nome/tipo)")
-                r_vel = r_col2.number_input("Velocidade Média (m/s)", min_value=0.0, step=1.0)
+                r_proj = r_col2.text_input("Projétil", placeholder="Ex: 147gr JHP")
+                r_vel = r_col2.number_input("Velocidade (fps/ms)", min_value=0.0, step=1.0)
                 r_qty = r_col2.number_input("Quantidade", min_value=0, step=1)
-                r_notes = st.text_area("Observações")
-                submit = st.form_submit_button("Salvar Sessão")
-                if submit and r_caliber:
-                    with managed_session() as db2:
-                        new_sess = ReloadSession(
-                            user_id=user_id,
-                            date=date.today(),
-                            caliber=r_caliber,
-                            powder=r_powder if r_powder else None,
-                            charge=r_charge if r_charge > 0 else None,
-                            projectile=r_proj if r_proj else None,
-                            velocity_avg=r_vel if r_vel > 0 else None,
-                            quantity=r_qty if r_qty > 0 else None,
-                            notes=r_notes if r_notes else None,
-                        )
-                        db2.add(new_sess)
-                    st.success("Sessão de recarga salva!")
-                    st.rerun()
+                r_notes = st.text_area("Observações Técnicas")
+                if st.form_submit_button("SALVAR SESSÃO", use_container_width=True):
+                    if r_caliber and r_qty > 0:
+                        with managed_session() as db2:
+                            new_sess = ReloadSession(
+                                user_id=user_id,
+                                date=date.today(),
+                                caliber=r_caliber,
+                                powder=r_powder or None,
+                                charge=r_charge if r_charge > 0 else None,
+                                projectile=r_proj or None,
+                                velocity_avg=r_vel if r_vel > 0 else None,
+                                quantity=r_qty,
+                                notes=r_notes or None,
+                            )
+                            db2.add(new_sess)
+                        st.success("Sessão salva no Logbook!")
+                        st.rerun()
+                    else:
+                        st.error("Calibre e Quantidade são obrigatórios.")
 
     with inv_tab:
         st.markdown("### 📦 ESTOQUE DE INSUMOS (INVENTORY)")
-        st.markdown("""
-            <div style='background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-primary); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <p style='color: var(--text-light); font-size: 0.8rem; margin: 0;'>
-                    <b style='color: var(--accent-primary);'>GESTÃO DE MATERIAIS:</b> Controle quantitativo de pólvoras, espoletas e projéteis.
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
+        
+        # 1. Show existing inventory
+        with managed_session() as db:
+            items = db.query(InventoryItem).filter_by(user_id=user_id).all()
+            if items:
+                for item in items:
+                    with st.container():
+                        c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+                        c1.markdown(f"**{item.name}** ({item.category})")
+                        c2.markdown(f"{item.quantity:.1f} {item.unit}")
+                        c3.markdown(f"Lote: {item.batch_number or '—'}")
+                        if c4.button("🗑️", key=f"del_inv_{item.id}"):
+                            with managed_session() as db_del:
+                                it_del = db_del.get(InventoryItem, item.id)
+                                if it_del: db_del.delete(it_del)
+                            st.rerun()
+            else:
+                st.info("Estoque vazio.")
 
-        with st.expander("➕ Adicionar/Atualizar Item", expanded=False):
-            with st.form("new_inv_form"):
+        st.divider()
+
+        # 2. Add/Update Item
+        with st.expander("➕ Adicionar/Atualizar Insumo", expanded=False):
+            with st.form("new_inv_form", clear_on_submit=True):
                 i_col1, i_col2 = st.columns(2)
                 i_cat = i_col1.selectbox("Categoria", ["Pólvora", "Projétil", "Espoleta", "Estojo", "Outro"])
                 i_name = i_col1.text_input("Nome/Marca")
-                i_batch = i_col1.text_input("Número do Lote")
-                i_qty = i_col2.number_input("Quantidade", min_value=0.0)
-                i_unit = i_col2.selectbox("Unidade", ["g", "grains", "un", "kg", "lb"])
-                i_price = i_col2.number_input("Preço da Embalagem / Lote (R$)", min_value=0.0, step=0.01)
+                i_batch = i_col1.text_input("Lote")
+                i_qty = i_col2.number_input("Quantidade Adicional", min_value=0.0)
+                i_unit = i_col2.selectbox("Unidade", ["grains", "g", "un", "kg", "lb"])
+                i_price = i_col2.number_input("Custo Total (R$)", min_value=0.0, step=0.01)
                 i_exp = i_col2.date_input("Validade", value=None)
-                st.form_submit_button("Salvar no Estoque", use_container_width=True)
+                
+                if st.form_submit_button("ATUALIZAR ESTOQUE", use_container_width=True):
+                    if i_name and i_qty > 0:
+                        # M6: Validação Pydantic
+                        from schemas import InventoryItemCreate
+                        try:
+                            InventoryItemCreate(
+                                category=i_cat,
+                                name=i_name,
+                                quantity=i_qty,
+                                unit=i_unit,
+                                price_unit=i_price/i_qty if i_qty > 0 else 0.0
+                            )
+                            
+                            with managed_session() as db:
+                                # Tenta encontrar lote existente
+                                existing = db.query(InventoryItem).filter_by(
+                                    user_id=user_id,
+                                    category=i_cat,
+                                    name=i_name,
+                                    batch_number=i_batch
+                                ).first()
+                                
+                                if existing:
+                                    total_qty = existing.quantity + i_qty
+                                    # Média ponderada do preço se houver custo informado
+                                    if i_price > 0 and total_qty > 0:
+                                        current_total_value = existing.quantity * existing.price_unit
+                                        existing.price_unit = (current_total_value + i_price) / total_qty
+                                    existing.quantity = total_qty
+                                else:
+                                    unit_price = i_price / i_qty if i_qty > 0 else 0
+                                    db.add(InventoryItem(
+                                        user_id=user_id,
+                                        category=i_cat,
+                                        name=i_name,
+                                        batch_number=i_batch,
+                                        quantity=i_qty,
+                                        unit=i_unit,
+                                        price_unit=unit_price,
+                                        expiration_date=i_exp
+                                    ))
+                            st.success("Estoque atualizado!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Dados inválidos: {str(e)}")
+                    else:
+                        st.error("Nome e Quantidade são obrigatórios.")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-    # Rerun fora do with managed_session() — sessão já fechada com segurança
-    if _needs_rerun:
-        st.rerun()
-
-
-def _handle_inventory_form(user_id: int) -> bool:
-    """
-    Processa o submit do formulário de estoque.
-    Retorna True se um rerun for necessário (dados foram salvos).
-    A sessão do banco é sempre fechada antes de retornar.
-    """
-    if "new_inv_form" not in st.session_state:
-        return False
-
-    form_data = st.session_state.get("new_inv_form", {})
-    # Streamlit submits via form state; verificamos se o submit button foi acionado
-    # O controle real do submit é feito pelo Streamlit internamente —
-    # esta função é chamada antes da renderização para processar dados do ciclo anterior.
-    # Por isso usamos st.session_state para flags explícitas.
-    if not st.session_state.get("_inv_form_submitted"):
-        return False
-
-    # Limpa a flag antes de processar
-    st.session_state["_inv_form_submitted"] = False
-    data = st.session_state.get("_inv_form_data", {})
-
-    with managed_session() as db:
-        user = db.get(User, user_id)
-        i_cat = data.get("category")
-        i_name = data.get("name")
-        i_batch = data.get("batch")
-        i_qty = data.get("qty", 0.0)
-        i_unit = data.get("unit")
-        i_price = data.get("price", 0.0)
-        i_exp = data.get("expiration")
-
-        unit_price = i_price / i_qty if i_qty > 0 else 0
-        existing = db.query(InventoryItem).filter_by(
-            user_id=user.id,
-            category=i_cat,
-            name=i_name,
-            batch_number=i_batch
-        ).first()
-
-        if existing:
-            total_qty = existing.quantity + i_qty
-            if total_qty > 0:
-                existing.price_unit = ((existing.quantity * existing.price_unit) + i_price) / total_qty
-            existing.quantity = total_qty
-            st.success(f"Estoque do Lote {i_batch} atualizado!")
-        else:
-            new_item = InventoryItem(
-                user_id=user.id,
-                category=i_cat,
-                name=i_name,
-                batch_number=i_batch,
-                expiration_date=i_exp,
-                quantity=i_qty,
-                unit=i_unit,
-                price_unit=unit_price
-            )
-            db.add(new_item)
-            st.success(f"{i_name} (Lote: {i_batch}) adicionado!")
-
-    return True

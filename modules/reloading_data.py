@@ -115,12 +115,13 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
         </style>
         """, unsafe_allow_html=True)
 
-        img_col, data_col = st.columns([1.2, 1.8])
+        img_col, data_col = st.columns([1.5, 1.5])
 
         with img_col:
-            # Logic to find a specific diagram for the caliber
-            img_name = selected_caliber.replace(" ", "_").replace(".", "").replace("&", "").lstrip("_")
+            # Logic to find the official SAAMI diagram
+            img_name = selected_caliber.lower().replace(" ", "_").replace(".", "").replace("&", "").lstrip("_")
             options = [
+                f"assets/saami/{img_name}_original.png",
                 f"assets/{img_name}_Diagram.png",
                 f"assets/{img_name}.png",
                 "cartridge_diagram.png"
@@ -134,7 +135,7 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
 
             if image_path:
                 st.markdown(f"""
-                <p class='img-label'>DIAGRAMA SAAMI · {selected_caliber}</p>
+                <p class='img-label'>MANUAL SAAMI ORIGINAL · {selected_caliber}</p>
                 <div class="img-frame">
                 """, unsafe_allow_html=True)
                 st.image(image_path, use_container_width=True)
@@ -142,7 +143,7 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             else:
                 st.markdown(f"""
                 <div style='background: rgba(15,23,42,0.6); border: 1px dashed rgba(100,116,139,0.3); border-radius: 8px; padding: 40px 20px; text-align: center;'>
-                    <p style='color: #475569; font-family: "JetBrains Mono", monospace; font-size: 0.7rem;'>⚠ DIAGRAMA INDISPONÍVEL</p>
+                    <p style='color: #475569; font-family: "JetBrains Mono", monospace; font-size: 0.7rem;'>⚠ ESQUEMA SAAMI INDISPONÍVEL</p>
                     <p style='color: #334155; font-size: 0.65rem;'>{selected_caliber}</p>
                 </div>
                 """, unsafe_allow_html=True)

@@ -14,19 +14,49 @@ def show_profile():
     user_id = st.session_state["user_id"]
 
     # Load user data into plain dict to avoid DetachedInstanceError
+    user_data = None
+    firearms_data = []
+    sessions_data = []
+
     with managed_session() as session:
         user = session.get(User, user_id)
         if not user:
             st.error("Usuário não encontrado.")
             return
-        u = {
+            
+        # Serializar usuário
+        user_data = {
             "name": user.name or "",
             "cpf": user.cpf or "",
             "cr_number": user.cr_number or "",
             "email": user.email or "",
             "phone": user.phone or "",
             "cr_expiration": user.cr_expiration,
+            "address_acervo": user.address_acervo or ""
         }
+        
+        # Serializar armas
+        for f in user.firearms:
+            firearms_data.append({
+                "model": f.model or "—",
+                "serial": f.serial or "—",
+                "sigma": f.sigma or "—",
+                "craf": f.craf or "—"
+            })
+            
+        # Serializar sessões recentes
+        from core.models import ReloadSession
+        sessions = session.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(10).all()
+        for s in sessions:
+            sessions_data.append({
+                "date_str": s.date.strftime('%d/%m/%Y') if s.date else "N/A",
+                "caliber": s.caliber,
+                "charge": s.charge or 0,
+                "quantity": s.quantity or 0,
+                "date": s.date
+            })
+
+    u = user_data # Para compatibilidade com o código abaixo
 
     st.markdown("### 👤 PERFIL DO ATIRADOR (CREDENTIALS)")
     st.markdown("""
@@ -51,6 +81,17 @@ def show_profile():
         new_email = st.text_input("E-mail", value=u["email"])
         new_phone = st.text_input("Telefone (XX) XXXXX-XXXX", value=u["phone"], max_chars=15)
         new_cr_exp = st.date_input("Validade do CR", value=u["cr_expiration"], format="DD/MM/YYYY")
+        
+        st.markdown("---")
+        if st.button("📄 Gerar Relatório de Acervo (PDF)", use_container_width=True):
+            with st.spinner("Gerando relatório..."):
+                pdf_data = create_inspection_report(user_data, firearms_data, sessions_data)
+                st.download_button(
+                    label="📥 Baixar Relatório de Acervo",
+                    data=pdf_data,
+                    file_name=f"Relatorio_Acervo_{user_data['name'].replace(' ', '_')}.pdf",
+                    mime="application/pdf"
+                )
         
         st.markdown("---")
         st.caption("📍 Endereço do Acervo")
@@ -90,17 +131,35 @@ def show_profile():
             full_address += f", {complemento}"
         full_address += f", {bairro} - {cidade_uf}, CEP: {cep}"
 
-        with managed_session() as session:
-            user = session.get(User, user_id)
-            if user:
-                user.name = new_name
-                user.cpf = new_cpf
-                user.cr_number = new_cr
-                user.cr_expiration = new_cr_exp
-                user.email = new_email
-                user.phone = new_phone
-                user.address_acervo = full_address
-        st.success("Perfil atualizado!")
+        # M6: Validação Pydantic
+        from schemas import UserCreate
+        try:
+            # Pegamos apenas os campos necessários para o schema (alguns podem ser opcionais)
+            UserCreate(
+                username=st.session_state.get("user_name", "user"), # Placeholder para validação
+                password="validpassword123", # Placeholder para validação
+                name=new_name,
+                cpf=re.sub(r'\D', '', new_cpf),
+                email=new_email,
+                phone=new_phone,
+                cr_number=new_cr,
+                cr_expiration=new_cr_exp,
+                address_acervo=full_address
+            )
+            
+            with managed_session() as session:
+                user = session.get(User, user_id)
+                if user:
+                    user.name = new_name
+                    user.cpf = new_cpf
+                    user.cr_number = new_cr
+                    user.cr_expiration = new_cr_exp
+                    user.email = new_email
+                    user.phone = new_phone
+                    user.address_acervo = full_address
+            st.success("Perfil atualizado!")
+        except Exception as e:
+            st.error(f"Erro de validação: {str(e)}")
     
     st.divider()
     st.markdown("### 🔫 Minhas Armas (Acervo)")
@@ -128,6 +187,15 @@ def show_profile():
                 with managed_session() as db_del:
                     firearm_to_del = db_del.get(Firearm, fd['id'])
                     if firearm_to_del:
+                        from core.models import log_action
+                        # Log da remoção antes de deletar
+                        log_action(
+                            user_id=user_id,
+                            action="firearm_deleted",
+                            table_name="firearms",
+                            record_id=fd['id'],
+                            old={"model": fd['model'], "serial": fd['serial'], "sigma": fd['sigma'], "craf": fd['craf']}
+                        )
                         db_del.delete(firearm_to_del)
                 st.success("Arma removida.")
                 st.rerun()
@@ -154,6 +222,16 @@ def show_profile():
                         expiration=m_exp,
                     )
                     db3.add(new_f)
+                    db3.flush() # Para pegar o ID
+                    
+                    from core.models import log_action
+                    log_action(
+                        user_id=user_id,
+                        action="firearm_added",
+                        table_name="firearms",
+                        record_id=new_f.id,
+                        new={"model": m_model, "serial": m_serial, "sigma": m_sigma, "craf": m_craf}
+                    )
                 st.success("Arma adicionada.")
                 st.rerun()
 

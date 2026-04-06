@@ -127,22 +127,22 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
             if perimeter == 0:
                 continue
 
-            # Shape metrics
+            # Shape metrics (stricter for impact points)
             circularity = 4 * np.pi * (area / (perimeter * perimeter))
             hull = cv2.convexHull(cnt)
             hull_area = cv2.contourArea(hull)
             solidity = float(area) / hull_area if hull_area > 0 else 0
 
-            # Bounding box aspect ratio (bullet holes are roughly circular)
+            # Bounding box aspect ratio (bullet holes are extremely close to 1:1)
             x_r, y_r, w_r, h_r = cv2.boundingRect(cnt)
             aspect_ratio = float(w_r) / h_r if h_r > 0 else 0
 
-            # FILTER 1: Shape must be circular-ish (stricter thresholds)
-            if circularity < 0.55 or solidity < 0.7:
+            # FILTER 1: Shape must be circular-ish (real impact points are very circular)
+            if circularity < 0.75 or solidity < 0.88:
                 continue
 
-            # FILTER 2: Aspect ratio must be close to 1:1 (not elongated like text)
-            if aspect_ratio < 0.4 or aspect_ratio > 2.5:
+            # FILTER 2: Aspect ratio must be very close to 1:1
+            if aspect_ratio < 0.8 or aspect_ratio > 1.25:
                 continue
 
             # FILTER 3: Reject detections too close to image edges
@@ -157,21 +157,22 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
             if cY < edge_margin or cY > (img_h - edge_margin):
                 continue
 
-            # FILTER 4: Dark-center validation — bullet holes have dark interiors
-            # Sample the average intensity inside the contour
+            # FILTER 4: Intensity Gradient Validation
+            # Bullet holes in paper have a dark interior and often a "lead smear" ring.
             mask = np.zeros(gray.shape, dtype=np.uint8)
             cv2.drawContours(mask, [cnt], -1, 255, -1)
+            
+            # Sample interior
             mean_intensity = cv2.mean(gray, mask=mask)[0]
-
-            # Bullet holes should be significantly darker than the surrounding area
-            # Sample surrounding area intensity
+            
+            # Sample exterior ring
             dilated_mask = cv2.dilate(mask, kernel, iterations=3)
             ring_mask = cv2.subtract(dilated_mask, mask)
-            surround_intensity = cv2.mean(gray, mask=ring_mask)[0] if cv2.countNonZero(ring_mask) > 0 else 200
+            surround_intensity = cv2.mean(gray, mask=ring_mask)[0] if cv2.countNonZero(ring_mask) > 0 else 255
 
-            # The hole interior should be at least 30 intensity units darker than surroundings
-            intensity_diff = surround_intensity - mean_intensity
-            if intensity_diff < 25:
+            # A real hole should be MUCH darker than its immediate surroundings
+            # AND it shouldn't be just a dark spot in a dark area (contrast check)
+            if (surround_intensity - mean_intensity) < 35:
                 continue
 
             # Passed all filters — this is likely a real bullet hole

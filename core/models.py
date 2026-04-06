@@ -1,8 +1,10 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text, DateTime
+from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from contextlib import contextmanager
 import bcrypt
+import json
 
 Base = declarative_base()
 
@@ -23,6 +25,7 @@ class User(Base):
     firearms = relationship("Firearm", back_populates="owner", cascade="all, delete-orphan")
     sessions = relationship("ReloadSession", back_populates="user", cascade="all, delete-orphan")
     inventory = relationship("InventoryItem", back_populates="user", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -81,6 +84,20 @@ class InventoryItem(Base):
     
     user = relationship("User", back_populates="inventory")
 
+class AuditLog(Base):
+    __tablename__ = 'audit_logs'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    action = Column(String(50), nullable=False) # firearm_added, firearm_deleted, firearm_updated
+    table_name = Column(String(50))
+    record_id = Column(Integer)
+    old_value = Column(Text) # JSON string
+    new_value = Column(Text) # JSON string
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", back_populates="audit_logs")
+
+
 # Database setup
 import streamlit as st
 import os
@@ -101,7 +118,7 @@ def create_db_engine():
 # Initialize engine with resilience
 engine = create_db_engine()
 
-# Try to create tables, if it fails (e.g. remote DB unreachable), fallback to SQLite
+# Try to create tables, if it fails
 try:
     Base.metadata.create_all(engine)
 except Exception as e:
@@ -112,22 +129,10 @@ except Exception as e:
 Session = sessionmaker(bind=engine)
 
 def get_session():
-    """
-    Retorna uma nova sessão do SQLAlchemy.
-    Prefira usar `managed_session()` para garantir o fechamento da sessão.
-    """
     return Session()
 
 @contextmanager
 def managed_session():
-    """
-    Context manager que garante o fechamento da sessão mesmo em caso de
-    exceção ou interrupção por `st.rerun()`.
-
-    Uso:
-        with managed_session() as db:
-            user = db.get(User, user_id)
-    """
     session = Session()
     try:
         yield session
@@ -138,20 +143,29 @@ def managed_session():
     finally:
         session.close()
 
+def log_action(user_id, action, table_name, record_id=None, old=None, new=None):
+    """Auxiliar para disparar logs de auditoria."""
+    with managed_session() as db:
+        log = AuditLog(
+            user_id=user_id,
+            action=action,
+            table_name=table_name,
+            record_id=record_id,
+            old_value=json.dumps(old) if old else None,
+            new_value=json.dumps(new) if new else None
+        )
+        db.add(log)
+
+
 def init_db_if_empty():
-    """
-    Inicializa o banco de dados com um usuário administrador padrão caso esteja vazio.
-    """
     session = get_session()
     try:
         if session.query(User).count() == 0:
             from datetime import date
-            # Carrega senha do admin via secrets (obrigatório em produção)
             try:
                 admin_pass = st.secrets["admin_password"]
-            except (KeyError, FileNotFoundError):
+            except:
                 admin_pass = "ballistic_admin_2025!"
-                print("[WARN] 'admin_password' não definido em secrets.toml. Usando senha padrão local.")
             admin = User(
                 username="atirador_pro",
                 name="Atirador Demo",

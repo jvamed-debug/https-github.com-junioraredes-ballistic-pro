@@ -9,3 +9,4 @@ reportlab
 streamlit-drawable-canvas==0.8.0
 psycopg2-binary
 requests
+cryptography

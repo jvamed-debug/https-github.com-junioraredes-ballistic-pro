@@ -1,19 +1,61 @@
 import json
 import os
 import hashlib
+import base64
+import streamlit as st
+from cryptography.fernet import Fernet
 
 CONFIG_FILE = "device_config.json"
+KEY_FILE = ".device_key"
+
+
+def _get_encryption_key():
+    """Obtém ou gera uma chave de criptografia persistente para o dispositivo."""
+    # 1. Prioridade para Streamlit Secrets (Produção)
+    try:
+        if "device_encryption_key" in st.secrets:
+            return st.secrets["device_encryption_key"].encode()
+    except (KeyError, FileNotFoundError):
+        pass
+
+    # 2. Tenta ler de arquivo local oculto
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE, "rb") as f:
+            return f.read()
+
+    # 3. Gera nova chave e salva localmente (Desenvolvimento)
+    new_key = Fernet.generate_key()
+    with open(KEY_FILE, "wb") as f:
+        f.write(new_key)
+    return new_key
+
+
+def _encrypt(val):
+    """Criptografa um valor usando AES-256 (Fernet)."""
+    if not val: return ""
+    f = Fernet(_get_encryption_key())
+    return f.encrypt(val.encode()).decode()
+
+
+def _decrypt(val):
+    """Descriptografa um valor codificado."""
+    if not val: return ""
+    try:
+        f = Fernet(_get_encryption_key())
+        return f.decrypt(val.encode()).decode()
+    except Exception:
+        return ""
 
 
 def _hash_username(username):
-    """Gera hash do username para não armazenar em plaintext."""
+    """Gera hash do username para validação de integridade (SHA-256)."""
     return hashlib.sha256(username.encode('utf-8')).hexdigest()
 
 
 def save_biometrics(username):
     """Salva o usuário atual como habilitado para login biométrico neste dispositivo."""
     config = {
-        "last_user": username,
+        "lp_secure": _encrypt(username),  # last_user criptografado AES-256
         "user_hash": _hash_username(username),
         "biometrics_enabled": True
     }
@@ -28,13 +70,18 @@ def clear_biometrics():
 
 
 def check_biometrics_available():
-    """Verifica se há um usuário salvo para biometria."""
+    """Verifica se há um usuário salvo para biometria e valida integridade."""
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r") as f:
                 data = json.load(f)
-                if data.get("biometrics_enabled") and data.get("last_user"):
-                    return data["last_user"]
+                if data.get("biometrics_enabled"):
+                    encrypted_user = data.get("lp_secure")
+                    if encrypted_user:
+                        username = _decrypt(encrypted_user)
+                        # Validação dupla: o hash original deve coincidir com o decriptografado
+                        if username and _hash_username(username) == data.get("user_hash"):
+                            return username
         except (json.JSONDecodeError, KeyError, IOError):
             return None
     return None
