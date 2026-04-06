@@ -125,14 +125,29 @@ def ensure_schema_compliance(engine):
     
     # 1. Verificar colunas de inventory_items
     columns = [c['name'] for c in inspector.get_columns('inventory_items')]
-    if 'price_unit' not in columns and 'price_total' in columns:
-        with engine.begin() as conn:
-            # SQLite não suporta RENAME COLUMN em versões < 3.25, usa ALTER ADD como fallback
+    
+    with engine.begin() as conn:
+        # Caso especial: price_total -> price_unit
+        if 'price_unit' not in columns and 'price_total' in columns:
             try:
                 conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
             except Exception:
-                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN price_unit FLOAT DEFAULT 0.0"))
-                conn.execute(text("UPDATE inventory_items SET price_unit = price_total / quantity WHERE quantity > 0"))
+                try:
+                    conn.execute(text("ALTER TABLE inventory_items ADD COLUMN price_unit FLOAT DEFAULT 0.0"))
+                    conn.execute(text("UPDATE inventory_items SET price_unit = price_total / quantity WHERE quantity > 0"))
+                except Exception: pass
+
+        # Garantir batch_number
+        if 'batch_number' not in columns:
+            try:
+                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN batch_number VARCHAR(50)"))
+            except Exception: pass
+
+        # Garantir expiration_date
+        if 'expiration_date' not in columns:
+            try:
+                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN expiration_date DATE"))
+            except Exception: pass
 
 # Try to create tables, if it fails
 try:
