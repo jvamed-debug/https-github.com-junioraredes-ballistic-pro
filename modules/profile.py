@@ -97,7 +97,7 @@ def show_profile():
         st.markdown("### 📋 Histórico de Auditoria (Últimos 10)")
         from core.models import AuditLog
         with managed_session() as session:
-            logs = session.query(AuditLog).filter_by(user_id=target_user_id).order_by(AuditLog.timestamp.desc()).limit(10).all()
+            logs = session.query(AuditLog).filter_by(user_id=user_id).order_by(AuditLog.timestamp.desc()).limit(10).all()
             if logs:
                 for l in logs:
                     with st.expander(f"{l.timestamp.strftime('%H:%M:%S')} - {l.action}"):
