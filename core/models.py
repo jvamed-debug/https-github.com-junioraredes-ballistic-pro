@@ -42,6 +42,7 @@ class Firearm(Base):
     craf = Column(String)
     serial = Column(String)
     expiration = Column(Date)
+    image_url = Column(String) # URL para imagem no S3
     
     owner = relationship("User", back_populates="firearms")
     sessions = relationship("ReloadSession", back_populates="firearm")
@@ -64,6 +65,7 @@ class ReloadSession(Base):
     velocity_avg = Column(Float)
     velocity_sd = Column(Float)
     grouping_mm = Column(Float)
+    image_url = Column(String) # URL para imagem do alvo no S3
     notes = Column(Text)
     
     user = relationship("User", back_populates="sessions")
@@ -149,6 +151,20 @@ def ensure_schema_compliance(engine):
                 conn.execute(text("ALTER TABLE inventory_items ADD COLUMN expiration_date DATE"))
             except Exception: pass
 
+        # Garantir image_url em firearms
+        firearm_cols = [c['name'] for c in inspector.get_columns('firearms')]
+        if 'image_url' not in firearm_cols:
+            try:
+                conn.execute(text("ALTER TABLE firearms ADD COLUMN image_url VARCHAR"))
+            except Exception: pass
+
+        # Garantir image_url em reload_sessions
+        session_cols = [c['name'] for c in inspector.get_columns('reload_sessions')]
+        if 'image_url' not in session_cols:
+            try:
+                conn.execute(text("ALTER TABLE reload_sessions ADD COLUMN image_url VARCHAR"))
+            except Exception: pass
+
 # Try to create tables, if it fails
 try:
     Base.metadata.create_all(engine)
@@ -195,10 +211,17 @@ def init_db_if_empty():
     try:
         if session.query(User).count() == 0:
             from datetime import date
-            try:
-                admin_pass = st.secrets["admin_password"]
-            except:
-                admin_pass = "ballistic_admin_2025!"
+            
+            # M01: Bloqueio de Segurança em Produção
+            is_production = "supabase" in st.secrets or "device_encryption_key" in st.secrets
+            has_admin_secret = "admin_password" in st.secrets
+            
+            if is_production and not has_admin_secret:
+                print("[CRITICAL] Bloqueio de Segurança: Não foi possível criar admin padrão em produção sem 'admin_password' nos Secrets.")
+                return
+
+            admin_pass = st.secrets.get("admin_password", "ballistic_admin_2025!")
+            
             admin = User(
                 username="atirador_pro",
                 name="Atirador Demo",

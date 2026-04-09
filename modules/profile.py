@@ -3,6 +3,7 @@ import re
 import requests
 from core.models import managed_session, User, Firearm
 from ui.styles import apply_custom_styles
+from services.s3_service import s3_mgr
 from bio_auth import save_biometrics, clear_biometrics, check_biometrics_available
 from report_gen import create_inspection_report
 
@@ -43,6 +44,68 @@ def show_profile():
                 "sigma": f.sigma or "—",
                 "craf": f.craf or "—"
             })
+            
+        st.markdown(f"### 🛡️ Segurança do Dispositivo")
+        
+        # Exibe status da criptografia
+        enc_source = st.session_state.get("encryption_source", "Não Inicializado")
+        status_color = "#10b981" if "Secrets" in enc_source else "#f59e0b"
+        
+        st.markdown(f"""
+            <div style='padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid {status_color}33; border-left: 5px solid {status_color};'>
+                <p style='margin:0; font-size: 0.75rem; color: #94a3b8; font-family: "JetBrains Mono", monospace;'>FONTE DE CRIPTOGRAFIA ATUAL</p>
+                <h4 style='margin:5px 0 0 0; color: white;'>{enc_source}</h4>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if "Secrets" not in enc_source:
+            st.warning("⚠️ **Atenção:** Seus dados locais estão protegidos, mas a chave é temporária. Configure `device_encryption_key` nos Secrets do Streamlit para persistência permanente.")
+            if st.button("📋 Copiar Chave Atual para Configuração"):
+                from bio_auth import _get_encryption_key
+                try:
+                    key = _get_encryption_key().decode()
+                    st.code(f'device_encryption_key = "{key}"', language="toml")
+                    st.info("Copie a linha acima e cole nas configurações de 'Secrets' do seu Streamlit Cloud.")
+                except Exception as e:
+                    st.error(f"Erro ao recuperar chave: {e}")
+
+        st.divider()
+        
+        # M03: Botão de Exportação de Backup
+        st.markdown("### 💾 Backup Externo")
+        st.write("Baixe uma cópia de segurança do seu banco de dados (.db) para salvaguarda externa.")
+        
+        db_path = "ballistics.db"
+        if os.path.exists(db_path):
+            with open(db_path, "rb") as f:
+                st.download_button(
+                    label="📥 Baixar Ballistics.db",
+                    data=f,
+                    file_name=f"ballistics_backup_{datetime.now().strftime('%Y%p%d_%H%M')}.db",
+                    mime="application/x-sqlite3",
+                    use_container_width=True
+                )
+        else:
+            st.error("Banco de dados não encontrado para exportação.")
+
+        st.divider()
+        
+        # Logs de Auditoria
+        st.markdown("### 📋 Histórico de Auditoria (Últimos 10)")
+        from core.models import AuditLog
+        with managed_session() as session:
+            logs = session.query(AuditLog).filter_by(user_id=target_user_id).order_by(AuditLog.timestamp.desc()).limit(10).all()
+            if logs:
+                for l in logs:
+                    with st.expander(f"{l.timestamp.strftime('%H:%M:%S')} - {l.action}"):
+                        st.json({
+                            "Tabela": l.table_name,
+                            "ID Registro": l.record_id,
+                            "Antigo": json.loads(l.old_value) if l.old_value else None,
+                            "Novo": json.loads(l.new_value) if l.new_value else None
+                        })
+            else:
+                st.info("Nenhum log de auditoria encontrado.")
             
         # Serializar sessões recentes
         from core.models import ReloadSession
@@ -175,10 +238,14 @@ def show_profile():
                 "craf": f.craf or "—",
                 "serial": f.serial or "—",
                 "expiration": str(f.expiration) if f.expiration else "—",
+                "image_url": f.image_url
             })
 
     if firearms_data:
         for fd in firearms_data:
+            if fd["image_url"]:
+                st.image(fd["image_url"], use_container_width=True)
+            
             cols = st.columns([3, 2, 2, 1])
             cols[0].markdown(f"**{fd['model']}** – Série: {fd['serial']}")
             cols[1].markdown(f"SIGMA: {fd['sigma']} | CRAF: {fd['craf']}")
@@ -210,8 +277,14 @@ def show_profile():
             m_sigma = st.text_input("SIGMA")
             m_craf = st.text_input("CRAF")
             m_exp = st.date_input("Data de Validade")
+            m_img = st.file_uploader("Foto da Arma (Opcional)", type=["jpg", "png", "jpeg"])
             submit_f = st.form_submit_button("Salvar Arma")
             if submit_f and m_model:
+                image_url = None
+                if m_img:
+                    with st.spinner("Enviando foto da arma para o S3..."):
+                        image_url = s3_mgr.upload_image(m_img, folder="firearms")
+                
                 with managed_session() as db3:
                     new_f = Firearm(
                         user_id=user_id,
@@ -220,6 +293,7 @@ def show_profile():
                         sigma=m_sigma if m_sigma else None,
                         craf=m_craf if m_craf else None,
                         expiration=m_exp,
+                        image_url=image_url
                     )
                     db3.add(new_f)
                     db3.flush() # Para pegar o ID

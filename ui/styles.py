@@ -19,6 +19,19 @@ def apply_custom_styles():
         --warning-base: #f59e0b;
     }
 
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stMetric {
+            padding: 1rem !important;
+        }
+        .stMetric [data-testid="stMetricValue"] {
+            font-size: 1.4rem !important;
+        }
+        .header-title {
+            font-size: 2.2rem !important;
+        }
+    }
+
     /* Layout & Base */
     html, body, [class*="css"] {
         font-family: 'Outfit', sans-serif;
@@ -159,13 +172,64 @@ def apply_custom_styles():
         border-radius: 8px !important;
         border: 1px solid transparent !important;
     }
+    
+    /* Glassmorphism Classes */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeInUp 0.5s ease-out forwards; }
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: #0f172a;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    [data-testid="stSidebarNav"] { padding-top: 2rem; }
+
+    /* Buttons */
+    .stButton > button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.3px !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .stButton > button:active { transform: scale(0.98); }
+
+    /* Hide Streamlit components for 'App' feel */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    div.stDeployButton {display: none;}
+    [data-testid="stToolbar"] {display: none;}
+    
+    /* Adjust top padding since header is hidden */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 def show_header():
     st.markdown("""
         <div style='text-align: center; padding: 2rem 0 3rem 0;'>
-            <h1 style='color: #0f172a; font-size: 3.5rem; font-weight: 950; margin-bottom: 0; letter-spacing: -2px;'>BALLISTIC PRO</h1>
+            <h1 class='header-title' style='color: #0f172a; font-size: 3.5rem; font-weight: 950; margin-bottom: 0; letter-spacing: -2px;'>BALLISTIC PRO</h1>
             <p style='color: #64748b; font-size: 0.85rem; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; margin-top: -5px;'>Engineering & Precision Interface</p>
             <div style='width: 40px; height: 3px; background: #2563eb; margin: 1.5rem auto;'></div>
         </div>

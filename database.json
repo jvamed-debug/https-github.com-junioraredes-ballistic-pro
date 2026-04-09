@@ -2,48 +2,14 @@
   "calibers": {
     ".32 S&W L": {
       "projectiles": {
-        "98gr CHCV": {
+        "98gr LSWC / FMJ": {
           "powders": {
-            "CBC 212": {
+            "CBC 216": {
               "min": 1.7,
               "max": 1.9,
               "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 216": {
-              "min": 1.4,
-              "max": 1.5,
-              "unit": "grains",
-              "velocity": 740,
-              "note": "Ref: Tabela CBC (Imagem)"
-            },
-            "CBC 250": {
-              "min": 1.7,
-              "max": 1.8,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            }
-          }
-        },
-        "98gr CHOG": {
-          "powders": {
-            "CBC 216": {
-              "min": 1.9,
-              "max": 2.1,
-              "unit": "grains",
-              "velocity": 705,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "98gr EXPO": {
-          "powders": {
-            "CBC 216": {
-              "min": 2.3,
-              "max": 2.6,
-              "unit": "grains",
-              "velocity": 775,
-              "note": "Ref: Tabela CBC (Imagem)"
+              "velocity": 750,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             }
           }
         }
@@ -52,21 +18,6 @@
       "max_case": "23.37 mm (0.920\")",
       "proj_dia": "7.92 mm (0.312\")",
       "base_dia": "8.53 mm (0.336\")"
-    },
-    ".32 S&W CURTO": {
-      "projectiles": {
-        "85gr CHOG": {
-          "powders": {
-            "CBC 216": {
-              "min": 1.4,
-              "max": 1.5,
-              "unit": "grains",
-              "velocity": 680,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        }
-      }
     },
     ".38 S&W": {
       "projectiles": {
@@ -115,35 +66,21 @@
     },
     ".357 MAGNUM": {
       "projectiles": {
-        "200gr CHPP": {
+        "158gr ETOG / FMJ": {
           "powders": {
             "CBC 216": {
-              "min": 4.3,
-              "max": 4.8,
+              "min": 5.8,
+              "max": 6.4,
               "unit": "grains",
-              "note": "extracted from CBC manual"
+              "velocity": 1150,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             },
-            "CBC 212": {
-              "min": 5.1,
-              "max": 5.55,
+            "CBC 219": {
+              "min": 13.5,
+              "max": 15.0,
               "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 250": {
-              "min": 4.6,
-              "max": 5.1,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            }
-          }
-        },
-        "240gr CHPP": {
-          "powders": {
-            "CBC 250": {
-              "min": 4.3,
-              "max": 4.6,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
+              "velocity": 1350,
+              "note": "Ref: TI-44 CBC v2024. Magnum Load."
             }
           }
         }
@@ -155,25 +92,14 @@
     },
     ".44 S&W SPECIAL": {
       "projectiles": {
-        "240gr ETPP": {
+        "240gr CHPP": {
           "powders": {
-            "CBC 212": {
-              "min": 5.4,
-              "max": 5.7,
+            "CBC 216": {
+              "min": 4.5,
+              "max": 5.0,
               "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 219": {
-              "min": 6.9,
-              "max": 7.4,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 217": {
-              "min": 6.8,
-              "max": 7.25,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
+              "velocity": 750,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             }
           }
         }
@@ -211,35 +137,14 @@
     },
     ".44 REM. MAGNUM": {
       "projectiles": {
-        "200gr CHPP": {
+        "240gr ETOG / FMJ": {
           "powders": {
-            "CBC 216": {
-              "min": 5.7,
-              "max": 6.2,
+            "CBC 219": {
+              "min": 18.0,
+              "max": 20.0,
               "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 212": {
-              "min": 6.25,
-              "max": 6.7,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 250": {
-              "min": 5.9,
-              "max": 6.3,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            }
-          }
-        },
-        "250gr CHPP": {
-          "powders": {
-            "CBC 250": {
-              "min": 5.1,
-              "max": 5.4,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
+              "velocity": 1300,
+              "note": "Ref: TI-44 CBC v2024. Magnum Load."
             }
           }
         }
@@ -251,14 +156,14 @@
     },
     ".45 COLT": {
       "projectiles": {
-        "250gr CHPP": {
+        "250gr ETOG / Lead": {
           "powders": {
             "CBC 216": {
               "min": 6.0,
               "max": 6.5,
               "unit": "grains",
-              "velocity": 800,
-              "note": "Ref: General Data (Approx). Start Low."
+              "velocity": 830,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             }
           }
         }
@@ -268,47 +173,16 @@
       "proj_dia": "11.48 mm (0.452\")",
       "base_dia": "12.19 mm (0.480\")"
     },
-    ".500 S&W MAGNUM": {
-      "projectiles": {
-        "300gr JHP": {
-          "powders": {
-            "CBC 129": {
-              "min": 40.0,
-              "max": 45.0,
-              "unit": "grains",
-              "velocity": 1600,
-              "note": "Ref: General Data (Approx). Start Low."
-            }
-          }
-        }
-      },
-      "max_oal": "57.15 mm (2.250\")",
-      "max_case": "41.28 mm (1.625\")",
-      "proj_dia": "12.70 mm (0.500\")",
-      "base_dia": "13.36 mm (0.526\")"
-    },
     ".25 AUTO": {
       "projectiles": {
-        "50gr ETOG": {
+        "50gr ETOG / FMJ": {
           "powders": {
-            "CBC 212": {
-              "min": 2.3,
-              "max": 2.5,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 250": {
-              "min": 2.1,
-              "max": 2.25,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
             "CBC 216": {
               "min": 1.0,
-              "max": 1.15,
+              "max": 1.2,
               "unit": "grains",
-              "velocity": 755,
-              "note": "Ref: Tabela CBC (Imagem)"
+              "velocity": 760,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             }
           }
         }
@@ -320,70 +194,14 @@
     },
     ".32 AUTO": {
       "projectiles": {
-        "50gr ETOG": {
-          "powders": {
-            "CBC 218": {
-              "min": 3.7,
-              "max": 3.9,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 212": {
-              "min": 3.2,
-              "max": 3.3,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 219": {
-              "min": 3.55,
-              "max": 3.8,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 217": {
-              "min": 3.55,
-              "max": 3.8,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 266": {
-              "min": 4.1,
-              "max": 4.3,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            }
-          }
-        },
-        "71gr ETOG": {
+        "71gr ETOG / FMJ": {
           "powders": {
             "CBC 216": {
               "min": 2.0,
               "max": 2.2,
               "unit": "grains",
               "velocity": 905,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "71gr EXPO": {
-          "powders": {
-            "CBC 216": {
-              "min": 2.0,
-              "max": 2.2,
-              "unit": "grains",
-              "velocity": 905,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "71gr CHOG": {
-          "powders": {
-            "CBC 216": {
-              "min": 2.0,
-              "max": 2.2,
-              "unit": "grains",
-              "velocity": 905,
-              "note": "Ref: Tabela CBC (Imagem)"
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             }
           }
         }
@@ -395,80 +213,32 @@
     },
     ".380 AUTO": {
       "projectiles": {
-        "95gr FMJ": {
-          "powders": {
-            "CBC 216": {
-              "min": 2.4,
-              "max": 2.8,
-              "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Web Search (RecargaClub)."
-            }
-          }
-        },
-        "95gr Lead": {
+        "95gr ETOG / FMJ": {
           "powders": {
             "CBC 216": {
               "min": 2.8,
-              "max": 3.2,
+              "max": 3.1,
               "unit": "grains",
-              "velocity": 900,
-              "note": "Ref: Web Search."
-            }
-          }
-        },
-        "90gr FMJ": {
-          "powders": {
-            "CBC 216": {
-              "min": 2.6,
-              "max": 2.9,
+              "velocity": 950,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
+            },
+            "CBC 219": {
+              "min": 3.2,
+              "max": 3.6,
               "unit": "grains",
               "velocity": 980,
-              "note": "Ref: Web Search."
+              "note": "Ref: TI-44 CBC v2024. Pólvora Lenta."
             }
           }
         },
-        "95gr ETOG": {
+        "95gr ETOG/EXPO (+P)": {
           "powders": {
-            "CBC 216": {
-              "min": 2.8,
-              "max": 3.1,
+            "CBC 219": {
+              "min": 4.1,
+              "max": 4.5,
               "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "95gr EXPO": {
-          "powders": {
-            "CBC 216": {
-              "min": 2.8,
-              "max": 3.1,
-              "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "95gr ETOG (+P)": {
-          "powders": {
-            "CBC 210": {
-              "min": 4.9,
-              "max": 5.4,
-              "unit": "grains",
-              "velocity": 1015,
-              "note": "Ref: Tabela CBC (+P)"
-            }
-          }
-        },
-        "95gr EXPO (+P)": {
-          "powders": {
-            "CBC 210": {
-              "min": 4.9,
-              "max": 5.4,
-              "unit": "grains",
-              "velocity": 1015,
-              "note": "Ref: Tabela CBC (+P)"
+              "velocity": 1050,
+              "note": "Ref: TI-44 CBC (+P) v2024."
             }
           }
         }
@@ -480,47 +250,21 @@
     },
     ".45 AUTO": {
       "projectiles": {
-        "200gr CSCV": {
+        "230gr ETOG / FMJ": {
           "powders": {
-            "CBC 219": {
-              "min": 7.25,
-              "max": 7.7,
+            "CBC 216": {
+              "min": 5.0,
+              "max": 5.5,
               "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 266": {
-              "min": 7.7,
-              "max": 8.2,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 217": {
-              "min": 6.5,
-              "max": 6.9,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
-            }
-          }
-        },
-        "230gr ETOG": {
-          "powders": {
-            "CBC 266": {
-              "min": 5.7,
-              "max": 6.0,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
+              "velocity": 830,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             },
             "CBC 219": {
-              "min": 5.5,
-              "max": 5.8,
+              "min": 5.8,
+              "max": 6.3,
               "unit": "grains",
-              "note": "extracted from CBC manual"
-            },
-            "CBC 217": {
-              "min": 5.25,
-              "max": 5.4,
-              "unit": "grains",
-              "note": "extracted from CBC manual"
+              "velocity": 850,
+              "note": "Ref: TI-44 CBC v2024. Pólvora Lenta."
             }
           }
         }
@@ -530,35 +274,23 @@
       "proj_dia": "11.48 mm (0.452\")",
       "base_dia": "12.09 mm (0.476\")"
     },
-    ".45 GAP": {
-      "projectiles": {
-        "200gr CSCV": {
-          "powders": {
-            "CBC 219": {
-              "min": 5.5,
-              "max": 6.0,
-              "unit": "grains",
-              "velocity": 900,
-              "note": "Ref: General Data (Approx)."
-            }
-          }
-        }
-      },
-      "max_oal": "27.18 mm (1.070\")",
-      "max_case": "19.18 mm (0.755\")",
-      "proj_dia": "11.48 mm (0.452\")",
-      "base_dia": "12.09 mm (0.476\")"
-    },
     ".223 REMINGTON": {
       "projectiles": {
-        "55gr ETPT": {
+        "55gr ETPT / FMJ": {
           "powders": {
             "CBC 102": {
-              "min": 22.0,
+              "min": 24.5,
+              "max": 26.5,
+              "unit": "grains",
+              "velocity": 3100,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
+            },
+            "CBC 126": {
+              "min": 22.5,
               "max": 24.5,
               "unit": "grains",
-              "velocity": 3000,
-              "note": "Ref: General 223 Data (Start Low)."
+              "velocity": 3050,
+              "note": "Ref: TI-44 CBC v2024 (Pólv. Lenta)."
             }
           }
         }
@@ -695,21 +427,21 @@
     },
     ".308 WINCHESTER": {
       "projectiles": {
-        "150gr ETPT": {
+        "150gr ETPP / FMJ": {
           "powders": {
             "CBC 102": {
-              "min": 40.0,
-              "max": 44.5,
+              "min": 42.0,
+              "max": 45.0,
               "unit": "grains",
-              "velocity": 2700,
-              "note": "Ref: CBC Data. Start Low."
+              "velocity": 2750,
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             },
             "CBC 126": {
               "min": 42.5,
-              "max": 46.5,
+              "max": 45.5,
               "unit": "grains",
               "velocity": 2800,
-              "note": "Ref: CBC Data. Start Low."
+              "note": "Ref: TI-44 CBC v2024."
             }
           }
         }
@@ -742,69 +474,48 @@
       "projectiles": {
         "115gr FMJ": {
           "powders": {
-            "CBC 231": {
-              "min": 4.3,
-              "max": 4.8,
-              "unit": "grains",
-              "velocity": 1100,
-              "note": "Ref: Win 231 Data (Approx). Start low."
-            },
-            "CBC 219": {
-              "min": 0.0,
-              "max": 0.0,
-              "unit": "grains",
-              "velocity": 0,
-              "note": "Data not consistent. Check Manual."
-            },
             "CBC 216": {
               "min": 3.9,
               "max": 4.3,
               "unit": "grains",
               "velocity": 1050,
-              "note": "Carga padr\u00e3o para treino (P\u00f3lvora R\u00e1pida)."
+              "note": "Ref: TI-44 CBC v2024. Pólvora Rápida."
+            },
+            "CBC 231": {
+              "min": 4.1,
+              "max": 4.5,
+              "unit": "grains",
+              "velocity": 1080,
+              "note": "Ref: TI-44 CBC v2024 (Equiv. Win 231)."
             }
           }
         },
         "124gr FMJ": {
           "powders": {
-            "CBC 231": {
-              "min": 3.9,
-              "max": 4.4,
-              "unit": "grains",
-              "velocity": 1050,
-              "note": "Ref: Win 231 Data (Approx). Start low."
-            },
             "CBC 216": {
               "min": 3.6,
               "max": 4.0,
               "unit": "grains",
               "velocity": 1020,
-              "note": "Carga padr\u00e3o para treino."
+              "note": "Ref: TI-44 CBC v2024. Carga padrão."
             },
             "CBC 219": {
               "min": 5.8,
               "max": 6.4,
               "unit": "grains",
               "velocity": 1150,
-              "note": "Carga de maior desempenho (P\u00f3lvora Lenta)."
+              "note": "Ref: TI-44 CBC v2024. Pólvora Lenta."
             }
           }
         },
         "147gr FMJ": {
           "powders": {
-            "CBC 231": {
-              "min": 3.0,
+            "CBC 216": {
+              "min": 3.1,
               "max": 3.4,
               "unit": "grains",
-              "velocity": 900,
-              "note": "Ref: Win 231 Data (Approx). Start low."
-            },
-            "CBC 216": {
-              "min": 3.2,
-              "max": 3.5,
-              "unit": "grains",
-              "velocity": 900,
-              "note": "Carga subs\u00f4nica aprox."
+              "velocity": 890,
+              "note": "Ref: TI-44 CBC v2024. Subsônica."
             }
           }
         }
@@ -857,14 +568,21 @@
     },
     ".38 SPL": {
       "projectiles": {
-        "158gr Lead SWC": {
+        "158gr Lead LSWC": {
           "powders": {
+            "CBC 216": {
+              "min": 3.4,
+              "max": 3.8,
+              "unit": "grains",
+              "velocity": 780,
+              "note": "Ref: TI-44 CBC v2024."
+            },
             "CBC 219": {
               "min": 3.8,
               "max": 4.2,
               "unit": "grains",
-              "velocity": 800,
-              "note": "Ref: Common Load."
+              "velocity": 820,
+              "note": "Ref: TI-44 CBC v2024. Pólvora Lenta."
             }
           }
         },
@@ -874,118 +592,19 @@
               "min": 2.4,
               "max": 2.7,
               "unit": "grains",
-              "velocity": 807,
-              "note": "Ref: Tabela CBC (Imagem)"
+              "velocity": 750,
+              "note": "Ref: TI-44 CBC v2024. Carga Wadcutter."
             }
           }
         },
-        "158gr CHOG": {
-          "powders": {
-            "CBC 216": {
-              "min": 3.5,
-              "max": 3.9,
-              "unit": "grains",
-              "velocity": 755,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "158gr CSCV": {
-          "powders": {
-            "CBC 216": {
-              "min": 3.3,
-              "max": 3.7,
-              "unit": "grains",
-              "velocity": 755,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "158gr EXPP": {
-          "powders": {
-            "CBC 207": {
-              "min": 4.9,
-              "max": 5.4,
-              "unit": "grains",
-              "velocity": 804,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "158gr EXPO": {
-          "powders": {
-            "CBC 207": {
-              "min": 4.9,
-              "max": 5.4,
-              "unit": "grains",
-              "velocity": 804,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "158gr ETPP": {
-          "powders": {
-            "CBC 207": {
-              "min": 5.0,
-              "max": 5.6,
-              "unit": "grains",
-              "velocity": 804,
-              "note": "Ref: Tabela CBC (Imagem)"
-            }
-          }
-        },
-        "125gr EXPP (+P)": {
-          "powders": {
-            "CBC 207": {
-              "min": 5.6,
-              "max": 6.2,
-              "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Tabela CBC (+P)"
-            }
-          }
-        },
-        "125gr EXPO (+P)": {
-          "powders": {
-            "CBC 207": {
-              "min": 5.6,
-              "max": 6.2,
-              "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Tabela CBC (+P)"
-            }
-          }
-        },
-        "125gr ETPP (+P)": {
-          "powders": {
-            "CBC 207": {
-              "min": 5.9,
-              "max": 6.5,
-              "unit": "grains",
-              "velocity": 950,
-              "note": "Ref: Tabela CBC (+P)"
-            }
-          }
-        },
-        "158gr EXPP (+P)": {
+        "158gr ETPP (+P)": {
           "powders": {
             "CBC 207": {
               "min": 5.1,
               "max": 5.7,
               "unit": "grains",
-              "velocity": 885,
-              "note": "Ref: Tabela CBC (+P)"
-            }
-          }
-        },
-        "158gr EXPO (+P)": {
-          "powders": {
-            "CBC 207": {
-              "min": 5.1,
-              "max": 5.7,
-              "unit": "grains",
-              "velocity": 885,
-              "note": "Ref: Tabela CBC (+P)"
+              "velocity": 880,
+              "note": "Ref: TI-44 CBC (+P) v2024."
             }
           }
         }

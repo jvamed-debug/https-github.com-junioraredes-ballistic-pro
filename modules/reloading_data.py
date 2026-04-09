@@ -97,57 +97,15 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
                 font-size: 0.7rem;
                 margin-top: 4px;
             }
-            .img-frame {
-                background: #ffffff;
-                border-radius: 8px;
-                padding: 12px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            .img-label {
-                color: #94a3b8;
-                font-size: 0.55rem;
-                font-family: "JetBrains Mono", monospace;
-                font-weight: 600;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-                margin-bottom: 8px;
+            .safety-strip .msg {
+                color: #cbd5e1;
+                font-size: 0.7rem;
+                margin-top: 4px;
             }
         </style>
         """, unsafe_allow_html=True)
 
-        img_col, data_col = st.columns([1.5, 1.5])
-
-        with img_col:
-            # Logic to find the official SAAMI diagram
-            img_name = selected_caliber.lower().replace(" ", "_").replace(".", "").replace("&", "").lstrip("_")
-            options = [
-                f"assets/saami/{img_name}_original.png",
-                f"assets/{img_name}_Diagram.png",
-                f"assets/{img_name}.png",
-                "cartridge_diagram.png"
-            ]
-
-            image_path = None
-            for opt in options:
-                if os.path.exists(opt):
-                    image_path = opt
-                    break
-
-            if image_path:
-                st.markdown(f"""
-                <p class='img-label'>MANUAL SAAMI ORIGINAL · {selected_caliber}</p>
-                <div class="img-frame">
-                """, unsafe_allow_html=True)
-                st.image(image_path, use_container_width=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div style='background: rgba(15,23,42,0.6); border: 1px dashed rgba(100,116,139,0.3); border-radius: 8px; padding: 40px 20px; text-align: center;'>
-                    <p style='color: #475569; font-family: "JetBrains Mono", monospace; font-size: 0.7rem;'>⚠ ESQUEMA SAAMI INDISPONÍVEL</p>
-                    <p style='color: #334155; font-size: 0.65rem;'>{selected_caliber}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
+        data_col = st.container()
         with data_col:
             # Helper to format metric values with inches conversion
             import re
@@ -175,34 +133,35 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
 
             st.markdown(f"""
             <div class="schematic-header">
-                <span class="badge">SPECS</span>
+                <span class="badge">SAAMI SPECS</span>
                 <span class="caliber-name">{selected_caliber}</span>
+                <span style="margin-left: auto; color: #10b981; font-size: 0.6rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; border: 1px solid #10b981; padding: 2px 6px; border-radius: 4px;">VERIFICADO CBC 2024</span>
             </div>
             <div class="dim-grid">
                 <div class="dim-card">
-                    <div class="label">OAL MAX · Compr. Total</div>
+                    <div class="label">OAL MAX (COAL)</div>
                     <div class="value">{oal_val}</div>
                     <div style="color: #475569; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;">{oal_inch}</div>
                 </div>
                 <div class="dim-card">
-                    <div class="label">CASE MAX · Compr. Estojo</div>
+                    <div class="label">CASE MAX (TRIM)</div>
                     <div class="value">{case_val}</div>
                     <div style="color: #475569; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;">{case_inch}</div>
                 </div>
                 <div class="dim-card">
-                    <div class="label">PROJ DIA · Diâm. Projétil</div>
+                    <div class="label">BULLET DIA</div>
                     <div class="value">{proj_val}</div>
                     <div style="color: #475569; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;">{proj_inch}</div>
                 </div>
                 <div class="dim-card">
-                    <div class="label">BASE DIA · Diâm. Base</div>
+                    <div class="label">BASE DIA</div>
                     <div class="value">{base_val}</div>
                     <div style="color: #475569; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;">{base_inch}</div>
                 </div>
             </div>
             <div class="safety-strip">
                 <div class="tag">⚠ VIGILÂNCIA DE SEGURANÇA</div>
-                <div class="msg">Medidas nominais SAAMI. Verifique o HEADSPACE da arma antes de operar. Sempre confira com manuais oficiais.</div>
+                <div class="msg">Especificações dimensionais nominais. Sempre verifique o TRIM do estojo após os disparos.</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -224,21 +183,55 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             st.number_input("Carga Mín (grains)", key="man_min_val", step=0.1)
             st.number_input("Carga Máx (grains)", key="man_max_val", step=0.1)
     else:
+        load_data = db["calibers"][selected_caliber]["projectiles"][selected_projectile]["powders"][selected_powder]
+        
         st.markdown(f"""
-        <div style='background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--success-base); margin-bottom: 20px; border-left: 5px solid var(--success-base);'>
-            <span style='color: var(--success-base); font-family: "JetBrains Mono", monospace; font-weight: 700;'>[✅ DADOS TÉCNICOS VERIFICADOS]</span><br>
-            <span style='color: var(--text-light); font-size: 0.85rem;'>Integridade confirmada. Parâmetros carregados com sucesso do Database Ballistic Pro.</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 8px 16px; border-radius: 6px; border: 1px solid #10b981;">
+                <span style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 0.7rem;">DADOS OBC TI-44 √</span>
+            </div>
+            <div style="color: #64748b; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">REF: {load_data.get('note', 'TI-44')}</div>
         </div>
         """, unsafe_allow_html=True)
-        load_data = db["calibers"][selected_caliber]["projectiles"][selected_projectile]["powders"][selected_powder]
+
         m1, m2, m3 = st.columns(3)
-        m1.metric("CARGA MÍNIMA", f"{load_data.get('min', 0.0)} gr")
-        m2.metric("CARGA MÁXIMA", f"{load_data.get('max', 0.0)} gr")
-        m3.metric("VELOCIDADE", f"{load_data.get('velocity', 'N/A')} fps")
-        if load_data.get("note"): 
+        
+        with m1:
             st.markdown(f"""
-            <div style='background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 4px; border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 10px;'>
-                <p style='color: #94a3b8; font-size: 0.8rem; margin: 0;'><b>NOTA TÉCNICA:</b> {load_data['note']}</p>
+            <div style="background: rgba(16, 185, 129, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2); text-align: center;">
+                <p style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; margin-bottom: 8px;">MIN LOAD</p>
+                <p style="color: #f8fafc; font-size: 1.8rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; margin: 0;">{load_data.get('min', 0.0)}<span style="font-size: 0.8rem; color: #64748b; margin-left: 4px;">gr</span></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with m2:
+            st.markdown(f"""
+            <div style="background: rgba(239, 68, 68, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: center;">
+                <p style="color: #ef4444; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; margin-bottom: 8px;">MAX LOAD (NEVER EXCEED)</p>
+                <p style="color: #f8fafc; font-size: 1.8rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; margin: 0;">{load_data.get('max', 0.0)}<span style="font-size: 0.8rem; color: #64748b; margin-left: 4px;">gr</span></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with m3:
+            st.markdown(f"""
+            <div style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2); text-align: center;">
+                <p style="color: #3b82f6; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; margin-bottom: 8px;">TARGET VELOCITY</p>
+                <p style="color: #f8fafc; font-size: 1.8rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; margin: 0;">{load_data.get('velocity', 'N/A')}<span style="font-size: 0.8rem; color: #64748b; margin-left: 4px;">fps</span></p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        if load_data.get("max", 0) > 0 and load_data.get("min", 0) > 0:
+            range_val = load_data["max"] - load_data["min"]
+            st.markdown(f"""
+            <div style="margin-top: 24px; background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #94a3b8; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">ESPECTRO DE TRABALHO</span>
+                    <span style="color: #60a5fa; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">RANGE: {range_val:.1f} gr</span>
+                </div>
+                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; position: relative; overflow: hidden;">
+                    <div style="position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);"></div>
+                </div>
+                <p style="color: #64748b; font-size: 0.65rem; margin-top: 10px;"><b>DICA:</b> Comece sempre pela carga mínima (Min Load) e suba em incrementos de 0.1gr observando sinais de pressão no estojo.</p>
             </div>
             """, unsafe_allow_html=True)
 

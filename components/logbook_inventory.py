@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime, date
 from core.models import managed_session, User, ReloadSession, InventoryItem, Firearm
 from services.reloading_service import ReloadingService
+from services.s3_service import s3_mgr
 from label_gen import create_label_pdf
 
 def show_logbook_and_inventory():
@@ -37,6 +38,8 @@ def show_logbook_and_inventory():
                             <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>
                         </div>
                     """, unsafe_allow_html=True)
+                    if s.image_url:
+                        st.image(s.image_url, caption=f"Alvo - {s.caliber}", width=300)
             else:
                 st.info("Nenhuma sessão de recarga registrada ainda.")
 
@@ -49,9 +52,15 @@ def show_logbook_and_inventory():
                 r_proj = r_col2.text_input("Projétil", placeholder="Ex: 147gr JHP")
                 r_vel = r_col2.number_input("Velocidade (fps/ms)", min_value=0.0, step=1.0)
                 r_qty = r_col2.number_input("Quantidade", min_value=0, step=1)
+                r_img = st.file_uploader("Foto do Alvo (Opcional)", type=["jpg", "png", "jpeg"])
                 r_notes = st.text_area("Observações Técnicas")
                 if st.form_submit_button("SALVAR SESSÃO", use_container_width=True):
                     if r_caliber and r_qty > 0:
+                        image_url = None
+                        if r_img:
+                            with st.spinner("Subindo imagem para o S3..."):
+                                image_url = s3_mgr.upload_image(r_img, folder="targets")
+                        
                         with managed_session() as db2:
                             new_sess = ReloadSession(
                                 user_id=user_id,
@@ -62,6 +71,7 @@ def show_logbook_and_inventory():
                                 projectile=r_proj or None,
                                 velocity_avg=r_vel if r_vel > 0 else None,
                                 quantity=r_qty,
+                                image_url=image_url,
                                 notes=r_notes or None,
                             )
                             db2.add(new_sess)

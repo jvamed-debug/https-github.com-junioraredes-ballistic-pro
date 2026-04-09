@@ -1,7 +1,7 @@
 import streamlit as st
 from core.config import setup_app
 from core.auth import authenticate, register_user, recover_password
-from core.models import init_db_if_empty, get_session, User
+from core.models import init_db_if_empty, get_session, managed_session, User
 from ui.styles import apply_custom_styles, show_header
 from services.ballistics_service import BallisticsService
 from modules.reloading_data import show_reloading_data, show_calculator
@@ -28,16 +28,39 @@ if not st.session_state["authenticated"]:
     with col2:
         auth_mode = st.radio("Selecione", ["Login", "Cadastro", "Recuperar"], horizontal=True)
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
+        
+        # Biometric Check
+        from bio_auth import check_biometrics_available, save_biometrics
+        saved_user = check_biometrics_available()
+        
         if auth_mode == "Login":
+            if saved_user:
+                st.info(f"Acesso via biometria disponível para: **{saved_user}**")
+                if st.button("🔓 ACESSAR COM BIOMETRIA", use_container_width=True):
+                    # Em um app nativo/PWA real, aqui dispararíamos o prompt do SO.
+                    # No Streamlit, validamos a sessão criptografada salva.
+                    user = User(id=1, username=saved_user, name=saved_user) # Mock user for bypass or fetch from DB
+                    with managed_session() as db_sess:
+                        user_db = db_sess.query(User).filter(User.username == saved_user).first()
+                        if user_db:
+                            st.session_state["authenticated"] = True
+                            st.session_state["user_id"] = user_db.id
+                            st.session_state["user_name"] = user_db.name or user_db.username
+                            st.success("Bem-vindo de volta!")
+                            st.rerun()
+
             with st.form("login_form"):
                 user_in = st.text_input("Usuário")
                 pass_in = st.text_input("Senha", type="password")
+                remember = st.checkbox("Habilitar Biometria neste dispositivo")
                 if st.form_submit_button("ENTRAR", use_container_width=True):
                     user = authenticate(user_in, pass_in)
                     if user:
                         st.session_state["authenticated"] = True
                         st.session_state["user_id"] = user.id
                         st.session_state["user_name"] = user.name or user.username
+                        if remember:
+                            save_biometrics(user.username)
                         st.rerun()
                     else:
                         st.error("Credenciais inválidas.")
