@@ -131,12 +131,16 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             proj_val, proj_inch = fmt_dim(proj_dia)
             base_val, base_inch = fmt_dim(base_dia)
 
+            v_source = caliber_data.get("source", "PADRÃO")
+            v_year = caliber_data.get("year", "2024")
+            
             st.markdown(f"""
             <div class="schematic-header">
-                <span class="badge">SAAMI SPECS</span>
+                <span class="badge">ESPECIFICAÇÕES NOMINAIS</span>
                 <span class="caliber-name">{selected_caliber}</span>
-                <span style="margin-left: auto; color: #10b981; font-size: 0.6rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; border: 1px solid #10b981; padding: 2px 6px; border-radius: 4px;">VERIFICADO CBC 2024</span>
+                <span style="margin-left: auto; color: #10b981; font-size: 0.6rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; border: 1px solid #10b981; padding: 2px 6px; border-radius: 4px;">{v_source} {v_year} √</span>
             </div>
+
             <div class="dim-grid">
                 <div class="dim-card">
                     <div class="label">OAL MAX (COAL)</div>
@@ -236,30 +240,62 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             """, unsafe_allow_html=True)
 
 def show_calculator(selected_projectile):
-    st.markdown("### 🧪 Estimativa de Carga")
+    st.markdown("### 🧪 Estimativa de Carga (EXPERIMENTAL)")
     
-    st.error("""
-    **⚠️ AVISO CRÍTICO DE SEGURANÇA (AUDITORIA FUN-001)**  
-    Este cálculo é estritamente **teórico e experimental**.  
-    - Pressões de câmara não são calculadas e podem exceder limites seguros.
-    - Nunca use estas estimativas como ponto de partida sem consultar tabelas oficiais.
-    - O desenvolvedor e a ferramenta não se responsabilizam por danos físicos ou materiais.
-    """)
+    # AUDITORIA FUN-001: Alerta Crítico Proeminente
+    st.markdown("""
+        <div style="background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <p style="color: #ef4444; font-weight: 900; margin-bottom: 8px; font-size: 1.1rem;">⚠️ AVISO DE RISCO DE VIDA (AUDITORIA FUN-001)</p>
+            <p style="color: #cbd5e1; font-size: 0.85rem; line-height: 1.5;">
+                Balística interna de armas de fogo envolve picos de pressão <b>NÃO-LINEARES</b>. Estimativas matemáticas 
+                simplificadas como esta podem sugerir cargas que resultam em <b>explosões de câmara</b> se usadas sem 
+                experiência técnica. 
+            </p>
+            <ul style="color: #94a3b8; font-size: 0.75rem; margin-top: 10px;">
+                <li>NUNCA comece pela carga estimada abaixo.</li>
+                <li>Este módulo serve apenas para comparação de energia cinética teórica.</li>
+                <li>O desenvolvedor não se responsabiliza por qualquer dano.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
 
     with c1:
-        target_vel = st.number_input("Velocidade Alvo (fps)", value=1000, key="calc_target_vel")
-        proj_w = st.number_input("Peso do Projétil (grains)", value=158.0, key="calc_proj_w")
+        target_vel = st.number_input("Velocidade Alvo (fps)", min_value=500, max_value=4500, value=1000, key="calc_target_vel", help="Velocidade final desejada na boca do cano.")
+        proj_w = st.number_input("Peso do Projétil (grains)", min_value=1.0, max_value=1000.0, value=158.0, key="calc_proj_w")
     with c2:
-        calorific = st.number_input("Poder Calorífico (J/g)", value=3800, key="calc_calorific")
-        efficiency = st.slider("Eficiência (%)", 5, 50, 25, key="calc_efficiency")
+        # Pólvoras variam muito em densidade energética
+        calorific = st.number_input("Poder Calorífico da Pólvora (J/g)", min_value=2000, max_value=6000, value=3800, key="calc_calorific", help="Ex: Pólvoras de base simples (~3400) vs base dupla (~4200)")
+        efficiency = st.slider("Eficiência Térmica Estimada (%)", 5, 60, 25, key="calc_efficiency", help="Quanto da queima vira movimento. Geralmente entre 20% e 35%.")
     
-    m_kg, v_ms = proj_w * 0.0000647989, target_vel * 0.3048
+    # Cálculos Físicos
+    m_kg = proj_w * 0.0000647989
+    v_ms = target_vel * 0.3048
     energy_j = 0.5 * m_kg * (v_ms ** 2)
+    
+    # Conversão de Energia -> Gramas -> Grains
     powder_g = energy_j / (calorific * (efficiency / 100))
     est_gr = powder_g * 15.4324
 
+    # Interface de Resultados (HUD)
+    res_col1, res_col2 = st.columns(2)
     
-    st.metric("Energia Estimada", f"{energy_j:.1f} J")
-    st.metric("Carga Sugerida", f"{est_gr:.2f} grains")
+    with res_col1:
+        st.markdown(f"""
+            <div style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.3); text-align: center;">
+                <p style="color: #60a5fa; font-size: 0.7rem; font-family: 'JetBrains Mono'; margin: 0;">ENERGIA CINÉTICA</p>
+                <p style="color: #f8fafc; font-size: 1.5rem; font-weight: 800; margin: 5px 0;">{energy_j:.1f} <span style="font-size: 0.8rem; color: #64748b;">Joules</span></p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with res_col2:
+        status_color = "#ef4444" if est_gr > 50 else "#10b981"
+        st.markdown(f"""
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid {status_color}; text-align: center;">
+                <p style="color: {status_color}; font-size: 0.7rem; font-family: 'JetBrains Mono'; margin: 0;">ESTIMATIVA TEÓRICA</p>
+                <p style="color: #f8fafc; font-size: 1.5rem; font-weight: 800; margin: 5px 0;">{est_gr:.2f} <span style="font-size: 0.8rem; color: #64748b;">grains</span></p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.warning("⚠️ SEMPRE reduza 10% da carga sugerida para iniciar os testes (Carga de Segurança) e utilize um cronógrafo.")

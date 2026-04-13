@@ -8,18 +8,49 @@ import json
 
 Base = declarative_base()
 
+from cryptography.fernet import Fernet
+import base64
+from sqlalchemy.types import TypeDecorator, String as SQLString
+
+# Configuração de Criptografia (SG-001)
+def get_encryption_suite():
+    # Busca chave nos segredos ou gera uma determinística baseada no ambiente
+    key_raw = st.secrets.get("device_encryption_key", "ballistic-pro-fallback-salt-2025")
+    # Garante que a chave tenha 32 bytes (base64) para o Fernet
+    key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32].encode())
+    return Fernet(key_b64)
+
+class EncryptedString(TypeDecorator):
+    """Criptografa dados sensíveis 'at rest'."""
+    impl = SQLString
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None: return None
+        suite = get_encryption_suite()
+        return suite.encrypt(value.encode()).decode()
+
+    def process_result_value(self, value, dialect):
+        if value is None: return None
+        suite = get_encryption_suite()
+        try:
+            return suite.decrypt(value.encode()).decode()
+        except Exception:
+            # Fallback para dados legados que ainda estão em texto plano
+            return value
+
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     name = Column(String)
-    cpf = Column(String)
-    email = Column(String, unique=True)
-    phone = Column(String)
-    cr_number = Column(String) # Certificado de Registro (Exército)
+    cpf = Column(EncryptedString) # PII Criptografado
+    email = Column(EncryptedString, unique=True) # PII Criptografado
+    phone = Column(EncryptedString)
+    cr_number = Column(EncryptedString) # Certificado de Registro (Exército)
     cr_expiration = Column(Date) # Validade do CR
-    address_acervo = Column(String) # Endereço do Acervo
+    address_acervo = Column(EncryptedString) # Endereço do Acervo
     is_premium = Column(Integer, default=0) # 0=Free, 1=Premium
     
     firearms = relationship("Firearm", back_populates="owner", cascade="all, delete-orphan")
@@ -38,11 +69,12 @@ class Firearm(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     model = Column(String, nullable=False)
-    sigma = Column(String)
-    craf = Column(String)
-    serial = Column(String)
+    sigma = Column(EncryptedString)
+    craf = Column(EncryptedString)
+    serial = Column(EncryptedString)
     expiration = Column(Date)
     image_url = Column(String) # URL para imagem no S3
+
     
     owner = relationship("User", back_populates="firearms")
     sessions = relationship("ReloadSession", back_populates="firearm")

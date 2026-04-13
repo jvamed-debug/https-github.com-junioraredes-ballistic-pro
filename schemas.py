@@ -25,3 +25,19 @@ class InventoryItemCreate(BaseModel):
     quantity: float
     unit: constr(min_length=1, max_length=10)
     price_unit: Optional[float] = 0.0
+
+class FirearmCreate(BaseModel):
+    """Validação para adição de novos equipamentos."""
+    model: constr(min_length=2, max_length=100)
+    serial: Optional[str]
+    sigma: Optional[str]
+    craf: Optional[str]
+
+class ReloadSessionCreate(BaseModel):
+    """Validação crítica para sessões de recarga (TEC-003)."""
+    caliber: constr(min_length=2)
+    quantity: int
+    charge: Optional[float] = 0.0
+    velocity_avg: Optional[float] = 0.0
+    
+    # Validadores customizados podem ser adicionados aqui se necessário

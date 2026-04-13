@@ -61,24 +61,37 @@ def show_logbook_and_inventory():
                             with st.spinner("Subindo imagem para o S3..."):
                                 image_url = s3_mgr.upload_image(r_img, folder="targets")
                         
-                        with managed_session() as db2:
-                            new_sess = ReloadSession(
-                                user_id=user_id,
-                                date=date.today(),
+                        # M03: Validação de Segurança (SEV 3)
+                        from schemas import ReloadSessionCreate
+                        try:
+                            ReloadSessionCreate(
                                 caliber=r_caliber,
-                                powder=r_powder or None,
-                                charge=r_charge if r_charge > 0 else None,
-                                projectile=r_proj or None,
-                                velocity_avg=r_vel if r_vel > 0 else None,
                                 quantity=r_qty,
-                                image_url=image_url,
-                                notes=r_notes or None,
+                                charge=r_charge,
+                                velocity_avg=r_vel
                             )
-                            db2.add(new_sess)
-                        st.success("Sessão salva no Logbook!")
-                        st.rerun()
+                            
+                            with managed_session() as db2:
+                                new_sess = ReloadSession(
+                                    user_id=user_id,
+                                    date=date.today(),
+                                    caliber=r_caliber,
+                                    powder=r_powder or None,
+                                    charge=r_charge if r_charge > 0 else None,
+                                    projectile=r_proj or None,
+                                    velocity_avg=r_vel if r_vel > 0 else None,
+                                    quantity=r_qty,
+                                    image_url=image_url,
+                                    notes=r_notes or None,
+                                )
+                                db2.add(new_sess)
+                            st.success("Sessão salva no Logbook!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Dados técnicos inválidos: {str(e)}")
                     else:
                         st.error("Calibre e Quantidade são obrigatórios.")
+
 
     with inv_tab:
         st.markdown("### 📦 ESTOQUE DE INSUMOS (INVENTORY)")
