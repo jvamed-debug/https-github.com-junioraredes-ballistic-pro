@@ -89,14 +89,19 @@ if not st.session_state["authenticated"]:
                             st.error(f"Erro ao cadastrar: {message}")
 
         elif auth_mode == "Recuperar":
-            with st.form("recover_form"):
-                rec_email = st.text_input("E-mail de Cadastro")
-                if st.form_submit_button("RECUPERAR SENHA", use_container_width=True):
-                    success, message = recover_password(rec_email)
-                    if success:
-                        st.success("Instruções enviadas para o seu e-mail.")
-                    else:
-                        st.error(message)
+            st.info("ℹ️ **Sistema de Auto-Recuperação Local**")
+            st.markdown("""
+                Por questões de segurança e privacidade (SG-001), este aplicativo opera de forma 100% offline e não armazena senhas em texto plano.
+                
+                **Como recuperar o acesso:**
+                1. Entre em contato com o **Administrador do Sistema** para um reset manual via banco de dados.
+                2. Caso você tenha acesso ao servidor, utilize o script de manutenção `scratch/debug_db.py` para resetar sua credencial.
+                
+                *Futuras versões incluirão reset via Chave Mestra (Secrets).*
+            """)
+            if st.button("VOLTAR PARA LOGIN", use_container_width=True):
+                st.rerun()
+
 
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
