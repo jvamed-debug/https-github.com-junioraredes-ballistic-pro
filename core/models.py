@@ -107,31 +107,39 @@ import os
 def create_db_engine():
     # Try to get DB URL from Streamlit Secrets (Production - Supabase)
     db_url = 'sqlite:///ballistics.db'
+    engine_args = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+    
     try:
         if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
             db_url = st.secrets["supabase"]["db_url"]
             # Suporte a URLs do SQLAlchemy/Supabase que vêm como postgres://
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql://", 1)
+            
+            # Adicionar timeout de conexão para PostgreSQL
+            engine_args["connect_args"] = {"connect_timeout": 10}
             print(f"[INFO] Configuração Supabase detectada.")
         else:
             print("[INFO] Secrets do Supabase não encontrados. Usando SQLite local.")
     except Exception as e:
         print(f"[WARN] Erro ao carregar segredos: {e}")
     
-    return create_engine(db_url)
+    return create_engine(db_url, **engine_args)
 
 # Initialize engine with resilience
 engine = create_db_engine()
 
-def ensure_schema_compliance(engine):
+def ensure_schema_compliance(engine_to_check):
     """
     Garante que o esquema do banco de dados esteja atualizado.
     Refatorado p/ Auditoria TEC-001: Adicionado tratamento de erro granular e logs.
     """
     from sqlalchemy import inspect, text
-    inspector = inspect(engine)
-    dialect = engine.dialect.name
+    inspector = inspect(engine_to_check)
+    dialect = engine_to_check.dialect.name
     
     # 1. Verificar Tabelas Críticas
     existing_tables = inspector.get_table_names()
@@ -141,15 +149,11 @@ def ensure_schema_compliance(engine):
     # 2. Executar Alterações p/ Tabela inventory_items
     columns = [c['name'] for c in inspector.get_columns('inventory_items')]
     
-    with engine.begin() as conn:
+    with engine_to_check.begin() as conn:
         # Renomeação de price_total -> price_unit (Caso legado)
         if 'price_unit' not in columns and 'price_total' in columns:
             try:
-                if dialect == 'sqlite':
-                    # SQLite < 3.25 não suporta RENAME COLUMN, mas Streamlit costuma usar moderno
-                    conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
-                else:
-                    conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
+                conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
                 print("[SCHEMA] Coluna price_total renomeada para price_unit.")
             except Exception as e:
                 print(f"[SCHEMA] Erro ao renomear: {e}. Tentando Add Column fallback.")
@@ -178,25 +182,22 @@ def ensure_schema_compliance(engine):
                         print(f"[SCHEMA] Falha ao adicionar image_url a {table}: {e}")
 
 
-# Try to create tables, if it fails
+# Try to create tables with fallback
 try:
     Base.metadata.create_all(engine)
     ensure_schema_compliance(engine)
 except Exception as e:
-    # Mostrar o erro real no console para o desenvolvedor
-    print(f"[CRITICAL] Erro fatal na inicialização do Banco: {e}")
-    import traceback
-    traceback.print_exc()
-    
-    st.warning(f"⚠️ Erro ao inicializar o esquema: {str(e)[:100]}... Tentando Banco Local...")
-    engine = create_engine('sqlite:///ballistics.db')
+    print(f"[CRITICAL] Erro na conexão primária: {e}. Acionando Fallback SQLite.")
+    engine = create_engine('sqlite:///ballistics.db', pool_pre_ping=True)
     Base.metadata.create_all(engine)
     ensure_schema_compliance(engine)
+    st.warning("⚠️ Conexão com Banco Remoto falhou. Usando Banco Local temporariamente.")
 
 Session = sessionmaker(bind=engine)
 
 def get_session():
     return Session()
+
 
 @contextmanager
 def managed_session():
