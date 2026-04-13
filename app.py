@@ -29,9 +29,13 @@ if not st.session_state["authenticated"]:
         auth_mode = st.radio("Selecione", ["Login", "Cadastro", "Recuperar"], horizontal=True)
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
         
-        # Biometric Check
+        # Biometric Check (Refatorado TEC-002)
         from bio_auth import check_biometrics_available, save_biometrics
-        saved_user = check_biometrics_available()
+        try:
+            saved_user = check_biometrics_available()
+        except (PermissionError, RuntimeError):
+            # Falha silenciosa: a opção de biometria simplesmente não aparecerá
+            saved_user = None
         
         if auth_mode == "Login":
             if saved_user:
@@ -39,7 +43,6 @@ if not st.session_state["authenticated"]:
                 if st.button("🔓 ACESSAR COM BIOMETRIA", use_container_width=True):
                     # Em um app nativo/PWA real, aqui dispararíamos o prompt do SO.
                     # No Streamlit, validamos a sessão criptografada salva.
-                    user = User(id=1, username=saved_user, name=saved_user) # Mock user for bypass or fetch from DB
                     with managed_session() as db_sess:
                         user_db = db_sess.query(User).filter(User.username == saved_user).first()
                         if user_db:

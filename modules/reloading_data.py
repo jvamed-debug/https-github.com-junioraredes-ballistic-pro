@@ -237,18 +237,29 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
 
 def show_calculator(selected_projectile):
     st.markdown("### 🧪 Estimativa de Carga")
+    
+    st.error("""
+    **⚠️ AVISO CRÍTICO DE SEGURANÇA (AUDITORIA FUN-001)**  
+    Este cálculo é estritamente **teórico e experimental**.  
+    - Pressões de câmara não são calculadas e podem exceder limites seguros.
+    - Nunca use estas estimativas como ponto de partida sem consultar tabelas oficiais.
+    - O desenvolvedor e a ferramenta não se responsabilizam por danos físicos ou materiais.
+    """)
+
     c1, c2 = st.columns(2)
+
     with c1:
-        target_vel = st.number_input("Velocidade Alvo (fps)", value=1000)
-        proj_w = st.number_input("Peso do Projétil (grains)", value=158.0)
+        target_vel = st.number_input("Velocidade Alvo (fps)", value=1000, key="calc_target_vel")
+        proj_w = st.number_input("Peso do Projétil (grains)", value=158.0, key="calc_proj_w")
     with c2:
-        calorific = st.number_input("Poder Calorífico (J/g)", value=3800)
-        efficiency = st.slider("Eficiência (%)", 5, 50, 25)
+        calorific = st.number_input("Poder Calorífico (J/g)", value=3800, key="calc_calorific")
+        efficiency = st.slider("Eficiência (%)", 5, 50, 25, key="calc_efficiency")
     
     m_kg, v_ms = proj_w * 0.0000647989, target_vel * 0.3048
     energy_j = 0.5 * m_kg * (v_ms ** 2)
     powder_g = energy_j / (calorific * (efficiency / 100))
     est_gr = powder_g * 15.4324
+
     
     st.metric("Energia Estimada", f"{energy_j:.1f} J")
     st.metric("Carga Sugerida", f"{est_gr:.2f} grains")

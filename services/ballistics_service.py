@@ -28,7 +28,14 @@ class BallisticsService:
     @staticmethod
     def calculate_predicted_load(v_current, charge_current, v_target):
         """
-        Simple linear prediction for load estimation (Use with caution!)
+        Cálculo de predição linear para estimativa de carga.
+        
+        ⚠️ AVISO DE SEGURANÇA (AUDITORIA FUN-001):
+        Balística interna NÃO é linear. Este cálculo é uma estimativa matemática simplificada 
+        e NÃO considera picos de pressão de câmara. O uso indevido pode causar falhas 
+        catastróficas no equipamento e riscos à vida.
+        Consulte sempre tabelas de recarga oficiais (SAAMI/CIP).
         """
         if v_current == 0: return 0
         return (v_target * charge_current) / v_current
+

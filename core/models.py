@@ -110,10 +110,14 @@ def create_db_engine():
     try:
         if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
             db_url = st.secrets["supabase"]["db_url"]
+            # Suporte a URLs do SQLAlchemy/Supabase que vêm como postgres://
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql://", 1)
+            print(f"[INFO] Configuração Supabase detectada.")
+        else:
+            print("[INFO] Secrets do Supabase não encontrados. Usando SQLite local.")
     except Exception as e:
-        print(f"[WARN] Não foi possível ler secrets do Supabase ({e}). Usando SQLite local.")
+        print(f"[WARN] Erro ao carregar segredos: {e}")
     
     return create_engine(db_url)
 
@@ -121,56 +125,70 @@ def create_db_engine():
 engine = create_db_engine()
 
 def ensure_schema_compliance(engine):
-    """Garante que o esquema do banco de dados esteja atualizado com as últimas colunas."""
+    """
+    Garante que o esquema do banco de dados esteja atualizado.
+    Refatorado p/ Auditoria TEC-001: Adicionado tratamento de erro granular e logs.
+    """
     from sqlalchemy import inspect, text
     inspector = inspect(engine)
+    dialect = engine.dialect.name
     
-    # 1. Verificar colunas de inventory_items
+    # 1. Verificar Tabelas Críticas
+    existing_tables = inspector.get_table_names()
+    if 'inventory_items' not in existing_tables:
+        return
+
+    # 2. Executar Alterações p/ Tabela inventory_items
     columns = [c['name'] for c in inspector.get_columns('inventory_items')]
     
     with engine.begin() as conn:
-        # Caso especial: price_total -> price_unit
+        # Renomeação de price_total -> price_unit (Caso legado)
         if 'price_unit' not in columns and 'price_total' in columns:
             try:
-                conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
-            except Exception:
+                if dialect == 'sqlite':
+                    # SQLite < 3.25 não suporta RENAME COLUMN, mas Streamlit costuma usar moderno
+                    conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
+                else:
+                    conn.execute(text("ALTER TABLE inventory_items RENAME COLUMN price_total TO price_unit"))
+                print("[SCHEMA] Coluna price_total renomeada para price_unit.")
+            except Exception as e:
+                print(f"[SCHEMA] Erro ao renomear: {e}. Tentando Add Column fallback.")
                 try:
                     conn.execute(text("ALTER TABLE inventory_items ADD COLUMN price_unit FLOAT DEFAULT 0.0"))
-                    conn.execute(text("UPDATE inventory_items SET price_unit = price_total / quantity WHERE quantity > 0"))
                 except Exception: pass
 
-        # Garantir batch_number
-        if 'batch_number' not in columns:
-            try:
-                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN batch_number VARCHAR(50)"))
-            except Exception: pass
+        # Adição de colunas ausentes
+        for col_name, col_type in [('batch_number', 'VARCHAR(50)'), ('expiration_date', 'DATE')]:
+            if col_name not in columns:
+                try:
+                    conn.execute(text(f"ALTER TABLE inventory_items ADD COLUMN {col_name} {col_type}"))
+                    print(f"[SCHEMA] Coluna {col_name} adicionada a inventory_items.")
+                except Exception as e:
+                    print(f"[SCHEMA] Falha ao adicionar {col_name}: {e}")
 
-        # Garantir expiration_date
-        if 'expiration_date' not in columns:
-            try:
-                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN expiration_date DATE"))
-            except Exception: pass
+        # 3. Verificar image_url em outras tabelas
+        for table in ['firearms', 'reload_sessions']:
+            if table in existing_tables:
+                t_cols = [c['name'] for c in inspector.get_columns(table)]
+                if 'image_url' not in t_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN image_url VARCHAR"))
+                        print(f"[SCHEMA] Coluna image_url adicionada a {table}.")
+                    except Exception as e:
+                        print(f"[SCHEMA] Falha ao adicionar image_url a {table}: {e}")
 
-        # Garantir image_url em firearms
-        firearm_cols = [c['name'] for c in inspector.get_columns('firearms')]
-        if 'image_url' not in firearm_cols:
-            try:
-                conn.execute(text("ALTER TABLE firearms ADD COLUMN image_url VARCHAR"))
-            except Exception: pass
-
-        # Garantir image_url em reload_sessions
-        session_cols = [c['name'] for c in inspector.get_columns('reload_sessions')]
-        if 'image_url' not in session_cols:
-            try:
-                conn.execute(text("ALTER TABLE reload_sessions ADD COLUMN image_url VARCHAR"))
-            except Exception: pass
 
 # Try to create tables, if it fails
 try:
     Base.metadata.create_all(engine)
     ensure_schema_compliance(engine)
 except Exception as e:
-    st.warning("⚠️ Erro ao inicializar o esquema. Tentando Banco Local...")
+    # Mostrar o erro real no console para o desenvolvedor
+    print(f"[CRITICAL] Erro fatal na inicialização do Banco: {e}")
+    import traceback
+    traceback.print_exc()
+    
+    st.warning(f"⚠️ Erro ao inicializar o esquema: {str(e)[:100]}... Tentando Banco Local...")
     engine = create_engine('sqlite:///ballistics.db')
     Base.metadata.create_all(engine)
     ensure_schema_compliance(engine)
@@ -214,13 +232,20 @@ def init_db_if_empty():
             
             # M01: Bloqueio de Segurança em Produção
             is_production = "supabase" in st.secrets or "device_encryption_key" in st.secrets
-            has_admin_secret = "admin_password" in st.secrets
+            
+            # Busca senha no nível raiz ou dentro de [passwords]
+            admin_pass = st.secrets.get("admin_password")
+            if not admin_pass and "passwords" in st.secrets:
+                admin_pass = st.secrets["passwords"].get("admin_password")
+            
+            has_admin_secret = admin_pass is not None
             
             if is_production and not has_admin_secret:
                 print("[CRITICAL] Bloqueio de Segurança: Não foi possível criar admin padrão em produção sem 'admin_password' nos Secrets.")
                 return
 
-            admin_pass = st.secrets.get("admin_password", "ballistic_admin_2025!")
+            if not admin_pass:
+                admin_pass = "ballistic_admin_2025!"
             
             admin = User(
                 username="atirador_pro",

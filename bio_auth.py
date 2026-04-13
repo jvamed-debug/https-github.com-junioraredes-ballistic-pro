@@ -10,31 +10,19 @@ KEY_FILE = ".device_key"
 
 
 def _get_encryption_key():
-    """Obtém ou gera uma chave de criptografia persistente para o dispositivo."""
-    # 1. Prioridade absoluta para Streamlit Secrets (Produção de Longo Prazo)
+    """Obtém a chave de criptografia persistente obrigatoriamente dos Secrets do Streamlit."""
     try:
         if "device_encryption_key" in st.secrets:
-            st.session_state["encryption_source"] = "Secrets (Persistente)"
+            # Em conformidade com auditoria SEC-001
             return st.secrets["device_encryption_key"].encode()
     except Exception:
         pass
 
-    # 2. Tenta ler de arquivo local (Desenvolvimento / Cloud Efêmero)
-    if os.path.exists(KEY_FILE):
-        with open(KEY_FILE, "rb") as f:
-            st.session_state["encryption_source"] = "Arquivo Local (Efêmero)"
-            return f.read()
+    # Se chegou aqui, não há chave configurada ou erro ocorreu
+    st.error("⚠️ CRITICAL: 'device_encryption_key' não encontrada nos Secrets!")
+    st.info("Para habilitar biometria, adicione a chave no arquivo .streamlit/secrets.toml")
+    raise PermissionError("Criptografia de dispositivo não inicializada. Verifique st.secrets.")
 
-    # 3. Gera nova chave (Fallback)
-    new_key = Fernet.generate_key()
-    try:
-        with open(KEY_FILE, "wb") as f:
-            f.write(new_key)
-        st.session_state["encryption_source"] = "Gerada Agora (Não Persistente)"
-    except Exception:
-        st.session_state["encryption_source"] = "Memória (Temporária)"
-    
-    return new_key
 
 
 def _encrypt(val):

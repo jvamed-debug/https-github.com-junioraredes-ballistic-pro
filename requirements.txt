@@ -11,3 +11,5 @@ psycopg2-binary
 requests
 cryptography
 boto3
+pydantic
+email-validator
