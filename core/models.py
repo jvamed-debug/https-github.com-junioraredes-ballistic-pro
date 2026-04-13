@@ -12,27 +12,41 @@ from cryptography.fernet import Fernet
 import base64
 from sqlalchemy.types import TypeDecorator, String as SQLString
 
-# Configuração de Criptografia (SG-001)
+# Configuração de Criptografia (SG-001 / Auditoria SEC-002)
 def get_encryption_suite():
-    # Busca chave nos segredos ou gera uma determinística baseada no ambiente
-    key_raw = st.secrets.get("device_encryption_key", "ballistic-pro-fallback-salt-2025")
+    """Obtém suite de criptografia Fernet. NUNCA usa fallback hardcoded."""
+    try:
+        key_raw = st.secrets["device_encryption_key"]
+    except (FileNotFoundError, KeyError):
+        # Em ambiente local sem secrets, usar modo texto plano com warning
+        import warnings
+        warnings.warn(
+            "[SECURITY] 'device_encryption_key' não encontrada nos Secrets. "
+            "Criptografia de PII desabilitada. Configure a chave para produção.",
+            stacklevel=2
+        )
+        return None
     # Garante que a chave tenha 32 bytes (base64) para o Fernet
     key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32].encode())
     return Fernet(key_b64)
 
 class EncryptedString(TypeDecorator):
-    """Criptografa dados sensíveis 'at rest'."""
+    """Criptografa dados sensíveis 'at rest'. Graceful degradation sem chave."""
     impl = SQLString
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is None: return None
         suite = get_encryption_suite()
+        if suite is None:
+            return value  # Sem criptografia — modo desenvolvimento
         return suite.encrypt(value.encode()).decode()
 
     def process_result_value(self, value, dialect):
         if value is None: return None
         suite = get_encryption_suite()
+        if suite is None:
+            return value  # Sem criptografia — modo desenvolvimento
         try:
             return suite.decrypt(value.encode()).decode()
         except Exception:

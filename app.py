@@ -8,6 +8,7 @@ from modules.reloading_data import show_reloading_data, show_calculator
 from components.logbook_inventory import show_logbook_and_inventory
 from modules.performance import show_performance_tab
 from modules.profile import show_profile
+from bio_auth import check_biometrics_available, save_biometrics
 import os
 
 # 1. Setup & Styles
@@ -30,7 +31,6 @@ if not st.session_state["authenticated"]:
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
         
         # Biometric Check (Refatorado TEC-002)
-        from bio_auth import check_biometrics_available, save_biometrics
         try:
             saved_user = check_biometrics_available()
         except (PermissionError, RuntimeError):
@@ -72,8 +72,9 @@ if not st.session_state["authenticated"]:
                 reg_name = st.text_input("Nome Completo")
                 reg_user = st.text_input("Nome de Usuário (Login)")
                 reg_email = st.text_input("E-mail")
-                reg_cpf = st.text_input("CPF")
-                reg_pass = st.text_input("Senha", type="password")
+                reg_cpf = st.text_input("CPF (somente números)", max_chars=14)
+                reg_phone = st.text_input("Telefone (opcional)", max_chars=15, placeholder="(XX) XXXXX-XXXX")
+                reg_pass = st.text_input("Senha (mín. 8 caracteres)", type="password")
                 reg_pass_conf = st.text_input("Confirme a Senha", type="password")
                 
                 if st.form_submit_button("CRIAR CONTA", use_container_width=True):
@@ -81,8 +82,13 @@ if not st.session_state["authenticated"]:
                         st.error("As senhas não coincidem.")
                     elif not reg_user or not reg_pass or not reg_email:
                         st.error("Preencha todos os campos obrigatórios.")
+                    elif len(reg_pass) < 8:
+                        st.error("A senha deve ter no mínimo 8 caracteres.")
                     else:
-                        success, message = register_user(reg_user, reg_pass, reg_name, reg_email, reg_cpf)
+                        # SEC-001: Ordem correta dos argumentos
+                        success, message = register_user(
+                            reg_user, reg_pass, reg_name, reg_cpf, reg_email, reg_phone or None
+                        )
                         if success:
                             st.success("Conta criada com sucesso! Faça login.")
                         else:

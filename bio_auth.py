@@ -10,18 +10,19 @@ KEY_FILE = ".device_key"
 
 
 def _get_encryption_key():
-    """Obtém a chave de criptografia persistente obrigatoriamente dos Secrets do Streamlit."""
+    """Obtém chave de criptografia Fernet-compatível dos Secrets do Streamlit.
+    SEC-003: Usa a mesma derivação de chave que models.py para consistência."""
     try:
         if "device_encryption_key" in st.secrets:
-            # Em conformidade com auditoria SEC-001
-            return st.secrets["device_encryption_key"].encode()
+            key_raw = st.secrets["device_encryption_key"]
+            # Derivar chave Fernet-compatível (32 bytes base64 url-safe)
+            key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32].encode())
+            return key_b64
     except Exception:
         pass
 
     # Se chegou aqui, não há chave configurada ou erro ocorreu
-    st.error("⚠️ CRITICAL: 'device_encryption_key' não encontrada nos Secrets!")
-    st.info("Para habilitar biometria, adicione a chave no arquivo .streamlit/secrets.toml")
-    raise PermissionError("Criptografia de dispositivo não inicializada. Verifique st.secrets.")
+    raise PermissionError("Criptografia de dispositivo não inicializada. Configure 'device_encryption_key' nos Secrets.")
 
 
 

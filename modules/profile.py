@@ -21,6 +21,7 @@ def show_profile():
     user_data = None
     firearms_data = []
     sessions_data = []
+    audit_logs_data = []
 
     with managed_session() as session:
         user = session.get(User, user_id)
@@ -47,73 +48,23 @@ def show_profile():
                 "sigma": f.sigma or "—",
                 "craf": f.craf or "—"
             })
-            
-        st.markdown(f"### 🛡️ Segurança do Dispositivo")
-        
-        # Exibe status da criptografia
-        enc_source = st.session_state.get("encryption_source", "Não Inicializado")
-        status_color = "#10b981" if "Secrets" in enc_source else "#f59e0b"
-        
-        st.markdown(f"""
-            <div style='padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid {status_color}33; border-left: 5px solid {status_color};'>
-                <p style='margin:0; font-size: 0.75rem; color: #94a3b8; font-family: "JetBrains Mono", monospace;'>FONTE DE CRIPTOGRAFIA ATUAL</p>
-                <h4 style='margin:5px 0 0 0; color: white;'>{enc_source}</h4>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        if "Secrets" not in enc_source:
-            st.warning("⚠️ **Atenção:** Seus dados locais estão protegidos, mas a chave é temporária. Configure `device_encryption_key` nos Secrets do Streamlit para persistência permanente.")
-            if st.button("📋 Copiar Chave Atual para Configuração"):
-                from bio_auth import _get_encryption_key
-                try:
-                    key = _get_encryption_key().decode()
-                    st.code(f'device_encryption_key = "{key}"', language="toml")
-                    st.info("Copie a linha acima e cole nas configurações de 'Secrets' do seu Streamlit Cloud.")
-                except Exception as e:
-                    st.error(f"Erro ao recuperar chave: {e}")
 
-        st.divider()
+        # TEC-001: Serializar sessões e logs DENTRO da mesma sessão
+        from core.models import AuditLog, ReloadSession
         
-        # M03: Botão de Exportação de Backup
-        st.markdown("### 💾 Backup Externo")
-        st.write("Baixe uma cópia de segurança do seu banco de dados (.db) para salvaguarda externa.")
-        
-        db_path = "ballistics.db"
-        if os.path.exists(db_path):
-            with open(db_path, "rb") as f:
-                st.download_button(
-                    label="📥 Baixar Ballistics.db",
-                    data=f,
-                    file_name=f"ballistics_backup_{datetime.now().strftime('%Y%p%d_%H%M')}.db",
-                    mime="application/x-sqlite3",
-                    use_container_width=True
-                )
-        else:
-            st.error("Banco de dados não encontrado para exportação.")
+        logs = session.query(AuditLog).filter_by(user_id=user_id).order_by(AuditLog.timestamp.desc()).limit(10).all()
+        for l in logs:
+            audit_logs_data.append({
+                "timestamp": l.timestamp.strftime('%H:%M:%S') if l.timestamp else "—",
+                "action": l.action,
+                "table_name": l.table_name,
+                "record_id": l.record_id,
+                "old_value": json.loads(l.old_value) if l.old_value else None,
+                "new_value": json.loads(l.new_value) if l.new_value else None
+            })
 
-        st.divider()
-        
-        # Logs de Auditoria
-        st.markdown("### 📋 Histórico de Auditoria (Últimos 10)")
-        from core.models import AuditLog
-        with managed_session() as session:
-            logs = session.query(AuditLog).filter_by(user_id=user_id).order_by(AuditLog.timestamp.desc()).limit(10).all()
-            if logs:
-                for l in logs:
-                    with st.expander(f"{l.timestamp.strftime('%H:%M:%S')} - {l.action}"):
-                        st.json({
-                            "Tabela": l.table_name,
-                            "ID Registro": l.record_id,
-                            "Antigo": json.loads(l.old_value) if l.old_value else None,
-                            "Novo": json.loads(l.new_value) if l.new_value else None
-                        })
-            else:
-                st.info("Nenhum log de auditoria encontrado.")
-            
-        # Serializar sessões recentes
-        from core.models import ReloadSession
-        sessions = session.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(10).all()
-        for s in sessions:
+        sessions_list = session.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(10).all()
+        for s in sessions_list:
             sessions_data.append({
                 "date_str": s.date.strftime('%d/%m/%Y') if s.date else "N/A",
                 "caliber": s.caliber,
@@ -121,6 +72,62 @@ def show_profile():
                 "quantity": s.quantity or 0,
                 "date": s.date
             })
+    # Sessão DB fechada com segurança aqui ↑
+
+    # === UI Rendering (sem sessão DB aberta) ===
+    
+    st.markdown(f"### 🛡️ Segurança do Dispositivo")
+    
+    # Exibe status da criptografia
+    enc_source = st.session_state.get("encryption_source", "Não Inicializado")
+    status_color = "#10b981" if "Secrets" in enc_source else "#f59e0b"
+    
+    st.markdown(f"""
+        <div style='padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid {status_color}33; border-left: 5px solid {status_color};'>
+            <p style='margin:0; font-size: 0.75rem; color: #94a3b8; font-family: "JetBrains Mono", monospace;'>FONTE DE CRIPTOGRAFIA ATUAL</p>
+            <h4 style='margin:5px 0 0 0; color: white;'>{enc_source}</h4>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if "Secrets" not in enc_source:
+        st.warning("⚠️ **Atenção:** Configure `device_encryption_key` nos Secrets do Streamlit para proteger dados pessoais em produção.")
+
+    st.divider()
+    
+    # TEC-003: Backup seguro — exporta APENAS dados do próprio usuário (JSON)
+    st.markdown("### 💾 Backup dos Seus Dados")
+    st.write("Baixe uma cópia de segurança dos **seus dados pessoais** em formato JSON.")
+    
+    backup_data = {
+        "usuario": {k: str(v) if v else "" for k, v in user_data.items()},
+        "armas": firearms_data,
+        "sessoes": [{k: str(v) if v else "" for k, v in s.items()} for s in sessions_data],
+        "exportado_em": datetime.now().isoformat()
+    }
+    backup_json = json.dumps(backup_data, ensure_ascii=False, indent=2)
+    st.download_button(
+        label="📥 Baixar Meus Dados (JSON)",
+        data=backup_json,
+        file_name=f"ballistic_pro_backup_{user_data['name'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+        mime="application/json",
+        use_container_width=True
+    )
+
+    st.divider()
+    
+    # Logs de Auditoria (renderizados com dados serializados)
+    st.markdown("### 📋 Histórico de Auditoria (Últimos 10)")
+    if audit_logs_data:
+        for l in audit_logs_data:
+            with st.expander(f"{l['timestamp']} - {l['action']}"):
+                st.json({
+                    "Tabela": l["table_name"],
+                    "ID Registro": l["record_id"],
+                    "Antigo": l["old_value"],
+                    "Novo": l["new_value"]
+                })
+    else:
+        st.info("Nenhum log de auditoria encontrado.")
 
     u = user_data # Para compatibilidade com o código abaixo
 

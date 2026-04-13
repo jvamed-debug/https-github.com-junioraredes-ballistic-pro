@@ -9,7 +9,7 @@ class UserCreate(BaseModel):
     username: constr(min_length=3, max_length=50)
     password: constr(min_length=8)
     name: Optional[str]
-    cpf: Optional[constr(regex=r"^\d{11}$")]  # CPF com 11 dígitos
+    cpf: Optional[constr(pattern=r"^\d{11}$")]  # CPF com 11 dígitos
     email: Optional[EmailStr]
     phone: Optional[str]
     cr_number: Optional[str]
