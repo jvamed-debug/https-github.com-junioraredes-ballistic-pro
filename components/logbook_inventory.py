@@ -24,9 +24,20 @@ def show_logbook_and_inventory():
                 </p>
             </div>
         """, unsafe_allow_html=True)
+
+        # UX-002: Paginação configurável
+        col_page, col_size = st.columns([3, 1])
+        page_size = col_size.selectbox("Por página", [10, 20, 50], index=0, key="log_page_size")
         
         with managed_session() as db:
-            sessions = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(20).all()
+            total_sessions = db.query(ReloadSession).filter_by(user_id=user_id).count()
+            total_pages = max(1, -(-total_sessions // page_size))  # ceil division
+            
+        current_page = col_page.number_input("Página", min_value=1, max_value=total_pages, value=1, step=1, key="log_page") - 1
+        offset = current_page * page_size
+
+        with managed_session() as db:
+            sessions = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(page_size).offset(offset).all()
             if sessions:
                 for s in sessions:
                     s_date = s.date.strftime('%d/%m/%Y') if s.date else "—"
@@ -40,6 +51,7 @@ def show_logbook_and_inventory():
                     """, unsafe_allow_html=True)
                     if s.image_url:
                         st.image(s.image_url, caption=f"Alvo - {s.caliber}", width=300)
+                st.caption(f"Mostrando {len(sessions)} de {total_sessions} sessões · Página {current_page + 1} de {total_pages}")
             else:
                 st.info("Nenhuma sessão de recarga registrada ainda.")
 
@@ -61,7 +73,6 @@ def show_logbook_and_inventory():
                             with st.spinner("Subindo imagem para o S3..."):
                                 image_url = s3_mgr.upload_image(r_img, folder="targets")
                         
-                        # M03: Validação de Segurança (SEV 3)
                         from schemas import ReloadSessionCreate
                         try:
                             ReloadSessionCreate(
@@ -85,12 +96,24 @@ def show_logbook_and_inventory():
                                     notes=r_notes or None,
                                 )
                                 db2.add(new_sess)
-                            st.success("Sessão salva no Logbook!")
+
+                            # FUN-002: Deduzir insumos do inventário (sessão própria no serviço)
+                            _, deducted = ReloadingService.deduct_inventory(new_sess, user_id)
+
+                            if deducted:
+                                st.success(f"Sessão salva no Logbook! Insumos deduzidos: {len(deducted)} item(ns)")
+                                with st.expander("Ver deduções"):
+                                    for msg in deducted:
+                                        st.caption(f"• {msg}")
+                            else:
+                                st.success("Sessão salva no Logbook!")
+                                st.caption("ℹ️ Nenhum insumo correspondente encontrado no estoque para dedução automática.")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Dados técnicos inválidos: {str(e)}")
                     else:
                         st.error("Calibre e Quantidade são obrigatórios.")
+
 
 
     with inv_tab:

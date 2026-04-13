@@ -107,7 +107,23 @@ def show_performance_tab(user_id):
                         gc3.metric("Desvio (POI)", f"X:{px:+.1f} Y:{py:+.1f} mm")
 
                     if st.button(f"Salvar Grupo {group['id']} no Histórico", key=f"save_g_{group['id']}"):
-                        st.toast("Medição salva no histórico!", icon="💾")
+                        # FUN-003: Persiste agrupamento na sessão mais recente do usuário
+                        best_group_mm = group["group_size_mm"]
+                        saved_session_id = None
+
+                        with managed_session() as db_save:
+                            # Busca sessão mais recente — sem filtro de calibre para maior compatibilidade
+                            last_sess = db_save.query(ReloadSession).filter_by(user_id=user_id).order_by(
+                                ReloadSession.date.desc()
+                            ).first()
+                            if last_sess:
+                                last_sess.grouping_mm = round(best_group_mm, 2)
+                                saved_session_id = last_sess.id
+                        
+                        if saved_session_id:
+                            st.toast(f"✅ Agrupamento {best_group_mm:.2f}mm salvo na sessão #{saved_session_id}!", icon="💾")
+                        else:
+                            st.warning("Nenhuma sessão de recarga encontrada. Registre uma sessão no Logbook primeiro.")
 
             st.divider()
             from report_gen import create_performance_report_v2
@@ -124,3 +140,4 @@ def show_performance_tab(user_id):
                 mime="application/pdf",
                 use_container_width=True
             )
+

@@ -6,6 +6,7 @@ from reportlab.lib.enums import TA_CENTER
 from io import BytesIO
 from datetime import datetime
 import cv2
+import io
 import os
 
 
@@ -138,13 +139,13 @@ def create_performance_report_v2(user, cv_results, analysis_img_bgr):
     # 2. Analyzed Target Image
     elements.append(Paragraph("<b>1. ANÁLISE VISUAL DO ALVO</b>", styles['Heading4']))
 
-    # Save CV image temporarily for PDF
-    temp_img_path = f"temp_analysis_{user_id}.jpg"
-    cv2.imwrite(temp_img_path, cv_results['annotated_image'])
-
-    im = Image(temp_img_path, width=450, height=350)
-    im.hAlign = 'CENTER'
-    elements.append(im)
+    # UX-004: Usar buffer em memória (evita race condition em multi-usuário)
+    is_success, img_buf = cv2.imencode('.jpg', cv_results['annotated_image'])
+    if is_success:
+        img_io = io.BytesIO(img_buf.tobytes())
+        im = Image(img_io, width=450, height=350)
+        im.hAlign = 'CENTER'
+        elements.append(im)
     elements.append(Spacer(1, 12))
 
     # 3. Metrics Table
@@ -187,10 +188,5 @@ def create_performance_report_v2(user, cv_results, analysis_img_bgr):
     elements.append(Paragraph(conclusion, styles['Normal']))
 
     doc.build(elements)
-
-    # Cleanup
-    if os.path.exists(temp_img_path):
-        os.remove(temp_img_path)
-
     buffer.seek(0)
     return buffer.getvalue()

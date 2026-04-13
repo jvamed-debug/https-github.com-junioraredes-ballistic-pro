@@ -95,17 +95,20 @@ if not st.session_state["authenticated"]:
                             st.error(f"Erro ao cadastrar: {message}")
 
         elif auth_mode == "Recuperar":
-            st.info("ℹ️ **Sistema de Auto-Recuperação Local**")
+            st.markdown("### 🔑 Recuperação de Acesso")
+            st.info("ℹ️ Por segurança, senhas não são armazenadas em texto plano e não podem ser recuperadas automaticamente.")
             st.markdown("""
-                Por questões de segurança e privacidade (SG-001), este aplicativo opera de forma 100% offline e não armazena senhas em texto plano.
-                
                 **Como recuperar o acesso:**
-                1. Entre em contato com o **Administrador do Sistema** para um reset manual via banco de dados.
-                2. Caso você tenha acesso ao servidor, utilize o script de manutenção `scratch/debug_db.py` para resetar sua credencial.
                 
-                *Futuras versões incluirão reset via Chave Mestra (Secrets).*
+                1. **Lembre da dica:** Tente variações da senha que você costuma usar.
+                2. **Contate o administrador:** Se você se lembra do seu nome de usuário, o administrador pode redefinir sua senha.
+                3. **Crie uma nova conta:** Se não houver dados importantes a preservar, registre-se novamente.
+                
+                > 💡 Dica: Após acessar, vá em **Perfil → Backup dos Seus Dados** para exportar seus dados regularmente.
             """)
-            if st.button("VOLTAR PARA LOGIN", use_container_width=True):
+            st.markdown("**📧 Contato do Suporte:**")
+            st.code("suporte@ballistic-pro.app", language=None)
+            if st.button("← VOLTAR PARA LOGIN", use_container_width=True):
                 st.rerun()
 
 
@@ -163,7 +166,19 @@ with t2:
     if is_manual:
         show_calculator(sel_proj)
     else:
-        st.info("Disponível apenas em Modo Manual.")
+        # UX-003: Explicação clara de quando a aba é acessível
+        st.markdown("### 🧪 Calculadora Manual")
+        st.info(
+            "💡 **A calculadora está disponível no Modo Manual.**\n\n"
+            "Para ativá-la, selecione **\"Outro\"** em qualquer um dos campos de Configuração de Carga "
+            "(Calibre, Projétil ou Pólvora) no painel acima.",
+            icon="ℹ️"
+        )
+        if st.button("Ativar Modo Manual →", use_container_width=False):
+            st.markdown(
+                "<script>window.scrollTo({top: 0, behavior: 'smooth'});</script>",
+                unsafe_allow_html=True
+            )
 
 with t3:
     show_logbook_and_inventory()
