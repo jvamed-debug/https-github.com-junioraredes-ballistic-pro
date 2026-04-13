@@ -67,7 +67,37 @@ if not st.session_state["authenticated"]:
                         st.rerun()
                     else:
                         st.error("Credenciais inválidas.")
-        # ... other auth modes
+        elif auth_mode == "Cadastro":
+            with st.form("register_form"):
+                reg_name = st.text_input("Nome Completo")
+                reg_user = st.text_input("Nome de Usuário (Login)")
+                reg_email = st.text_input("E-mail")
+                reg_cpf = st.text_input("CPF")
+                reg_pass = st.text_input("Senha", type="password")
+                reg_pass_conf = st.text_input("Confirme a Senha", type="password")
+                
+                if st.form_submit_button("CRIAR CONTA", use_container_width=True):
+                    if reg_pass != reg_pass_conf:
+                        st.error("As senhas não coincidem.")
+                    elif not reg_user or not reg_pass or not reg_email:
+                        st.error("Preencha todos os campos obrigatórios.")
+                    else:
+                        success, message = register_user(reg_user, reg_pass, reg_name, reg_email, reg_cpf)
+                        if success:
+                            st.success("Conta criada com sucesso! Faça login.")
+                        else:
+                            st.error(f"Erro ao cadastrar: {message}")
+
+        elif auth_mode == "Recuperar":
+            with st.form("recover_form"):
+                rec_email = st.text_input("E-mail de Cadastro")
+                if st.form_submit_button("RECUPERAR SENHA", use_container_width=True):
+                    success, message = recover_password(rec_email)
+                    if success:
+                        st.success("Instruções enviadas para o seu e-mail.")
+                    else:
+                        st.error(message)
+
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
