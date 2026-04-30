@@ -1,13 +1,11 @@
 import streamlit as st
 import re
 import requests
-import os
 import json
 from datetime import datetime
 from core.models import managed_session, User, Firearm
 from ui.styles import apply_custom_styles
 from services.s3_service import s3_mgr
-from bio_auth import save_biometrics, clear_biometrics, check_biometrics_available
 from report_gen import create_inspection_report
 
 def show_profile():
@@ -53,14 +51,14 @@ def show_profile():
         from core.models import AuditLog, ReloadSession
         
         logs = session.query(AuditLog).filter_by(user_id=user_id).order_by(AuditLog.timestamp.desc()).limit(10).all()
-        for l in logs:
+        for log in logs:
             audit_logs_data.append({
-                "timestamp": l.timestamp.strftime('%H:%M:%S') if l.timestamp else "—",
-                "action": l.action,
-                "table_name": l.table_name,
-                "record_id": l.record_id,
-                "old_value": json.loads(l.old_value) if l.old_value else None,
-                "new_value": json.loads(l.new_value) if l.new_value else None
+                "timestamp": log.timestamp.strftime('%H:%M:%S') if log.timestamp else "—",
+                "action": log.action,
+                "table_name": log.table_name,
+                "record_id": log.record_id,
+                "old_value": json.loads(log.old_value) if log.old_value else None,
+                "new_value": json.loads(log.new_value) if log.new_value else None
             })
 
         sessions_list = session.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(10).all()
@@ -76,8 +74,14 @@ def show_profile():
 
     # === UI Rendering (sem sessão DB aberta) ===
     
-    st.markdown(f"### 🛡️ Segurança do Dispositivo")
+    st.markdown("### 🛡️ Segurança e Acesso")
     
+    # Biometria Funcional (WebAuthn/Passkeys)
+    from bio_auth import render_biometric_registration
+    render_biometric_registration()
+    
+    st.divider()
+
     # Exibe status da criptografia
     enc_source = st.session_state.get("encryption_source", "Não Inicializado")
     status_color = "#10b981" if "Secrets" in enc_source else "#f59e0b"
@@ -118,13 +122,13 @@ def show_profile():
     # Logs de Auditoria (renderizados com dados serializados)
     st.markdown("### 📋 Histórico de Auditoria (Últimos 10)")
     if audit_logs_data:
-        for l in audit_logs_data:
-            with st.expander(f"{l['timestamp']} - {l['action']}"):
+        for log in audit_logs_data:
+            with st.expander(f"{log['timestamp']} - {log['action']}"):
                 st.json({
-                    "Tabela": l["table_name"],
-                    "ID Registro": l["record_id"],
-                    "Antigo": l["old_value"],
-                    "Novo": l["new_value"]
+                    "Tabela": log["table_name"],
+                    "ID Registro": log["record_id"],
+                    "Antigo": log["old_value"],
+                    "Novo": log["new_value"]
                 })
     else:
         st.info("Nenhum log de auditoria encontrado.")
@@ -133,7 +137,7 @@ def show_profile():
 
     st.markdown("### 👤 PERFIL DO ATIRADOR (CREDENTIALS)")
     st.markdown("""
-        <div style='background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+        <div style='background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
             <p style='color: var(--accent-primary); font-family: "JetBrains Mono", monospace; font-size: 0.75rem; font-weight: 700; margin: 0;'>
                 [IDENTIFICAÇÃO OPERACIONAL]
             </p>

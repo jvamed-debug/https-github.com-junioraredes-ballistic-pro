@@ -125,13 +125,13 @@ def create_performance_report_v2(user, cv_results, analysis_img_bgr):
     """
     buffer = BytesIO()
     user_name = _get(user, "name", "N/A")
-    user_id = _get(user, "id", 0)
+    _get(user, "id", 0)
     doc = SimpleDocTemplate(buffer, pagesize=A4, title=f"Relatório Performance - {user_name}")
     elements = []
     styles = getSampleStyleSheet()
 
     # 1. Header
-    title = Paragraph(f"<b>RELATÓRIO TÉCNICO DE BALÍSTICA E PRECISÃO</b>", styles['Title'])
+    title = Paragraph("<b>RELATÓRIO TÉCNICO DE BALÍSTICA E PRECISÃO</b>", styles['Title'])
     elements.append(title)
     elements.append(Paragraph(f"Atirador: {user_name} | Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 12))

@@ -1,6 +1,5 @@
 import boto3
 import streamlit as st
-from botocore.exceptions import NoCredentialsError
 import os
 
 class S3Service:
@@ -25,6 +24,11 @@ class S3Service:
     def upload_image(self, file, folder="targets"):
         """Realiza o upload de uma imagem para o bucket S3."""
         if not self.client:
+            return None
+        
+        ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        if file.type not in ALLOWED_TYPES:
+            st.error("Tipo de arquivo não permitido. Apenas imagens (JPEG, PNG, WEBP).")
             return None
         
         try:

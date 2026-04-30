@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 
 def show_reloading_data(db, selected_caliber, selected_projectile, selected_powder, is_manual_mode):
     # Dimensões do Calibre
@@ -135,12 +134,18 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             v_year = caliber_data.get("year", "2024")
             
             st.markdown(f"""
-            <div class="schematic-header">
-                <span class="badge">ESPECIFICAÇÕES NOMINAIS</span>
-                <span class="caliber-name">{selected_caliber}</span>
-                <span style="margin-left: auto; color: #10b981; font-size: 0.6rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; border: 1px solid #10b981; padding: 2px 6px; border-radius: 4px;">{v_source} {v_year} √</span>
+            <div class="schematic-header" style="background: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px 8px 0 0;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="badge" style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px;">ESPECIFICAÇÕES NOMINAIS</span>
+                    <span class="caliber-name">{selected_caliber}</span>
+                </div>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #10b981; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; border: 1px solid #10b98133; background: #10b98111; padding: 4px 10px; border-radius: 6px;">
+                        SOURCE: {v_source} {v_year}
+                    </span>
+                    <span style="height: 8px; width: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981;"></span>
+                </div>
             </div>
-
             <div class="dim-grid">
                 <div class="dim-card">
                     <div class="label">OAL MAX (COAL)</div>
@@ -172,7 +177,7 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
         st.divider()
 
     if is_manual_mode:
-        st.markdown(f"""
+        st.markdown("""
         <div style='background: rgba(245, 158, 11, 0.08); padding: 15px; border-radius: 8px; border: 1px solid var(--warning-base); margin-bottom: 20px;'>
             <span style='color: var(--warning-base); font-family: "JetBrains Mono", monospace; font-weight: 700;'>[⚠️ AVISO: MODO MANUAL ATIVO]</span><br>
             <span style='color: var(--text-light); font-size: 0.85rem;'>Componentes não validados em conjunto pelo banco de dados oficial. Opere com cautela técnica.</span>
@@ -180,9 +185,12 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
         """, unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
-            if selected_caliber == "Outro": st.text_input("Calibre", key="man_cal", placeholder="Ex: .308 Win")
-            if selected_projectile == "Outro": st.text_input("Projétil (grains)", key="man_proj", placeholder="Ex: 150gr Sierra")
-            if selected_powder == "Outro": st.text_input("Pólvora", key="man_pow", placeholder="Ex: IMR 4064")
+            if selected_caliber == "Outro":
+                st.text_input("Calibre", key="man_cal", placeholder="Ex: .308 Win")
+            if selected_projectile == "Outro":
+                st.text_input("Projétil (grains)", key="man_proj", placeholder="Ex: 150gr Sierra")
+            if selected_powder == "Outro":
+                st.text_input("Pólvora", key="man_pow", placeholder="Ex: IMR 4064")
         with col2:
             st.number_input("Carga Mín (grains)", key="man_min_val", step=0.1)
             st.number_input("Carga Máx (grains)", key="man_max_val", step=0.1)

@@ -3,234 +3,269 @@ import streamlit as st
 def apply_custom_styles():
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
     
     :root {
-        --bg-main: #f8fafc;
-        --bg-sidebar: #0f172a;
-        --card-bg: #ffffff;
-        --accent-primary: #2563eb;
-        --accent-secondary: #64748b;
-        --text-header: #0f172a;
-        --text-body: #334155;
-        --text-light: #64748b;
-        --border-color: #e2e8f0;
+        /* Paleta Tática / Engenharia */
+        --bg-main: #0a0e14; /* Quase preto técnico */
+        --bg-sidebar: #05070a; /* Mais escuro para contraste */
+        --card-bg: #11151c; /* Fundo dos painéis */
+        --accent-primary: #f59e0b; /* Âmbar Tático / Laranja */
+        --accent-secondary: #1e293b; /* Bordas e detalhes secundários */
+        --accent-glow: rgba(245, 158, 11, 0.15); /* Brilho sutil do painel */
+        
+        --text-header: #f8fafc; /* Texto brilhante */
+        --text-body: #94a3b8; /* Texto de leitura normal */
+        --text-light: #64748b; /* Texto secundário */
+        
+        --border-color: #1e293b;
+        --border-focus: #f59e0b;
+        
         --success-base: #10b981;
-        --warning-base: #f59e0b;
+        --warning-base: #ef4444; /* Vermelho mais intenso para perigo/max */
+        
+        --br-radius: 2px; /* Brutalista, sem cantos arredondados fofos */
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .stMetric {
-            padding: 1rem !important;
-        }
-        .stMetric [data-testid="stMetricValue"] {
-            font-size: 1.4rem !important;
-        }
-        .header-title {
-            font-size: 2.2rem !important;
-        }
-    }
-
-    /* Layout & Base */
+    /* === Layout Base & Tipografia === */
     html, body, [class*="css"] {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-body);
+        background-color: var(--bg-main) !important;
+    }
+
+    /* Forçar fundo escuro no app Streamlit */
+    .stApp {
+        background-color: var(--bg-main) !important;
+    }
+    
+    /* Headers com fonte técnica/industrial */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Rajdhani', sans-serif !important;
+        color: var(--text-header) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    p, span, div {
         color: var(--text-body);
     }
 
-    .stApp {
-        background-color: var(--bg-main);
-    }
-
-    /* Sidebar - Professional Dark Contrast */
+    /* === Sidebar Tática === */
     [data-testid="stSidebar"] {
         background-color: var(--bg-sidebar) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        border-right: 1px solid var(--border-color);
     }
+    
+    [data-testid="stSidebarNav"] { padding-top: 2rem; }
     
     [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] h3 {
-        color: #f8fafc !important;
-    }
-
-    /* Professional Metrics */
-    .stMetric {
-        background: var(--card-bg) !important;
-        padding: 1.5rem !important;
-        border-radius: 8px !important;
-        border: 1px solid var(--border-color) !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .stMetric:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .stMetric [data-testid="stMetricValue"] {
-        color: var(--accent-primary) !important;
-        font-weight: 700 !important;
-        font-size: 1.8rem !important;
-    }
-    
-    .stMetric [data-testid="stMetricLabel"] {
-        color: var(--text-light) !important;
-        font-weight: 600 !important;
-        text-transform: uppercase;
-        font-size: 0.75rem !important;
-        letter-spacing: 0.5px;
-    }
-
-    /* Tabs - Clean Modern */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-        background-color: transparent;
-        border-bottom: 2px solid var(--border-color);
-        padding: 0;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background-color: transparent !important;
-        border: none !important;
-        padding: 0 10px !important;
-        color: var(--text-light) !important;
-        font-weight: 500 !important;
-        transition: color 0.2s ease;
-    }
-
-    .stTabs [aria-selected="true"] {
-        color: var(--accent-primary) !important;
-        border-bottom: 2px solid var(--accent-primary) !important;
-    }
-
-    /* Expander - Card Style */
-    .stExpander {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .stExpander summary {
-        font-weight: 600 !important;
         color: var(--text-header) !important;
     }
 
-    /* Technical Hud - Engineering Schematic Style */
-    .tech-hud {
-        background: #ffffff;
-        border: 1px solid var(--border-color);
-        border-top: 4px solid var(--accent-primary);
-        padding: 2rem;
-        border-radius: 8px;
-        margin: 1.5rem 0;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+    /* === Painéis de Métricas (HUD Style) === */
+    .stMetric {
+        background: var(--card-bg) !important;
+        padding: 1.5rem !important;
+        border-radius: var(--br-radius) !important;
+        border: 1px solid var(--border-color) !important;
+        border-left: 3px solid var(--accent-primary) !important; /* Destaque direcional */
+        box-shadow: inset 0 0 15px rgba(0,0,0,0.5) !important;
+        transition: all 0.2s ease;
+    }
+    
+    .stMetric:hover {
+        border-color: var(--accent-primary) !important;
+        box-shadow: inset 0 0 20px var(--accent-glow) !important;
     }
 
-    /* Image Display - Document/Lab Style */
-    .stImage img {
-        background: #ffffff;
-        padding: 10px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+    /* Valores de Engenharia - Fonte monoespaçada */
+    .stMetric [data-testid="stMetricValue"] {
+        font-family: 'JetBrains Mono', monospace !important;
+        color: var(--text-header) !important;
+        font-weight: 700 !important;
+        font-size: 2rem !important;
+        letter-spacing: -1px;
+    }
+    
+    .stMetric [data-testid="stMetricLabel"] {
+        font-family: 'Rajdhani', sans-serif !important;
+        color: var(--accent-primary) !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        font-size: 0.85rem !important;
+        letter-spacing: 1.5px;
     }
 
-    /* Buttons - Solid Primary */
+    /* === Guias (Tabs) - Estilo Painel === */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 0;
+        border-radius: var(--br-radius);
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 48px;
+        background-color: transparent !important;
+        border: none !important;
+        border-right: 1px solid var(--border-color) !important;
+        padding: 0 20px !important;
+        color: var(--text-light) !important;
+        font-family: 'Rajdhani', sans-serif !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.2s ease;
+    }
+
+    .stTabs [aria-selected="true"] {
+        color: var(--bg-main) !important;
+        background-color: var(--accent-primary) !important;
+        border-bottom: none !important;
+    }
+
+    /* === Expanders - Estilo Terminal === */
+    .stExpander {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: var(--br-radius) !important;
+    }
+    
+    .stExpander summary {
+        font-family: 'Rajdhani', sans-serif !important;
+        font-weight: 600 !important;
+        color: var(--text-header) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* === Entradas de Dados (Inputs) === */
+    .stTextInput input, .stSelectbox select, .stNumberInput input, .stDateInput input {
+        background-color: #05070a !important; /* Muito escuro para foco */
+        color: var(--text-header) !important;
+        border-radius: var(--br-radius) !important;
+        border: 1px solid var(--border-color) !important;
+        font-family: 'JetBrains Mono', monospace !important; /* Dados precisam de precisão */
+        transition: border-color 0.15s ease;
+    }
+    
+    .stTextInput input:focus, .stSelectbox select:focus, .stNumberInput input:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 1px var(--accent-primary) !important;
+    }
+
+    /* === Botões - Ação Tática === */
     .stButton > button {
-        background-color: var(--accent-primary);
-        color: white;
-        border: none;
+        background-color: var(--bg-main);
+        color: var(--text-header);
+        border: 1px solid var(--accent-primary);
         padding: 0.5rem 1.5rem;
-        border-radius: 6px;
-        font-weight: 600;
-        transition: background-color 0.2s ease, transform 0.1s ease;
+        border-radius: var(--br-radius) !important;
+        font-family: 'Rajdhani', sans-serif !important;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 600 !important;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     
     .stButton > button:hover {
-        background-color: #1d4ed8;
-        transform: translateY(-1px);
-    }
-
-    /* Auth Card */
-    .auth-card {
-        background: white;
-        padding: 3rem;
-        border-radius: 12px;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-    }
-
-    /* General Inputs */
-    .stTextInput input, .stSelectbox select, .stNumberInput input {
-        border-radius: 6px !important;
-        border: 1px solid var(--border-color) !important;
+        background-color: var(--accent-primary);
+        color: var(--bg-main) !important;
+        box-shadow: 0 0 15px var(--accent-glow);
     }
     
+    .stButton > button:active { 
+        transform: scale(0.98); 
+    }
+
+    /* === Caixas de Informação / Alertas === */
     .stAlert {
-        border-radius: 8px !important;
-        border: 1px solid transparent !important;
+        background: var(--card-bg) !important;
+        border-radius: var(--br-radius) !important;
+        border: 1px solid var(--border-color) !important;
+        border-left: 4px solid var(--accent-primary) !important;
+        color: var(--text-body) !important;
     }
     
-    /* Glassmorphism Classes */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 1.5rem;
-        transition: all 0.3s ease;
-    }
-    .glass-card:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(59, 130, 246, 0.2);
-        transform: translateY(-2px);
+    .stAlert p {
+        color: var(--text-body) !important;
     }
 
-    /* Animations */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* Imagens de Câmeras/Hardware */
+    .stImage img {
+        background: var(--bg-main);
+        padding: 4px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--br-radius);
     }
-    .animate-fade-in { animation: fadeInUp 0.5s ease-out forwards; }
+
+    /* Technical Hud - Custom Component */
+    .tech-hud {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-top: 3px solid var(--accent-primary);
+        padding: 2rem;
+        border-radius: var(--br-radius);
+        margin: 1.5rem 0;
+        position: relative;
+    }
     
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {
-        background-color: #0f172a;
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
+    .tech-hud::before {
+        content: '[SYS_ACTIVE]';
+        position: absolute;
+        top: -10px;
+        right: 15px;
+        background: var(--bg-main);
+        padding: 0 5px;
+        color: var(--accent-primary);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem;
     }
-    [data-testid="stSidebarNav"] { padding-top: 2rem; }
 
-    /* Buttons */
-    .stButton > button {
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.3px !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    /* Dataframes/Tables */
+    [data-testid="stDataFrame"] {
+        border: 1px solid var(--border-color);
     }
-    .stButton > button:active { transform: scale(0.98); }
 
-    /* Hide Streamlit components for 'App' feel */
+    /* === Responsividade === */
+    @media (max-width: 768px) {
+        .stMetric { padding: 1rem !important; }
+        .stMetric [data-testid="stMetricValue"] { font-size: 1.4rem !important; }
+        .header-title { font-size: 2.2rem !important; }
+    }
+
+    /* Esconder Elementos do Streamlit */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     div.stDeployButton {display: none;}
     [data-testid="stToolbar"] {display: none;}
     
-    /* Adjust top padding since header is hidden */
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
     }
+    
+    /* Correção do fundo de blocos de markdown e info */
+    .stMarkdown p { color: var(--text-body); }
+    .stMarkdown strong { color: var(--text-header); }
     </style>
     """, unsafe_allow_html=True)
 
 def show_header():
     st.markdown("""
-        <div style='text-align: center; padding: 2rem 0 3rem 0;'>
-            <h1 class='header-title' style='color: #0f172a; font-size: 3.5rem; font-weight: 950; margin-bottom: 0; letter-spacing: -2px;'>BALLISTIC PRO</h1>
-            <p style='color: #64748b; font-size: 0.85rem; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; margin-top: -5px;'>Engineering & Precision Interface</p>
-            <div style='width: 40px; height: 3px; background: #2563eb; margin: 1.5rem auto;'></div>
+        <div style='text-align: center; padding: 2rem 0 3rem 0; border-bottom: 1px solid #1e293b; margin-bottom: 2rem;'>
+            <h1 class='header-title' style='color: #f8fafc; font-family: "Rajdhani", sans-serif; font-size: 4rem; font-weight: 700; margin-bottom: 0; letter-spacing: 2px; text-transform: uppercase;'>
+                BALLISTIC <span style='color: #f59e0b;'>PRO</span>
+            </h1>
+            <div style='display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 5px;'>
+                <div style='width: 30px; height: 1px; background: #f59e0b;'></div>
+                <p style='color: #94a3b8; font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 400; letter-spacing: 4px; margin: 0;'>
+                    TACTICAL ENGINEERING INTERFACE
+                </p>
+                <div style='width: 30px; height: 1px; background: #f59e0b;'></div>
+            </div>
         </div>
     """, unsafe_allow_html=True)

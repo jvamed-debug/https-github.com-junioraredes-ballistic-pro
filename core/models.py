@@ -5,29 +5,44 @@ from sqlalchemy.orm import sessionmaker, relationship
 from contextlib import contextmanager
 import bcrypt
 import json
+import base64
+from cryptography.fernet import Fernet
+from sqlalchemy.types import TypeDecorator, String as SQLString
+import streamlit as st
 
 Base = declarative_base()
 
-from cryptography.fernet import Fernet
-import base64
-from sqlalchemy.types import TypeDecorator, String as SQLString
-
 # Configuração de Criptografia (SG-001 / Auditoria SEC-002)
 def get_encryption_suite():
-    """Obtém suite de criptografia Fernet. NUNCA usa fallback hardcoded."""
+    """Obtém suite de criptografia Fernet. Impede falha silenciosa em produção."""
     try:
+        # Tenta obter a chave do Streamlit Secrets
         key_raw = st.secrets["device_encryption_key"]
     except (FileNotFoundError, KeyError):
+        # M01: Bloqueio de Segurança em Produção
+        is_production = "supabase" in st.secrets or st.secrets.get("environment") == "production"
+        
+        if is_production:
+            raise RuntimeError(
+                "[CRITICAL SECURITY] 'device_encryption_key' não encontrada em ambiente de produção. "
+                "Operação abortada para evitar salvamento de PII em texto plano."
+            )
+        
         # Em ambiente local sem secrets, usar modo texto plano com warning
         import warnings
         warnings.warn(
-            "[SECURITY] 'device_encryption_key' não encontrada nos Secrets. "
-            "Criptografia de PII desabilitada. Configure a chave para produção.",
+            "[SECURITY] 'device_encryption_key' não encontrada. "
+            "Criptografia de PII desabilitada (MODO DESENVOLVIMENTO).",
             stacklevel=2
         )
         return None
+    
     # Garante que a chave tenha 32 bytes (base64) para o Fernet
-    key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32].encode())
+    # Faz o encode para bytes se for string
+    if isinstance(key_raw, str):
+        key_raw = key_raw.encode()
+        
+    key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32])
     return Fernet(key_b64)
 
 class EncryptedString(TypeDecorator):
@@ -36,14 +51,16 @@ class EncryptedString(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        if value is None: return None
+        if value is None:
+            return None
         suite = get_encryption_suite()
         if suite is None:
             return value  # Sem criptografia — modo desenvolvimento
         return suite.encrypt(value.encode()).decode()
 
     def process_result_value(self, value, dialect):
-        if value is None: return None
+        if value is None:
+            return None
         suite = get_encryption_suite()
         if suite is None:
             return value  # Sem criptografia — modo desenvolvimento
@@ -147,31 +164,38 @@ class AuditLog(Base):
 
 
 # Database setup
-import streamlit as st
-import os
 
 def create_db_engine():
-    # Try to get DB URL from Streamlit Secrets (Production - Supabase)
-    db_url = 'sqlite:///ballistics.db'
+    import os
+    # Ordem de prioridade: Env Var -> Secrets -> SQLite local
+    db_url = os.environ.get("DATABASE_URL")
+    
+    if not db_url:
+        try:
+            if "database" in st.secrets:
+                db_url = st.secrets["database"].get("url")
+            elif "supabase" in st.secrets:
+                db_url = st.secrets["supabase"].get("db_url")
+        except Exception:
+            pass
+
+    if not db_url:
+        db_url = 'sqlite:///ballistics.db'
+        print("[INFO] Usando SQLite local.")
+    else:
+        # Suporte a postgres:// -> postgresql:// (necessário p/ SQLAlchemy 2.0+)
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        print(f"[INFO] Conectando ao banco de dados: {db_url.split('@')[-1]}")
+
     engine_args = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
     
-    try:
-        if "supabase" in st.secrets and "db_url" in st.secrets["supabase"]:
-            db_url = st.secrets["supabase"]["db_url"]
-            # Suporte a URLs do SQLAlchemy/Supabase que vêm como postgres://
-            if db_url.startswith("postgres://"):
-                db_url = db_url.replace("postgres://", "postgresql://", 1)
-            
-            # Adicionar timeout de conexão para PostgreSQL
-            engine_args["connect_args"] = {"connect_timeout": 10}
-            print(f"[INFO] Configuração Supabase detectada.")
-        else:
-            print("[INFO] Secrets do Supabase não encontrados. Usando SQLite local.")
-    except Exception as e:
-        print(f"[WARN] Erro ao carregar segredos: {e}")
+    # Adicionar timeout de conexão para PostgreSQL
+    if "postgresql" in db_url:
+        engine_args["connect_args"] = {"connect_timeout": 10}
     
     return create_engine(db_url, **engine_args)
 
@@ -185,7 +209,6 @@ def ensure_schema_compliance(engine_to_check):
     """
     from sqlalchemy import inspect, text
     inspector = inspect(engine_to_check)
-    dialect = engine_to_check.dialect.name
     
     # 1. Verificar Tabelas Críticas
     existing_tables = inspector.get_table_names()
@@ -205,7 +228,8 @@ def ensure_schema_compliance(engine_to_check):
                 print(f"[SCHEMA] Erro ao renomear: {e}. Tentando Add Column fallback.")
                 try:
                     conn.execute(text("ALTER TABLE inventory_items ADD COLUMN price_unit FLOAT DEFAULT 0.0"))
-                except Exception: pass
+                except Exception:
+                    pass
 
         # Adição de colunas ausentes
         for col_name, col_type in [('batch_number', 'VARCHAR(50)'), ('expiration_date', 'DATE')]:

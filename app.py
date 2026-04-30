@@ -1,7 +1,7 @@
 import streamlit as st
 from core.config import setup_app
-from core.auth import authenticate, register_user, recover_password
-from core.models import init_db_if_empty, get_session, managed_session, User
+from core.auth import authenticate, register_user
+from core.models import init_db_if_empty, managed_session, User
 from ui.styles import apply_custom_styles, show_header
 from services.ballistics_service import BallisticsService
 from modules.reloading_data import show_reloading_data, show_calculator
@@ -9,7 +9,6 @@ from components.logbook_inventory import show_logbook_and_inventory
 from modules.performance import show_performance_tab
 from modules.profile import show_profile
 from bio_auth import check_biometrics_available, save_biometrics
-import os
 
 # 1. Setup & Styles
 setup_app()
@@ -21,6 +20,8 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 if "user_id" not in st.session_state:
     st.session_state["user_id"] = None
+if "login_attempts" not in st.session_state:
+    st.session_state["login_attempts"] = 0
 
 # 3. Auth Flow
 if not st.session_state["authenticated"]:
@@ -30,35 +31,49 @@ if not st.session_state["authenticated"]:
         auth_mode = st.radio("Selecione", ["Login", "Cadastro", "Recuperar"], horizontal=True)
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
         
-        # Biometric Check (Refatorado TEC-002)
-        try:
-            saved_user = check_biometrics_available()
-        except (PermissionError, RuntimeError):
-            # Falha silenciosa: a opção de biometria simplesmente não aparecerá
-            saved_user = None
+        # 1. Biometria Funcional (WebAuthn/Passkey)
+        from bio_auth import render_biometric_login
         
         if auth_mode == "Login":
+            passkey_user = render_biometric_login()
+            if passkey_user:
+                # Se o WebAuthn autenticou, fazemos o login direto
+                with managed_session() as db_sess:
+                    user_db = db_sess.query(User).filter(User.username == passkey_user.username).first()
+                    if user_db:
+                        st.session_state["authenticated"] = True
+                        st.session_state["user_id"] = user_db.id
+                        st.session_state["user_name"] = user_db.name or user_db.username
+                        st.success(f"Bem-vindo, {st.session_state['user_name']}!")
+                        st.rerun()
+
+            # 2. Biometria Legada (Dispositivo Conhecido)
+            saved_user = check_biometrics_available()
             if saved_user:
-                st.info(f"Acesso via biometria disponível para: **{saved_user}**")
-                if st.button("🔓 ACESSAR COM BIOMETRIA", use_container_width=True):
-                    # Em um app nativo/PWA real, aqui dispararíamos o prompt do SO.
-                    # No Streamlit, validamos a sessão criptografada salva.
+                st.info(f"Acesso rápido disponível para: **{saved_user}**")
+                if st.button("🔓 LOGIN RÁPIDO (DISPOSITIVO)", use_container_width=True):
                     with managed_session() as db_sess:
                         user_db = db_sess.query(User).filter(User.username == saved_user).first()
                         if user_db:
                             st.session_state["authenticated"] = True
                             st.session_state["user_id"] = user_db.id
                             st.session_state["user_name"] = user_db.name or user_db.username
-                            st.success("Bem-vindo de volta!")
+                            st.success("Acesso autorizado.")
                             st.rerun()
 
             with st.form("login_form"):
                 user_in = st.text_input("Usuário")
                 pass_in = st.text_input("Senha", type="password")
                 remember = st.checkbox("Habilitar Biometria neste dispositivo")
+                
+                if st.session_state["login_attempts"] >= 5:
+                    st.error("⚠️ Muitas tentativas falhas. Acesso bloqueado temporariamente por segurança.")
+                    st.stop()
+                    
                 if st.form_submit_button("ENTRAR", use_container_width=True):
                     user = authenticate(user_in, pass_in)
                     if user:
+                        st.session_state["login_attempts"] = 0
                         st.session_state["authenticated"] = True
                         st.session_state["user_id"] = user.id
                         st.session_state["user_name"] = user.name or user.username
@@ -66,6 +81,7 @@ if not st.session_state["authenticated"]:
                             save_biometrics(user.username)
                         st.rerun()
                     else:
+                        st.session_state["login_attempts"] += 1
                         st.error("Credenciais inválidas.")
         elif auth_mode == "Cadastro":
             with st.form("register_form"):
@@ -90,9 +106,11 @@ if not st.session_state["authenticated"]:
                             reg_user, reg_pass, reg_name, reg_cpf, reg_email, reg_phone or None
                         )
                         if success:
-                            st.success("Conta criada com sucesso! Faça login.")
+                            st.success("✅ Conta criada com sucesso! Você já pode fazer login.")
+                            st.balloons()
+                            # Limpa campos se necessário ou redireciona
                         else:
-                            st.error(f"Erro ao cadastrar: {message}")
+                            st.error(f"❌ Erro ao cadastrar:\n\n{message}")
 
         elif auth_mode == "Recuperar":
             st.markdown("### 🔑 Recuperação de Acesso")

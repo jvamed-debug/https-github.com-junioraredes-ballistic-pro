@@ -41,7 +41,8 @@ def group_shots(shots, dist_threshold_px=150):
     Groups shots into clusters based on distance.
     Simple implementation of Density-Based clustering without sklearn.
     """
-    if not shots: return []
+    if not shots:
+        return []
     
     n = len(shots)
     groups = []
@@ -194,7 +195,8 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
                 for i in range(len(group)):
                     for j in range(i+1, len(group)):
                         dist = np.sqrt((group[i][0]-group[j][0])**2 + (group[i][1]-group[j][1])**2)
-                        if dist > max_dist_px: max_dist_px = dist
+                        if dist > max_dist_px:
+                            max_dist_px = dist
             
             group_mm = max_dist_px / pixel_per_mm
             poi_x, poi_y = 0.0, 0.0
@@ -217,7 +219,11 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
                 cv2.drawMarker(annotated_img, (sx, sy), color, cv2.MARKER_CROSS, 15)
             
             cv2.drawMarker(annotated_img, (int(avg_x), int(avg_y)), (0, 0, 255), cv2.MARKER_STAR, 20)
-            cv2.putText(annotated_img, f"G{idx+1}: {group_mm:.1f}mm", (int(avg_x), int(avg_y)-20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            
+            # Text HUD with subtle shadow for premium look
+            label = f"G{idx+1}: {group_mm:.2f}mm"
+            cv2.putText(annotated_img, label, (int(avg_x)+1, int(avg_y)-19), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Shadow
+            cv2.putText(annotated_img, label, (int(avg_x), int(avg_y)-20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2) # Front
 
         # Highlight auto-calib coin
         if auto_calib_marker is not None:

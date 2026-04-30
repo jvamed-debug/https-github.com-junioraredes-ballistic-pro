@@ -17,10 +17,14 @@ Concluímos a implementação das funcionalidades necessárias para o deploy pro
 - **Integração UI**: Formulários de "Nova Sessão" e "Adicionar Arma" agora possuem upload de imagem integrado.
 
 ### 💅 Otimização Mobile & Segurança
-- **Design Responsivo**: CSS otimizado para esconder barras do Streamlit e ajustar o layout em telas pequenas.
-- **Biometria Integrada**: Login rápido habilitado via persistência criptografada.
+## 🚀 O que foi finalizado recentemente (Redesign & Auditoria)
+- **Redesign Tático (Dark Mode HUD)**: A interface foi completamente reconstruída para refletir um ambiente de *Engenharia e Precisão*. O novo design utiliza paleta escura (reduz fadiga ocular no estande), tipografia técnica (Rajdhani e JetBrains Mono) e detalhes em Âmbar de alto contraste.
+- **Micro-interações de Alta Performance**: Bordas afiadas (estilo brutalista militar) e glows de seleção rápidos (Doherty Threshold) sem animações exageradas ou sombras densas.
+- **Auditoria de Segurança (Internal Audit)**: Foram fechadas vulnerabilidades ativas. Limitamos requisições (rate-limit em login), bloqueamos execução de malwares restringindo o MIME no AWS S3, ofuscamos avisos de enumeração de conta e otimizamos `.all()` queries pesadas do BD.
+- **Correções de Sintaxe e Estilo**: Foram resolvidos todos os erros de linting (PEP-8, E701, E741, E722) no projeto. Auditoria: 100% conformidade.
+- **Limpeza do Repositório**: Todos os arquivos de desenvolvimento e referências locais (PDFs e prints) movidos para `/scratch/`.
 
-## 🚀 Próximos Passos (Ação do Usuário)
+## 🏁 Próximos Passos (Ação do Usuário)
 
 Para que o deploy funcione, você precisa preencher as **Secrets** no painel do Streamlit Cloud com o seguinte formato:
 

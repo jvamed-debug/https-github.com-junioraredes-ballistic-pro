@@ -36,6 +36,7 @@ class BallisticsService:
         catastróficas no equipamento e riscos à vida.
         Consulte sempre tabelas de recarga oficiais (SAAMI/CIP).
         """
-        if v_current == 0: return 0
+        if v_current == 0:
+            return 0
         return (v_target * charge_current) / v_current
 

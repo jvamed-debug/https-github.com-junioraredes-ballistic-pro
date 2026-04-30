@@ -1,11 +1,8 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from datetime import datetime
 from core.models import managed_session, User, ReloadSession
 from cv_utils import calculate_group_size_v2
-from PIL import Image
-import io
 
 def show_performance_tab(user_id):
     # --- Carregar todos os dados do banco ANTES da renderização ---
@@ -17,7 +14,8 @@ def show_performance_tab(user_id):
             "name": getattr(db_user, "name", ""),
             "email": getattr(db_user, "email", ""),
         }
-        sessions_raw = db.query(ReloadSession).filter_by(user_id=user_id).all()
+        sessions_raw = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(100).all()
+        sessions_raw.reverse() # For chronological plotting
         sessions_data = [{
             "Data": s.date.strftime('%d/%m/%Y'),
             "Agrupamento (mm)": s.grouping_mm,
@@ -27,26 +25,43 @@ def show_performance_tab(user_id):
     # Sessão fechada com segurança aqui ↑
 
     st.markdown("### 📊 DASHBOARD DE PERFORMANCE OPERACIONAL")
-    st.markdown('<div class="tech-hud">', unsafe_allow_html=True)
+    st.markdown("""
+        <div style='background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); padding: 2px; border-radius: 12px; margin-bottom: 25px;'>
+            <div style='background: #0f172a; padding: 20px; border-radius: 10px;'>
+                <div style='display: flex; justify-content: space-between; align-items: center;'>
+                    <div>
+                        <p style='color: #3b82f6; font-family: "JetBrains Mono", monospace; font-size: 0.7rem; font-weight: 700; margin: 0;'>SISTEMA DE ANÁLISE BALÍSTICA v2.5</p>
+                        <h2 style='color: white; margin: 5px 0 0 0; font-size: 1.5rem;'>Status de Tiro: <span style='color: #10b981;'>ESTÁVEL</span></h2>
+                    </div>
+                    <div style='text-align: right;'>
+                        <p style='color: #94a3b8; font-family: "JetBrains Mono", monospace; font-size: 0.6rem; margin: 0;'>OPERADOR</p>
+                        <p style='color: #f1f5f9; font-weight: 600; margin: 0;'>{user_info["name"].upper()}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    """.format(user_info=user_info), unsafe_allow_html=True)
 
     # 1. Historical Trends
     if sessions_data:
         df = pd.DataFrame(sessions_data)
         c1, c2 = st.columns(2)
         with c1:
+            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.caption("📈 TENDÊNCIA DE AGRUPAMENTO (MOA/mm)")
             st.line_chart(df.set_index("Data")["Agrupamento (mm)"], color="#3b82f6")
+            st.markdown('</div>', unsafe_allow_html=True)
         with c2:
+            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.caption("📉 CONSISTÊNCIA BALÍSTICA (SD/Velocidade)")
             st.bar_chart(df.set_index("Data")["SD"], color="#334155")
-
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
     st.divider()
 
     # 2. Advanced CV Analysis
     st.markdown("#### 🔘 SCANNER DE ALVO & BALÍSTICA COMPUTACIONAL")
     st.markdown("""
-        <div style='background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+        <div style='background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; border-left: 5px solid var(--accent-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
             <p style='color: var(--text-light); font-size: 0.8rem; margin: 0;'>
                 <b style='color: var(--accent-primary);'>ANÁLISE AVANÇADA:</b> Calibração via visão computacional (OpenCV).
                 Detecção de POI e agrupamento submétrico.
