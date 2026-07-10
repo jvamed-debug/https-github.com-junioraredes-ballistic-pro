@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+.DS_Store
+.env
+venv/
+.streamlit/secrets.toml
+
+# Banco de dados local (TEC-010)
+*.db
+*.sqlite
+
+# Arquivos de debug e scan (TEC-006)
+scan_results.json
+scan_results.txt
+debug_*.py
+scratch/
+
+# PDFs de referência (TEC-007) — use Git LFS se necessário
+*.pdf
+
+# Arquivos temporários de análise (UX-004)
+temp_analysis_*.jpg
+temp_analysis_*.png
+
+# Logs locais
+*.log
