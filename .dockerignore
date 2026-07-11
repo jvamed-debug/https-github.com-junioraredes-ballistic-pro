@@ -1,0 +1,15 @@
+.git
+.github
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+tests/
+engineering-ai-platform/
+*.db
+*.sqlite
+.env
+.streamlit/secrets.toml
+scratch/
+*.md
+!requirements.txt

@@ -1,34 +1,41 @@
-# Build stage: Basic python image
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
-# System setup
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
-    software-properties-common \
-    git \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Work directory
 WORKDIR /app
-
-# Copy requirement files first for better caching
 COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Install dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+FROM python:3.11-slim
 
-# Copy the rest of the application
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /app
+COPY --from=builder /install /usr/local
 COPY . .
 
-# Expose Streamlit port
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 8501
 
-# Healthcheck
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Run the application
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "app.py", \
+    "--server.port=8501", \
+    "--server.address=0.0.0.0", \
+    "--server.headless=true", \
+    "--browser.gatherUsageStats=false", \
+    "--server.fileWatcherType=none"]
