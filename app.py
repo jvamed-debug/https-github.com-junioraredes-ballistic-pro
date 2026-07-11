@@ -116,21 +116,31 @@ if not st.session_state["authenticated"]:
                             st.error(f"❌ Erro ao cadastrar:\n\n{message}")
 
         elif auth_mode == "Recuperar":
-            st.markdown("### 🔑 Recuperação de Acesso")
-            st.info("ℹ️ Por segurança, senhas não são armazenadas em texto plano e não podem ser recuperadas automaticamente.")
+            st.markdown("### Recuperacao de Acesso")
+            st.info("Por seguranca, senhas nao sao armazenadas em texto plano e nao podem ser recuperadas automaticamente.")
+            with st.form("recovery_form"):
+                recovery_input = st.text_input(
+                    "E-mail ou Telefone cadastrado",
+                    placeholder="email@exemplo.com ou (XX) XXXXX-XXXX"
+                )
+                if st.form_submit_button("SOLICITAR RECUPERACAO", use_container_width=True):
+                    if recovery_input:
+                        from core.auth import recover_password
+                        _, msg = recover_password(recovery_input)
+                        st.success(msg)
+                    else:
+                        st.error("Informe seu e-mail ou telefone.")
+
             st.markdown("""
-                **Como recuperar o acesso:**
-                
-                1. **Lembre da dica:** Tente variações da senha que você costuma usar.
-                2. **Contate o administrador:** Se você se lembra do seu nome de usuário, o administrador pode redefinir sua senha.
-                3. **Crie uma nova conta:** Se não houver dados importantes a preservar, registre-se novamente.
-                
-                > 💡 Dica: Após acessar, vá em **Perfil → Backup dos Seus Dados** para exportar seus dados regularmente.
+                **Alternativas:**
+
+                1. Contate o administrador para redefinir sua senha.
+                2. Crie uma nova conta se nao houver dados a preservar.
+
+                Apos acessar, va em **Perfil** para exportar seus dados regularmente.
             """)
-            st.markdown("**📧 Contato do Suporte:**")
+            st.markdown("**Contato do Suporte:**")
             st.code("suporte@ballistic-pro.app", language=None)
-            if st.button("← VOLTAR PARA LOGIN", use_container_width=True):
-                st.rerun()
 
 
         st.markdown('</div>', unsafe_allow_html=True)

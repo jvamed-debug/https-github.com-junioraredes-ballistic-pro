@@ -123,8 +123,8 @@ def show_profile():
     st.divider()
     
     # TEC-003: Backup seguro — exporta APENAS dados do próprio usuário (JSON)
-    st.markdown("### 💾 Backup dos Seus Dados")
-    st.write("Baixe uma cópia de segurança dos **seus dados pessoais** em formato JSON.")
+    st.markdown("### Backup dos Seus Dados")
+    st.write("Baixe uma copia de seguranca dos seus dados pessoais em formato JSON.")
     
     backup_data = {
         "usuario": {k: str(v) if v else "" for k, v in user_data.items()},
@@ -134,12 +134,23 @@ def show_profile():
     }
     backup_json = json.dumps(backup_data, ensure_ascii=False, indent=2)
     st.download_button(
-        label="📥 Baixar Meus Dados (JSON)",
+        label="Baixar Meus Dados (JSON)",
         data=backup_json,
         file_name=f"ballistic_pro_backup_{user_data['name'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
         mime="application/json",
         use_container_width=True
     )
+
+    # SQLite backup (local only)
+    import os
+    if os.path.exists("ballistics.db"):
+        from utils.backup_mgr import run_backup
+        if st.button("Backup do Banco Local (SQLite)", use_container_width=True):
+            path = run_backup()
+            if path:
+                st.success(f"Backup salvo em: {path}")
+            else:
+                st.error("Falha ao realizar backup.")
 
     st.divider()
     
