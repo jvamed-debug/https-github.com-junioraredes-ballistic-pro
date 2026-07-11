@@ -15,7 +15,7 @@ Bem-vindo ao **Ballistic Pro**, sua suíte completa para gestão de recarga de m
 ## 🛠️ Instalação e Execução
 
 ### Pré-requisitos
-*   Python 3.10 ou superior
+*   Python 3.11 ou superior (Python 3.12 também é validado pelo CI)
 
 ### Passo 1: Acesse a pasta do projeto
 No seu terminal, execute:
