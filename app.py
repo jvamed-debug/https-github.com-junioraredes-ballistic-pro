@@ -8,6 +8,9 @@ from modules.reloading_data import show_reloading_data, show_calculator
 from components.logbook_inventory import show_logbook_and_inventory
 from modules.performance import show_performance_tab
 from modules.profile import show_profile
+from modules.trajectory import show_trajectory_tab
+from modules.ai_advisor_tab import show_ai_advisor_tab
+from modules.cost_analytics import show_cost_analytics
 from bio_auth import check_biometrics_available, save_biometrics
 
 # 1. Setup & Styles
@@ -113,21 +116,31 @@ if not st.session_state["authenticated"]:
                             st.error(f"❌ Erro ao cadastrar:\n\n{message}")
 
         elif auth_mode == "Recuperar":
-            st.markdown("### 🔑 Recuperação de Acesso")
-            st.info("ℹ️ Por segurança, senhas não são armazenadas em texto plano e não podem ser recuperadas automaticamente.")
+            st.markdown("### Recuperacao de Acesso")
+            st.info("Por seguranca, senhas nao sao armazenadas em texto plano e nao podem ser recuperadas automaticamente.")
+            with st.form("recovery_form"):
+                recovery_input = st.text_input(
+                    "E-mail ou Telefone cadastrado",
+                    placeholder="email@exemplo.com ou (XX) XXXXX-XXXX"
+                )
+                if st.form_submit_button("SOLICITAR RECUPERACAO", use_container_width=True):
+                    if recovery_input:
+                        from core.auth import recover_password
+                        _, msg = recover_password(recovery_input)
+                        st.success(msg)
+                    else:
+                        st.error("Informe seu e-mail ou telefone.")
+
             st.markdown("""
-                **Como recuperar o acesso:**
-                
-                1. **Lembre da dica:** Tente variações da senha que você costuma usar.
-                2. **Contate o administrador:** Se você se lembra do seu nome de usuário, o administrador pode redefinir sua senha.
-                3. **Crie uma nova conta:** Se não houver dados importantes a preservar, registre-se novamente.
-                
-                > 💡 Dica: Após acessar, vá em **Perfil → Backup dos Seus Dados** para exportar seus dados regularmente.
+                **Alternativas:**
+
+                1. Contate o administrador para redefinir sua senha.
+                2. Crie uma nova conta se nao houver dados a preservar.
+
+                Apos acessar, va em **Perfil** para exportar seus dados regularmente.
             """)
-            st.markdown("**📧 Contato do Suporte:**")
+            st.markdown("**Contato do Suporte:**")
             st.code("suporte@ballistic-pro.app", language=None)
-            if st.button("← VOLTAR PARA LOGIN", use_container_width=True):
-                st.rerun()
 
 
         st.markdown('</div>', unsafe_allow_html=True)
@@ -175,7 +188,10 @@ with st.expander("⚡ CONFIGURAÇÃO DE CARGA (PARAMETER INPUT)", expanded=True)
 is_manual = (sel_cal == "Outro" or sel_proj == "Outro" or sel_pow == "Outro")
 
 # Tabs Routing
-t1, t2, t3, t4, t5 = st.tabs(["📊 Dados", "🧪 Calc", "📔 Log", "📈 Perf", "👤 Perfil"])
+t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
+    "📊 Dados", "🧪 Calc", "🎯 Trajetoria", "📔 Log",
+    "📈 Perf", "🤖 IA", "💰 Custos", "👤 Perfil"
+])
 
 with t1:
     show_reloading_data(db, sel_cal, sel_proj, sel_pow, is_manual)
@@ -184,25 +200,27 @@ with t2:
     if is_manual:
         show_calculator(sel_proj)
     else:
-        # UX-003: Explicação clara de quando a aba é acessível
         st.markdown("### 🧪 Calculadora Manual")
         st.info(
-            "💡 **A calculadora está disponível no Modo Manual.**\n\n"
-            "Para ativá-la, selecione **\"Outro\"** em qualquer um dos campos de Configuração de Carga "
-            "(Calibre, Projétil ou Pólvora) no painel acima.",
-            icon="ℹ️"
+            "A calculadora esta disponivel no Modo Manual.\n\n"
+            "Para ativa-la, selecione **\"Outro\"** em qualquer um dos campos de Configuracao de Carga "
+            "(Calibre, Projetil ou Polvora) no painel acima.",
         )
-        if st.button("Ativar Modo Manual →", use_container_width=False):
-            st.markdown(
-                "<script>window.scrollTo({top: 0, behavior: 'smooth'});</script>",
-                unsafe_allow_html=True
-            )
 
 with t3:
-    show_logbook_and_inventory()
+    show_trajectory_tab(db, sel_cal, sel_proj)
 
 with t4:
-    show_performance_tab(st.session_state["user_id"])
+    show_logbook_and_inventory()
 
 with t5:
+    show_performance_tab(st.session_state["user_id"])
+
+with t6:
+    show_ai_advisor_tab(db, sel_cal, sel_proj, sel_pow, st.session_state["user_id"])
+
+with t7:
+    show_cost_analytics(st.session_state["user_id"])
+
+with t8:
     show_profile()

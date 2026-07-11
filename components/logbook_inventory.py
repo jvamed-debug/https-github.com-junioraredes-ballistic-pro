@@ -48,9 +48,23 @@ def show_logbook_and_inventory():
                             <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>
                         </div>
                     """, unsafe_allow_html=True)
+                    col_actions = st.columns([1, 1, 4])
                     if s.image_url:
-                        st.image(s.image_url, caption=f"Alvo - {s.caliber}", width=300)
-                st.caption(f"Mostrando {len(sessions)} de {total_sessions} sessões · Página {current_page + 1} de {total_pages}")
+                        with col_actions[0]:
+                            st.image(s.image_url, caption=f"Alvo - {s.caliber}", width=300)
+                    with col_actions[1]:
+                        if st.button("Etiqueta", key=f"label_{s.id}"):
+                            from label_gen import create_label_pdf
+                            user_name = st.session_state.get("user_name", "N/A")
+                            label_pdf = create_label_pdf(s, user_name)
+                            st.download_button(
+                                "Baixar Etiqueta",
+                                data=label_pdf,
+                                file_name=f"etiqueta_{s.caliber}_{s.id}.pdf",
+                                mime="application/pdf",
+                                key=f"dl_label_{s.id}",
+                            )
+                st.caption(f"Mostrando {len(sessions)} de {total_sessions} sessoes · Pagina {current_page + 1} de {total_pages}")
             else:
                 st.info("Nenhuma sessão de recarga registrada ainda.")
 

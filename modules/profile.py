@@ -74,12 +74,36 @@ def show_profile():
 
     # === UI Rendering (sem sessão DB aberta) ===
     
-    st.markdown("### 🛡️ Segurança e Acesso")
-    
+    st.markdown("### Seguranca e Acesso")
+
+    # Password change
+    with st.expander("Alterar Senha", expanded=False):
+        with st.form("change_password_form"):
+            old_pass = st.text_input("Senha Atual", type="password")
+            new_pass = st.text_input("Nova Senha (min. 8 caracteres)", type="password")
+            confirm_pass = st.text_input("Confirme a Nova Senha", type="password")
+            if st.form_submit_button("ALTERAR SENHA", use_container_width=True):
+                if not old_pass or not new_pass:
+                    st.error("Preencha todos os campos.")
+                elif new_pass != confirm_pass:
+                    st.error("As senhas nao coincidem.")
+                elif len(new_pass) < 8:
+                    st.error("A nova senha deve ter no minimo 8 caracteres.")
+                else:
+                    with managed_session() as pw_session:
+                        pw_user = pw_session.get(User, user_id)
+                        if pw_user and pw_user.check_password(old_pass):
+                            pw_user.set_password(new_pass)
+                            from core.models import log_action
+                            log_action(user_id, "password_changed", "users", user_id)
+                            st.success("Senha alterada com sucesso!")
+                        else:
+                            st.error("Senha atual incorreta.")
+
     # Biometria Funcional (WebAuthn/Passkeys)
     from bio_auth import render_biometric_registration
     render_biometric_registration()
-    
+
     st.divider()
 
     # Exibe status da criptografia
@@ -99,8 +123,8 @@ def show_profile():
     st.divider()
     
     # TEC-003: Backup seguro — exporta APENAS dados do próprio usuário (JSON)
-    st.markdown("### 💾 Backup dos Seus Dados")
-    st.write("Baixe uma cópia de segurança dos **seus dados pessoais** em formato JSON.")
+    st.markdown("### Backup dos Seus Dados")
+    st.write("Baixe uma copia de seguranca dos seus dados pessoais em formato JSON.")
     
     backup_data = {
         "usuario": {k: str(v) if v else "" for k, v in user_data.items()},
@@ -110,12 +134,23 @@ def show_profile():
     }
     backup_json = json.dumps(backup_data, ensure_ascii=False, indent=2)
     st.download_button(
-        label="📥 Baixar Meus Dados (JSON)",
+        label="Baixar Meus Dados (JSON)",
         data=backup_json,
         file_name=f"ballistic_pro_backup_{user_data['name'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
         mime="application/json",
         use_container_width=True
     )
+
+    # SQLite backup (local only)
+    import os
+    if os.path.exists("ballistics.db"):
+        from utils.backup_mgr import run_backup
+        if st.button("Backup do Banco Local (SQLite)", use_container_width=True):
+            path = run_backup()
+            if path:
+                st.success(f"Backup salvo em: {path}")
+            else:
+                st.error("Falha ao realizar backup.")
 
     st.divider()
     
@@ -294,11 +329,23 @@ def show_profile():
             m_img = st.file_uploader("Foto da Arma (Opcional)", type=["jpg", "png", "jpeg"])
             submit_f = st.form_submit_button("Salvar Arma")
             if submit_f and m_model:
+                from schemas import FirearmCreate
+                try:
+                    FirearmCreate(
+                        model=m_model,
+                        serial=m_serial if m_serial else None,
+                        sigma=m_sigma if m_sigma else None,
+                        craf=m_craf if m_craf else None,
+                    )
+                except Exception as e:
+                    st.error(f"Dados invalidos: {str(e)}")
+                    return
+
                 image_url = None
                 if m_img:
                     with st.spinner("Enviando foto da arma para o S3..."):
                         image_url = s3_mgr.upload_image(m_img, folder="firearms")
-                
+
                 with managed_session() as db3:
                     new_f = Firearm(
                         user_id=user_id,
