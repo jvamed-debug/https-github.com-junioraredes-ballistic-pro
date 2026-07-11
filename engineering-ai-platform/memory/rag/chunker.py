@@ -47,9 +47,10 @@ class TextChunker:
                 end_char=end,
             ))
 
-            start = end - self._overlap
-            if start >= len(text):
+            if end >= len(text):
                 break
+
+            start = end - self._overlap
             index += 1
 
         return chunks

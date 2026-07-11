@@ -45,25 +45,31 @@
 - [x] Agent Coordinator (estratégias sequential/parallel/pipeline, auto-assign)
 
 ## Release 0.6 — Agents
-- [ ] Knowledge Agent
-- [ ] Documentation Agent
-- [ ] Agent autonomy levels
-- [ ] Agent communication protocol
+- [x] Knowledge Agent (busca, indexação, recomendação de padrões, gestão de ADRs)
+- [x] Documentation Agent (geração de docs, API docs, runbooks, READMEs)
+- [x] Agent autonomy levels (supervised/semi/autonomous/full, aprovações, cost limits)
+- [x] Agent communication protocol (MessageBus, broadcast, request/response, delegation)
 
 ## Release 0.7 — API
-- [ ] REST API (FastAPI)
-- [ ] WebSocket streaming
-- [ ] Auth / Rate limiting
+- [x] REST API (EAPApplication com rotas para agents, projects, workflows)
+- [x] WebSocket streaming (WebSocketManager, canais, eventos em tempo real)
+- [x] Auth / Rate limiting (API keys, scopes, rate limiting por janela)
+- [x] Middleware (RequestLogger, CORS, ErrorHandler)
 
 ## Release 0.8 — CLI
-- [ ] CLI completo
-- [ ] Interactive mode
-- [ ] Config management
+- [x] CLI completo (init, agents, status, config, provider, workflows, health)
+- [x] Interactive mode (REPL com comandos built-in, histórico, contexto)
+- [x] Config management (PlatformConfig, persistência JSON, providers)
 
 ## Release 0.9 — Enterprise
-- [ ] Multi-tenant
-- [ ] Audit log
-- [ ] RBAC
+- [x] Multi-tenant (TenantManager, planos Free/Starter/Pro/Enterprise, limites)
+- [x] Audit log (AuditLog imutável, queries por actor/action/tenant, security events)
+- [x] RBAC (RBACManager, 5 system roles, 10 permissions, resource policies)
 
 ## Release 1.0 — Stable
-- [ ] Primeira versão funcional completa
+- [x] Primeira versão funcional completa
+- [x] Todos os agentes operacionais (8 agentes especializados)
+- [x] API REST com auth e WebSocket
+- [x] CLI completo com modo interativo
+- [x] Enterprise: multi-tenant, audit, RBAC
+- [x] 100+ testes unitários
