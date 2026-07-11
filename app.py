@@ -8,6 +8,9 @@ from modules.reloading_data import show_reloading_data, show_calculator
 from components.logbook_inventory import show_logbook_and_inventory
 from modules.performance import show_performance_tab
 from modules.profile import show_profile
+from modules.trajectory import show_trajectory_tab
+from modules.ai_advisor_tab import show_ai_advisor_tab
+from modules.cost_analytics import show_cost_analytics
 from bio_auth import check_biometrics_available, save_biometrics
 
 # 1. Setup & Styles
@@ -175,7 +178,10 @@ with st.expander("⚡ CONFIGURAÇÃO DE CARGA (PARAMETER INPUT)", expanded=True)
 is_manual = (sel_cal == "Outro" or sel_proj == "Outro" or sel_pow == "Outro")
 
 # Tabs Routing
-t1, t2, t3, t4, t5 = st.tabs(["📊 Dados", "🧪 Calc", "📔 Log", "📈 Perf", "👤 Perfil"])
+t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
+    "📊 Dados", "🧪 Calc", "🎯 Trajetoria", "📔 Log",
+    "📈 Perf", "🤖 IA", "💰 Custos", "👤 Perfil"
+])
 
 with t1:
     show_reloading_data(db, sel_cal, sel_proj, sel_pow, is_manual)
@@ -184,25 +190,27 @@ with t2:
     if is_manual:
         show_calculator(sel_proj)
     else:
-        # UX-003: Explicação clara de quando a aba é acessível
         st.markdown("### 🧪 Calculadora Manual")
         st.info(
-            "💡 **A calculadora está disponível no Modo Manual.**\n\n"
-            "Para ativá-la, selecione **\"Outro\"** em qualquer um dos campos de Configuração de Carga "
-            "(Calibre, Projétil ou Pólvora) no painel acima.",
-            icon="ℹ️"
+            "A calculadora esta disponivel no Modo Manual.\n\n"
+            "Para ativa-la, selecione **\"Outro\"** em qualquer um dos campos de Configuracao de Carga "
+            "(Calibre, Projetil ou Polvora) no painel acima.",
         )
-        if st.button("Ativar Modo Manual →", use_container_width=False):
-            st.markdown(
-                "<script>window.scrollTo({top: 0, behavior: 'smooth'});</script>",
-                unsafe_allow_html=True
-            )
 
 with t3:
-    show_logbook_and_inventory()
+    show_trajectory_tab(db, sel_cal, sel_proj)
 
 with t4:
-    show_performance_tab(st.session_state["user_id"])
+    show_logbook_and_inventory()
 
 with t5:
+    show_performance_tab(st.session_state["user_id"])
+
+with t6:
+    show_ai_advisor_tab(db, sel_cal, sel_proj, sel_pow, st.session_state["user_id"])
+
+with t7:
+    show_cost_analytics(st.session_state["user_id"])
+
+with t8:
     show_profile()
