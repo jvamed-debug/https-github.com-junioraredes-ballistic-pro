@@ -1,0 +1,5 @@
+[project]
+name = "ballistic-pro"
+version = "1.0.0"
+description = "Sistema de gestão de recarga, acervo e análise balística"
+requires-python = ">=3.11"
