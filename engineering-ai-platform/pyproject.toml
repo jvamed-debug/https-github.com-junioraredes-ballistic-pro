@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineering-ai-platform"
-version = "0.1.0"
+version = "1.0.0"
 description = "Plataforma de engenharia assistida por IA — multi-agent, auditável e extensível"
 readme = "README.md"
 license = {text = "MIT"}
