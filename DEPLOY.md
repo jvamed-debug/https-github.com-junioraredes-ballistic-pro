@@ -5,6 +5,7 @@
 - VPS Hostinger com EasyPanel instalado
 - Acesso SSH ao servidor
 - Repositório GitHub conectado ao EasyPanel
+- Runtime Python 3.11 ou superior; o Dockerfile oficial utiliza Python 3.11
 
 ## 1. Configurar o Projeto no EasyPanel
 
@@ -82,4 +83,4 @@ Em **Source** → ative **Auto Deploy** para rebuildar automaticamente em cada p
 | Container reiniciando | Verifique logs; geralmente é `DATABASE_URL` incorreta |
 | Erro de conexão DB | Confirme que o serviço `db` está rodando e a connection string usa o hostname interno |
 | Build lento | Normal no primeiro build (~3min); builds seguintes usam cache |
-| Sem HTTPS | Verifique se o DNS do domínio aponta para o IP do VPS |
+| Sem HTTPS | Verifique se o DNS do domínio aponta para o IP da VPS |
