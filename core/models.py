@@ -251,6 +251,17 @@ def ensure_schema_compliance(engine_to_check):
                     except Exception as e:
                         print(f"[SCHEMA] Falha ao adicionar image_url a {table}: {e}")
 
+        # 4. Verificar colunas de sessão de recarga (primer, case, velocity_sd)
+        if 'reload_sessions' in existing_tables:
+            rs_cols = [c['name'] for c in inspector.get_columns('reload_sessions')]
+            for col_name, col_type in [('primer', 'VARCHAR'), ('case', 'VARCHAR'), ('velocity_sd', 'FLOAT')]:
+                if col_name not in rs_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE reload_sessions ADD COLUMN \"{col_name}\" {col_type}"))
+                        print(f"[SCHEMA] Coluna {col_name} adicionada a reload_sessions.")
+                    except Exception as e:
+                        print(f"[SCHEMA] Falha ao adicionar {col_name}: {e}")
+
 
 # Try to create tables with fallback
 try:
