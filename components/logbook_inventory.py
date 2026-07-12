@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import date
-from core.models import managed_session, ReloadSession, InventoryItem
+from core.models import managed_session, ReloadSession, InventoryItem, Firearm
 from services.reloading_service import ReloadingService
 from services.s3_service import s3_mgr
 
@@ -77,14 +77,25 @@ def show_logbook_and_inventory():
                 st.info("Nenhuma sessão de recarga registrada ainda.")
 
         with st.expander("➕ Nova Sessão de Recarga", expanded=False):
+            with managed_session() as db_fa:
+                firearms_list = db_fa.query(Firearm).filter_by(user_id=user_id).all()
+                firearm_options = {f"{f.model} (#{f.id})": f.id for f in firearms_list}
+
             with st.form("new_reload_form", clear_on_submit=True):
+                if firearm_options:
+                    r_firearm = st.selectbox("Arma", ["— Nenhuma —"] + list(firearm_options.keys()))
+                else:
+                    r_firearm = None
+                    st.caption("Nenhuma arma cadastrada. Cadastre em Perfil > Armas.")
+
                 r_col1, r_col2 = st.columns(2)
                 r_caliber = r_col1.text_input("Calibre", placeholder="Ex: 9mm")
                 r_powder = r_col1.text_input("Pólvora", placeholder="Ex: IMR 4064")
                 r_charge = r_col1.number_input("Carga (grains)", min_value=0.0, step=0.1)
                 r_primer = r_col1.text_input("Espoleta", placeholder="Ex: Small Pistol")
                 r_proj = r_col2.text_input("Projétil", placeholder="Ex: 147gr JHP")
-                r_vel = r_col2.number_input("Velocidade (fps/ms)", min_value=0.0, step=1.0)
+                r_vel = r_col2.number_input("Velocidade média (fps)", min_value=0.0, step=1.0)
+                r_sd = r_col2.number_input("Desvio padrão (SD)", min_value=0.0, step=0.1)
                 r_qty = r_col2.number_input("Quantidade", min_value=0, step=1)
                 r_case = r_col2.text_input("Estojo", placeholder="Ex: CBC latão")
                 r_img = st.file_uploader("Foto do Alvo (Opcional)", type=["jpg", "png", "jpeg"])
@@ -105,9 +116,14 @@ def show_logbook_and_inventory():
                                 velocity_avg=r_vel
                             )
                             
+                            selected_firearm_id = None
+                            if r_firearm and r_firearm != "— Nenhuma —":
+                                selected_firearm_id = firearm_options.get(r_firearm)
+
                             with managed_session() as db2:
                                 new_sess = ReloadSession(
                                     user_id=user_id,
+                                    firearm_id=selected_firearm_id,
                                     date=date.today(),
                                     caliber=r_caliber,
                                     powder=r_powder or None,
@@ -116,6 +132,7 @@ def show_logbook_and_inventory():
                                     primer=r_primer or None,
                                     case=r_case or None,
                                     velocity_avg=r_vel if r_vel > 0 else None,
+                                    velocity_sd=r_sd if r_sd > 0 else None,
                                     quantity=r_qty,
                                     image_url=image_url,
                                     notes=r_notes or None,

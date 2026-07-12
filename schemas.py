@@ -39,5 +39,8 @@ class ReloadSessionCreate(BaseModel):
     quantity: int
     charge: Optional[float] = 0.0
     velocity_avg: Optional[float] = 0.0
-    
-    # Validadores customizados podem ser adicionados aqui se necessário
+    velocity_sd: Optional[float] = 0.0
+    powder: Optional[str] = None
+    projectile: Optional[str] = None
+    primer: Optional[str] = None
+    case: Optional[str] = None
