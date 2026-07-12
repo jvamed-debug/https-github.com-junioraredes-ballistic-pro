@@ -1,1 +1,0 @@
-"""Scheduler — agendamento de tarefas."""

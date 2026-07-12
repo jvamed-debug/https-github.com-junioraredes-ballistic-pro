@@ -24,3 +24,12 @@ temp_analysis_*.png
 
 # Logs locais
 *.log
+
+# Diretórios de referência externos
+engineering-ai-platform/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
