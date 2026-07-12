@@ -15,33 +15,47 @@ Base = declarative_base()
 # Configuração de Criptografia (SG-001 / Auditoria SEC-002)
 def get_encryption_suite():
     """Obtém suite de criptografia Fernet. Impede falha silenciosa em produção."""
+    import os
+    key_raw = None
+
+    # 1. Tenta env var FERNET_KEY (Docker/EasyPanel)
+    fernet_env = os.environ.get("FERNET_KEY")
+    if fernet_env:
+        try:
+            return Fernet(fernet_env.encode() if isinstance(fernet_env, str) else fernet_env)
+        except Exception:
+            pass
+
+    # 2. Tenta Streamlit Secrets (device_encryption_key)
     try:
-        # Tenta obter a chave do Streamlit Secrets
         key_raw = st.secrets["device_encryption_key"]
     except (FileNotFoundError, KeyError):
-        # M01: Bloqueio de Segurança em Produção
-        is_production = "supabase" in st.secrets or st.secrets.get("environment") == "production"
-        
+        pass
+
+    if key_raw is None:
+        is_production = bool(fernet_env) or os.environ.get("DATABASE_URL", "").startswith("postgresql")
+        try:
+            is_production = is_production or "supabase" in st.secrets or st.secrets.get("environment") == "production"
+        except (FileNotFoundError, KeyError):
+            pass
+
         if is_production:
             raise RuntimeError(
-                "[CRITICAL SECURITY] 'device_encryption_key' não encontrada em ambiente de produção. "
-                "Operação abortada para evitar salvamento de PII em texto plano."
+                "[CRITICAL SECURITY] Chave de criptografia não encontrada em ambiente de produção. "
+                "Configure FERNET_KEY ou device_encryption_key."
             )
-        
-        # Em ambiente local sem secrets, usar modo texto plano com warning
+
         import warnings
         warnings.warn(
-            "[SECURITY] 'device_encryption_key' não encontrada. "
+            "[SECURITY] Chave de criptografia não encontrada. "
             "Criptografia de PII desabilitada (MODO DESENVOLVIMENTO).",
             stacklevel=2
         )
         return None
-    
-    # Garante que a chave tenha 32 bytes (base64) para o Fernet
-    # Faz o encode para bytes se for string
+
     if isinstance(key_raw, str):
         key_raw = key_raw.encode()
-        
+
     key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32])
     return Fernet(key_b64)
 
@@ -313,7 +327,12 @@ def init_db_if_empty():
             from datetime import date
             
             # M01: Bloqueio de Segurança em Produção
-            is_production = "supabase" in st.secrets or "device_encryption_key" in st.secrets
+            import os as _os
+            is_production = bool(_os.environ.get("FERNET_KEY")) or _os.environ.get("DATABASE_URL", "").startswith("postgresql")
+            try:
+                is_production = is_production or "supabase" in st.secrets or "device_encryption_key" in st.secrets
+            except (FileNotFoundError, KeyError):
+                pass
             
             # Busca senha no nível raiz ou dentro de [passwords]
             admin_pass = st.secrets.get("admin_password")

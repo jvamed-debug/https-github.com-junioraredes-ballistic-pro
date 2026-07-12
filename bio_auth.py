@@ -34,7 +34,16 @@ def render_biometric_registration():
 
 # Funções Legadas / Fallback de Dispositivo
 def _get_encryption_key():
-    """Obtém chave de criptografia Fernet-compatível dos Secrets do Streamlit."""
+    """Obtém chave de criptografia Fernet-compatível (env var ou Secrets)."""
+    fernet_env = os.environ.get("FERNET_KEY")
+    if fernet_env:
+        try:
+            key = fernet_env.encode() if isinstance(fernet_env, str) else fernet_env
+            Fernet(key)
+            return key
+        except Exception:
+            pass
+
     try:
         key_raw = st.secrets["device_encryption_key"]
         if isinstance(key_raw, str):
