@@ -40,12 +40,20 @@ def show_logbook_and_inventory():
             if sessions:
                 for s in sessions:
                     s_date = s.date.strftime('%d/%m/%Y') if s.date else "—"
+                    cost_str = ""
+                    if s.powder and s.charge:
+                        try:
+                            unit_cost = ReloadingService.calculate_unit_cost(s, user_id)
+                            if unit_cost > 0:
+                                cost_str = f" | <span style='color: #16a34a; font-size: 0.75rem;'>R$ {unit_cost:.2f}/un</span>"
+                        except Exception:
+                            pass
                     st.markdown(f"""
                         <div style='background: rgba(255,255,255,0.02); padding: 10px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;'>
-                            <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> | 
-                            <b>{s.caliber}</b> | 
-                            <span style='color: #475569;'>{s.quantity or 0}un</span> | 
-                            <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>
+                            <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> |
+                            <b>{s.caliber}</b> |
+                            <span style='color: #475569;'>{s.quantity or 0}un</span> |
+                            <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>{cost_str}
                         </div>
                     """, unsafe_allow_html=True)
                     col_actions = st.columns([1, 1, 4])
@@ -74,9 +82,11 @@ def show_logbook_and_inventory():
                 r_caliber = r_col1.text_input("Calibre", placeholder="Ex: 9mm")
                 r_powder = r_col1.text_input("Pólvora", placeholder="Ex: IMR 4064")
                 r_charge = r_col1.number_input("Carga (grains)", min_value=0.0, step=0.1)
+                r_primer = r_col1.text_input("Espoleta", placeholder="Ex: Small Pistol")
                 r_proj = r_col2.text_input("Projétil", placeholder="Ex: 147gr JHP")
                 r_vel = r_col2.number_input("Velocidade (fps/ms)", min_value=0.0, step=1.0)
                 r_qty = r_col2.number_input("Quantidade", min_value=0, step=1)
+                r_case = r_col2.text_input("Estojo", placeholder="Ex: CBC latão")
                 r_img = st.file_uploader("Foto do Alvo (Opcional)", type=["jpg", "png", "jpeg"])
                 r_notes = st.text_area("Observações Técnicas")
                 if st.form_submit_button("SALVAR SESSÃO", use_container_width=True):
@@ -103,6 +113,8 @@ def show_logbook_and_inventory():
                                     powder=r_powder or None,
                                     charge=r_charge if r_charge > 0 else None,
                                     projectile=r_proj or None,
+                                    primer=r_primer or None,
+                                    case=r_case or None,
                                     velocity_avg=r_vel if r_vel > 0 else None,
                                     quantity=r_qty,
                                     image_url=image_url,

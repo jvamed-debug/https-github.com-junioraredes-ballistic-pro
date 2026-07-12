@@ -1,1 +1,0 @@
-"""Coordinator — coordenação de agentes."""
