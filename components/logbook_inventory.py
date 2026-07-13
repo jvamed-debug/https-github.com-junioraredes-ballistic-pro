@@ -48,12 +48,21 @@ def show_logbook_and_inventory():
                                 cost_str = f" | <span style='color: #16a34a; font-size: 0.75rem;'>R$ {unit_cost:.2f}/un</span>"
                         except Exception:
                             pass
+                    vel_str = ""
+                    if s.velocity_avg:
+                        vel_str = f" | <span style='color: #0ea5e9; font-size: 0.75rem;'>{s.velocity_avg:.0f}fps"
+                        if s.velocity_sd:
+                            vel_str += f" (SD {s.velocity_sd:.1f})"
+                        vel_str += "</span>"
+                    firearm_str = ""
+                    if s.firearm and s.firearm.model:
+                        firearm_str = f" | <span style='color: #a78bfa; font-size: 0.75rem;'>{s.firearm.model}</span>"
                     st.markdown(f"""
                         <div style='background: rgba(255,255,255,0.02); padding: 10px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;'>
                             <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> |
                             <b>{s.caliber}</b> |
                             <span style='color: #475569;'>{s.quantity or 0}un</span> |
-                            <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>{cost_str}
+                            <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>{vel_str}{firearm_str}{cost_str}
                         </div>
                     """, unsafe_allow_html=True)
                     col_actions = st.columns([1, 1, 4])
@@ -109,17 +118,23 @@ def show_logbook_and_inventory():
                         
                         from schemas import ReloadSessionCreate
                         try:
-                            ReloadSessionCreate(
-                                caliber=r_caliber,
-                                quantity=r_qty,
-                                charge=r_charge,
-                                velocity_avg=r_vel
-                            )
-                            
                             selected_firearm_id = None
                             if r_firearm and r_firearm != "— Nenhuma —":
                                 selected_firearm_id = firearm_options.get(r_firearm)
 
+                            ReloadSessionCreate(
+                                caliber=r_caliber,
+                                quantity=r_qty,
+                                charge=r_charge,
+                                velocity_avg=r_vel,
+                                velocity_sd=r_sd,
+                                powder=r_powder or None,
+                                projectile=r_proj or None,
+                                primer=r_primer or None,
+                                case=r_case or None,
+                                firearm_id=selected_firearm_id,
+                            )
+                            
                             with managed_session() as db2:
                                 new_sess = ReloadSession(
                                     user_id=user_id,
@@ -204,7 +219,9 @@ def show_logbook_and_inventory():
                                 name=i_name,
                                 quantity=i_qty,
                                 unit=i_unit,
-                                price_unit=i_price/i_qty if i_qty > 0 else 0.0
+                                price_unit=i_price/i_qty if i_qty > 0 else 0.0,
+                                batch_number=i_batch or None,
+                                expiration_date=i_exp,
                             )
                             
                             with managed_session() as db:
