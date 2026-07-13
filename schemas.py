@@ -1,40 +1,42 @@
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, constr, field_validator
 from typing import Optional
 from datetime import date
 
 class UserCreate(BaseModel):
-    """
-    Modelo para validação de dados ao criar um novo usuário.
-    """
     username: constr(min_length=3, max_length=50)
     password: constr(min_length=8)
-    name: Optional[str]
-    cpf: Optional[constr(pattern=r"^\d{11}$")]  # CPF com 11 dígitos
-    email: Optional[EmailStr]
-    phone: Optional[str]
-    cr_number: Optional[str]
-    cr_expiration: Optional[date]
-    address_acervo: Optional[str]
+    name: Optional[str] = None
+    cpf: Optional[constr(pattern=r"^\d{11}$")] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    cr_number: Optional[str] = None
+    cr_expiration: Optional[date] = None
+    address_acervo: Optional[str] = None
 
 class InventoryItemCreate(BaseModel):
-    """
-    Modelo para validação de dados ao criar um novo item de inventário.
-    """
     category: constr(min_length=3, max_length=50)
     name: constr(min_length=1, max_length=100)
     quantity: float
     unit: constr(min_length=1, max_length=10)
     price_unit: Optional[float] = 0.0
+    batch_number: Optional[str] = None
+    expiration_date: Optional[date] = None
+
+    @field_validator("quantity")
+    @classmethod
+    def quantity_non_negative(cls, v):
+        if v < 0:
+            raise ValueError("Quantidade não pode ser negativa")
+        return v
 
 class FirearmCreate(BaseModel):
-    """Validação para adição de novos equipamentos."""
     model: constr(min_length=2, max_length=100)
-    serial: Optional[str]
-    sigma: Optional[str]
-    craf: Optional[str]
+    serial: Optional[str] = None
+    sigma: Optional[str] = None
+    craf: Optional[str] = None
+    expiration: Optional[date] = None
 
 class ReloadSessionCreate(BaseModel):
-    """Validação crítica para sessões de recarga (TEC-003)."""
     caliber: constr(min_length=2)
     quantity: int
     charge: Optional[float] = 0.0
@@ -43,4 +45,19 @@ class ReloadSessionCreate(BaseModel):
     powder: Optional[str] = None
     projectile: Optional[str] = None
     primer: Optional[str] = None
-    case: Optional[str] = None
+    case: Optional[str] = None
+    firearm_id: Optional[int] = None
+
+    @field_validator("quantity")
+    @classmethod
+    def quantity_positive(cls, v):
+        if v < 1:
+            raise ValueError("Quantidade deve ser pelo menos 1")
+        return v
+
+    @field_validator("charge", "velocity_avg", "velocity_sd")
+    @classmethod
+    def non_negative_floats(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Valor não pode ser negativo")
+        return v
