@@ -37,53 +37,92 @@ def show_logbook_and_inventory():
 
         with managed_session() as db:
             sessions = db.query(ReloadSession).filter_by(user_id=user_id).order_by(ReloadSession.date.desc()).limit(page_size).offset(offset).all()
-            if sessions:
-                for s in sessions:
-                    s_date = s.date.strftime('%d/%m/%Y') if s.date else "—"
-                    cost_str = ""
-                    if s.powder and s.charge:
-                        try:
-                            unit_cost = ReloadingService.calculate_unit_cost(s, user_id)
-                            if unit_cost > 0:
-                                cost_str = f" | <span style='color: #16a34a; font-size: 0.75rem;'>R$ {unit_cost:.2f}/un</span>"
-                        except Exception:
-                            pass
-                    vel_str = ""
-                    if s.velocity_avg:
-                        vel_str = f" | <span style='color: #0ea5e9; font-size: 0.75rem;'>{s.velocity_avg:.0f}fps"
-                        if s.velocity_sd:
-                            vel_str += f" (SD {s.velocity_sd:.1f})"
-                        vel_str += "</span>"
-                    firearm_str = ""
-                    if s.firearm and s.firearm.model:
-                        firearm_str = f" | <span style='color: #a78bfa; font-size: 0.75rem;'>{s.firearm.model}</span>"
-                    st.markdown(f"""
-                        <div style='background: rgba(255,255,255,0.02); padding: 10px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;'>
-                            <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> |
-                            <b>{s.caliber}</b> |
-                            <span style='color: #475569;'>{s.quantity or 0}un</span> |
-                            <span style='color: #94a3b8; font-size: 0.8rem;'>{s.powder or '—'} ({s.charge or 0}gr) · {s.projectile or '—'}</span>{vel_str}{firearm_str}{cost_str}
-                        </div>
-                    """, unsafe_allow_html=True)
-                    col_actions = st.columns([1, 1, 4])
-                    if s.image_url:
-                        with col_actions[0]:
-                            st.image(s.image_url, caption=f"Alvo - {s.caliber}", width=300)
-                    with col_actions[1]:
-                        if st.button("Etiqueta", key=f"label_{s.id}"):
-                            from label_gen import create_label_pdf
-                            user_name = st.session_state.get("user_name", "N/A")
-                            label_pdf = create_label_pdf(s, user_name)
-                            st.download_button(
-                                "Baixar Etiqueta",
-                                data=label_pdf,
-                                file_name=f"etiqueta_{s.caliber}_{s.id}.pdf",
-                                mime="application/pdf",
-                                key=f"dl_label_{s.id}",
-                            )
-                st.caption(f"Mostrando {len(sessions)} de {total_sessions} sessoes · Pagina {current_page + 1} de {total_pages}")
-            else:
-                st.info("Nenhuma sessão de recarga registrada ainda.")
+            sessions_serialized = []
+            for s in sessions:
+                sessions_serialized.append({
+                    "id": s.id,
+                    "date": s.date,
+                    "caliber": s.caliber,
+                    "quantity": s.quantity,
+                    "powder": s.powder,
+                    "charge": s.charge,
+                    "projectile": s.projectile,
+                    "primer": s.primer,
+                    "case": s.case,
+                    "velocity_avg": s.velocity_avg,
+                    "velocity_sd": s.velocity_sd,
+                    "grouping_mm": s.grouping_mm,
+                    "image_url": s.image_url,
+                    "notes": s.notes,
+                    "firearm_model": s.firearm.model if s.firearm else None,
+                })
+
+        if sessions_serialized:
+            for s in sessions_serialized:
+                s_date = s["date"].strftime('%d/%m/%Y') if s["date"] else "—"
+                cost_str = ""
+                if s["powder"] and s["charge"]:
+                    try:
+                        unit_cost = ReloadingService.calculate_unit_cost(
+                            type("S", (), s)(), user_id
+                        )
+                        if unit_cost > 0:
+                            cost_str = f" | <span style='color: #16a34a; font-size: 0.75rem;'>R$ {unit_cost:.2f}/un</span>"
+                    except Exception:
+                        pass
+                vel_str = ""
+                if s["velocity_avg"]:
+                    vel_str = f" | <span style='color: #0ea5e9; font-size: 0.75rem;'>{s['velocity_avg']:.0f}fps"
+                    if s["velocity_sd"]:
+                        vel_str += f" (SD {s['velocity_sd']:.1f})"
+                    vel_str += "</span>"
+                firearm_str = ""
+                if s["firearm_model"]:
+                    firearm_str = f" | <span style='color: #a78bfa; font-size: 0.75rem;'>{s['firearm_model']}</span>"
+                grouping_str = ""
+                if s["grouping_mm"]:
+                    grouping_str = f" | <span style='color: #f59e0b; font-size: 0.75rem;'>{s['grouping_mm']:.1f}mm</span>"
+                st.markdown(f"""
+                    <div style='background: rgba(255,255,255,0.02); padding: 10px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;'>
+                        <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> |
+                        <b>{s['caliber']}</b> |
+                        <span style='color: #475569;'>{s['quantity'] or 0}un</span> |
+                        <span style='color: #94a3b8; font-size: 0.8rem;'>{s['powder'] or '—'} ({s['charge'] or 0}gr) · {s['projectile'] or '—'}</span>{vel_str}{grouping_str}{firearm_str}{cost_str}
+                    </div>
+                """, unsafe_allow_html=True)
+
+                col_actions = st.columns([1, 1, 1, 3])
+                if s["image_url"]:
+                    with col_actions[0]:
+                        st.image(s["image_url"], caption=f"Alvo - {s['caliber']}", width=300)
+                with col_actions[1]:
+                    if st.button("Etiqueta", key=f"label_{s['id']}"):
+                        from label_gen import create_label_pdf
+                        user_name = st.session_state.get("user_name", "N/A")
+                        label_pdf = create_label_pdf(type("S", (), s)(), user_name)
+                        st.download_button(
+                            "Baixar Etiqueta",
+                            data=label_pdf,
+                            file_name=f"etiqueta_{s['caliber']}_{s['id']}.pdf",
+                            mime="application/pdf",
+                            key=f"dl_label_{s['id']}",
+                        )
+                with col_actions[2]:
+                    if st.button("Detalhes", key=f"detail_{s['id']}"):
+                        st.session_state[f"show_detail_{s['id']}"] = not st.session_state.get(f"show_detail_{s['id']}", False)
+
+                if st.session_state.get(f"show_detail_{s['id']}", False):
+                    dc1, dc2, dc3 = st.columns(3)
+                    dc1.caption(f"Espoleta: {s['primer'] or '—'}")
+                    dc1.caption(f"Estojo: {s['case'] or '—'}")
+                    grp_display = f"{s['grouping_mm']:.2f}mm" if s["grouping_mm"] else "—"
+                    dc2.caption(f"Agrupamento: {grp_display}")
+                    dc2.caption(f"Arma: {s['firearm_model'] or '—'}")
+                    dc3.caption(f"Notas: {s['notes'] or '—'}")
+
+            st.caption(f"Mostrando {len(sessions_serialized)} de {total_sessions} sessoes · Pagina {current_page + 1} de {total_pages}")
+        else:
+            st.info("Nenhuma sessão de recarga registrada ainda.")
 
         with st.expander("➕ Nova Sessão de Recarga", expanded=False):
             with managed_session() as db_fa:
@@ -175,25 +214,55 @@ def show_logbook_and_inventory():
 
     with inv_tab:
         st.markdown("### 📦 ESTOQUE DE INSUMOS (INVENTORY)")
-        
-        # 1. Show existing inventory
+
         with managed_session() as db:
             items = db.query(InventoryItem).filter_by(user_id=user_id).all()
-            if items:
-                for item in items:
-                    with st.container():
-                        c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
-                        c1.markdown(f"**{item.name}** ({item.category})")
-                        c2.markdown(f"{item.quantity:.1f} {item.unit}")
-                        c3.markdown(f"Lote: {item.batch_number or '—'}")
-                        if c4.button("🗑️", key=f"del_inv_{item.id}"):
-                            with managed_session() as db_del:
-                                it_del = db_del.get(InventoryItem, item.id)
-                                if it_del:
-                                    db_del.delete(it_del)
-                            st.rerun()
-            else:
-                st.info("Estoque vazio.")
+            items_data = [{
+                "id": i.id,
+                "name": i.name,
+                "category": i.category,
+                "quantity": i.quantity,
+                "unit": i.unit,
+                "price_unit": i.price_unit,
+                "batch_number": i.batch_number,
+                "expiration_date": i.expiration_date,
+            } for i in items]
+
+        low_stock_threshold = {"Espoleta": 100, "Estojo": 50, "Polvora": 100, "Projetil": 50, "Pólvora": 100, "Projétil": 50}
+        low_stock_items = [
+            i for i in items_data
+            if i["quantity"] <= low_stock_threshold.get(i["category"], 20)
+            and i["quantity"] > 0
+        ]
+        zero_stock_items = [i for i in items_data if i["quantity"] <= 0]
+
+        if zero_stock_items or low_stock_items:
+            for i in zero_stock_items:
+                st.error(f"SEM ESTOQUE: {i['name']} ({i['category']})")
+            for i in low_stock_items:
+                st.warning(f"Estoque baixo: {i['name']} — {i['quantity']:.0f} {i['unit']} restantes")
+
+        if items_data:
+            for item in items_data:
+                total_val = item["quantity"] * item["price_unit"]
+                qty_color = "#ef4444" if item["quantity"] <= 0 else (
+                    "#f59e0b" if item["quantity"] <= low_stock_threshold.get(item["category"], 20)
+                    else "#10b981"
+                )
+                with st.container():
+                    c1, c2, c3, c4, c5 = st.columns([2, 1, 1, 1, 0.5])
+                    c1.markdown(f"**{item['name']}** ({item['category']})")
+                    c2.markdown(f"<span style='color: {qty_color};'>{item['quantity']:.1f} {item['unit']}</span>", unsafe_allow_html=True)
+                    c3.markdown(f"Lote: {item['batch_number'] or '—'}")
+                    c4.markdown(f"R$ {total_val:.2f}" if total_val > 0 else "—")
+                    if c5.button("🗑️", key=f"del_inv_{item['id']}"):
+                        with managed_session() as db_del:
+                            it_del = db_del.get(InventoryItem, item["id"])
+                            if it_del:
+                                db_del.delete(it_del)
+                        st.rerun()
+        else:
+            st.info("Estoque vazio.")
 
         st.divider()
 

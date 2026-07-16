@@ -131,8 +131,40 @@ def show_cost_analytics(user_id):
     else:
         st.info("Nenhum item no inventario. Adicione insumos na aba **Log** para ver analises de custo.")
 
-    # Expiration alerts
+    _show_low_stock_alerts(user_id)
     _show_expiration_alerts(user_id)
+
+
+def _show_low_stock_alerts(user_id):
+    st.divider()
+    st.markdown("##### Alertas de Estoque Baixo")
+
+    thresholds = {"Pólvora": 100, "Projétil": 50, "Espoleta": 100, "Estojo": 50}
+
+    with managed_session() as db:
+        items = db.query(InventoryItem).filter_by(user_id=user_id).all()
+        alerts = []
+        for item in items:
+            threshold = thresholds.get(item.category, 20)
+            if item.quantity <= 0:
+                alerts.append((item.name, item.category, item.quantity, item.unit, "ESGOTADO"))
+            elif item.quantity <= threshold:
+                alerts.append((item.name, item.category, item.quantity, item.unit, "BAIXO"))
+
+    if alerts:
+        for name, cat, qty, unit, status in alerts:
+            is_empty = status == "ESGOTADO"
+            color = "#ef4444" if is_empty else "#f59e0b"
+            icon = "!!" if is_empty else "!"
+            st.markdown(f"""
+                <div style='background: rgba({'239, 68, 68' if is_empty else '245, 158, 11'}, 0.08); padding: 10px 15px; border-radius: 6px; border-left: 4px solid {color}; margin-bottom: 8px;'>
+                    <span style='color: {color}; font-weight: 700; font-family: "JetBrains Mono"; font-size: 0.75rem;'>[{icon}] {status}</span>
+                    <span style='color: var(--text-body); margin-left: 10px;'>{name} ({cat})</span>
+                    <span style='color: var(--text-light); font-size: 0.8rem; float: right;'>{qty:.1f} {unit}</span>
+                </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.success("Todos os insumos com estoque adequado.")
 
 
 def _show_expiration_alerts(user_id):
