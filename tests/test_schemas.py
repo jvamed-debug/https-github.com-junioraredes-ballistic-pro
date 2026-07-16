@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import date
-from schemas import UserCreate, InventoryItemCreate, FirearmCreate, ReloadSessionCreate
+from schemas import UserCreate, ProfileUpdate, InventoryItemCreate, FirearmCreate, ReloadSessionCreate
 
 
 class TestUserCreate:
@@ -73,6 +73,46 @@ class TestUserCreate:
     def test_exact_min_password(self):
         user = UserCreate(username="testuser", password="12345678")
         assert user.password == "12345678"
+
+
+class TestProfileUpdate:
+    def test_all_none_defaults(self):
+        p = ProfileUpdate()
+        assert p.name is None
+        assert p.cpf is None
+        assert p.email is None
+        assert p.phone is None
+        assert p.cr_number is None
+        assert p.cr_expiration is None
+        assert p.address_acervo is None
+
+    def test_valid_full_profile(self):
+        p = ProfileUpdate(
+            name="João Silva",
+            cpf="12345678901",
+            email="joao@example.com",
+            phone="(11) 99999-0000",
+            cr_number="CR-123456",
+            cr_expiration=date(2030, 12, 31),
+            address_acervo="Rua Teste, 123",
+        )
+        assert p.name == "João Silva"
+        assert p.cpf == "12345678901"
+        assert p.cr_expiration == date(2030, 12, 31)
+
+    def test_invalid_cpf_fails(self):
+        with pytest.raises(Exception):
+            ProfileUpdate(cpf="123")
+
+    def test_invalid_email_fails(self):
+        with pytest.raises(Exception):
+            ProfileUpdate(email="not-an-email")
+
+    def test_partial_update(self):
+        p = ProfileUpdate(name="Maria", phone="(21) 98888-1234")
+        assert p.name == "Maria"
+        assert p.phone == "(21) 98888-1234"
+        assert p.email is None
 
 
 class TestInventoryItemCreate:

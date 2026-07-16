@@ -243,20 +243,16 @@ def show_profile():
             full_address += f", {complemento}"
         full_address += f", {bairro} - {cidade_uf}, CEP: {cep}"
 
-        # M6: Validação Pydantic
-        from schemas import UserCreate
+        from schemas import ProfileUpdate
         try:
-            # Pegamos apenas os campos necessários para o schema (alguns podem ser opcionais)
-            UserCreate(
-                username=st.session_state.get("user_name", "user"), # Placeholder para validação
-                password="validpassword123", # Placeholder para validação
+            ProfileUpdate(
                 name=new_name,
-                cpf=re.sub(r'\D', '', new_cpf),
-                email=new_email,
-                phone=new_phone,
-                cr_number=new_cr,
+                cpf=re.sub(r'\D', '', new_cpf) if new_cpf else None,
+                email=new_email or None,
+                phone=new_phone or None,
+                cr_number=new_cr or None,
                 cr_expiration=new_cr_exp,
-                address_acervo=full_address
+                address_acervo=full_address,
             )
             
             with managed_session() as session:
@@ -333,9 +329,10 @@ def show_profile():
                 try:
                     FirearmCreate(
                         model=m_model,
-                        serial=m_serial if m_serial else None,
-                        sigma=m_sigma if m_sigma else None,
-                        craf=m_craf if m_craf else None,
+                        serial=m_serial or None,
+                        sigma=m_sigma or None,
+                        craf=m_craf or None,
+                        expiration=m_exp,
                     )
                 except Exception as e:
                     st.error(f"Dados invalidos: {str(e)}")
