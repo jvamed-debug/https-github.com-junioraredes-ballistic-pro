@@ -226,19 +226,93 @@ Forneça:
         content = f"**Analise Offline para {caliber}**\n\n"
         vel = current_data.get("velocity", 0)
         sd = current_data.get("sd", 0)
+        charge = current_data.get("charge", 0)
+        grouping = current_data.get("grouping", 0)
+
+        if charge and charge > 0:
+            content += f"- Carga atual: {charge} grains\n"
+
+        if vel and vel > 0:
+            content += f"- Velocidade: {vel} fps\n"
+
         if sd and sd > 0:
             if sd < 10:
                 content += f"- SD de {sd} fps: EXCELENTE consistencia\n"
+                content += "  - Carga bem ajustada, manter configuracao atual\n"
             elif sd < 20:
                 content += f"- SD de {sd} fps: BOM, aceitavel para uso geral\n"
+                content += "  - Para competicao, tente ajustes de +/- 0.2gr na carga\n"
+            elif sd < 30:
+                content += f"- SD de {sd} fps: REGULAR, considere ajustes\n"
+                content += "  - Verifique uniformidade do assentamento do projetil\n"
+                content += "  - Experimente trocar o lote de espoleta\n"
             else:
-                content += f"- SD de {sd} fps: ELEVADO, considere ajustar a carga\n"
+                content += f"- SD de {sd} fps: ELEVADO, requer atencao\n"
+                content += "  - Verifique o peso dos estojos (uniformidade)\n"
+                content += "  - Considere trocar a polvora ou ajustar a carga significativamente\n"
+                content += "  - Inspecione o estojo apos o tiro para sinais de pressao\n"
+
+        if grouping and grouping > 0:
+            if grouping < 25:
+                content += f"- Agrupamento de {grouping}mm: EXCELENTE\n"
+            elif grouping < 50:
+                content += f"- Agrupamento de {grouping}mm: BOM para uso tatico\n"
+            else:
+                content += f"- Agrupamento de {grouping}mm: considere revisar tecnica e equipamento\n"
+
+        if not vel and not sd and not grouping:
+            content += "- Dados insuficientes para analise. Registre velocidade e SD com cronografo.\n"
+
+        content += "\n**Seguranca:** Sempre comece pela carga minima e suba gradualmente.\n"
         content += "\n*Para sugestoes detalhadas com IA, configure uma API key.*"
         return AdvisorResponse(content=content, provider="offline", confidence="low")
 
     def _offline_trend_analysis(self, sessions: list[dict]) -> AdvisorResponse:
         content = "**Analise de Tendencia Offline**\n\n"
         content += f"- Total de sessoes analisadas: {len(sessions)}\n"
+
+        if len(sessions) >= 2:
+            velocities = [s.get("velocity_avg") or s.get("velocity", 0) for s in sessions if s.get("velocity_avg") or s.get("velocity")]
+            sds = [s.get("velocity_sd") or s.get("sd", 0) for s in sessions if s.get("velocity_sd") or s.get("sd")]
+            groupings = [s.get("grouping_mm") or s.get("grouping", 0) for s in sessions if s.get("grouping_mm") or s.get("grouping")]
+
+            if velocities:
+                avg_vel = sum(velocities) / len(velocities)
+                content += f"- Velocidade media: {avg_vel:.0f} fps\n"
+                if len(velocities) >= 3:
+                    recent = sum(velocities[-3:]) / 3
+                    early = sum(velocities[:3]) / 3
+                    diff = recent - early
+                    if abs(diff) < 10:
+                        content += "  - Tendencia: ESTAVEL\n"
+                    elif diff > 0:
+                        content += f"  - Tendencia: SUBINDO (+{diff:.0f} fps)\n"
+                    else:
+                        content += f"  - Tendencia: DESCENDO ({diff:.0f} fps)\n"
+
+            if sds:
+                avg_sd = sum(sds) / len(sds)
+                content += f"- SD medio: {avg_sd:.1f} fps\n"
+                if avg_sd < 15:
+                    content += "  - Consistencia: BOA\n"
+                else:
+                    content += "  - Consistencia: IRREGULAR, revise componentes\n"
+
+            if groupings:
+                avg_grp = sum(groupings) / len(groupings)
+                content += f"- Agrupamento medio: {avg_grp:.1f}mm\n"
+                if len(groupings) >= 3:
+                    recent_g = sum(groupings[-3:]) / 3
+                    early_g = sum(groupings[:3]) / 3
+                    if recent_g < early_g * 0.9:
+                        content += "  - Precisao: MELHORANDO\n"
+                    elif recent_g > early_g * 1.1:
+                        content += "  - Precisao: PIORANDO — verifique desgaste do cano\n"
+                    else:
+                        content += "  - Precisao: ESTAVEL\n"
+        else:
+            content += "- Registre mais sessoes para analise de tendencia.\n"
+
         content += "\n*Para analise preditiva com IA, configure uma API key.*"
         return AdvisorResponse(content=content, provider="offline", confidence="low")
 

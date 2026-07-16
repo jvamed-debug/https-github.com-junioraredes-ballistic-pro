@@ -13,6 +13,15 @@ class UserCreate(BaseModel):
     cr_expiration: Optional[date] = None
     address_acervo: Optional[str] = None
 
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    cpf: Optional[constr(pattern=r"^\d{11}$")] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    cr_number: Optional[str] = None
+    cr_expiration: Optional[date] = None
+    address_acervo: Optional[str] = None
+
 class InventoryItemCreate(BaseModel):
     category: constr(min_length=3, max_length=50)
     name: constr(min_length=1, max_length=100)
