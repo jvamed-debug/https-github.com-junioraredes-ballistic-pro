@@ -51,10 +51,15 @@ class ReloadingService:
                     InventoryItem.name.ilike(f"%{session_data.powder}%")
                 ).first()
                 if item:
-                    needed = session_data.charge * session_data.quantity
+                    charge = session_data.charge or 0
+                    qty = session_data.quantity or 0
+                    needed = charge * qty
                     deduction = needed / (15.4324 if item.unit.lower() == "g" else 1)
-                    item.quantity -= deduction
-                    messages.append(f"Subtraído {deduction:.2f}{item.unit} de {item.name}")
+                    if item.quantity < deduction:
+                        messages.append(f"Estoque insuficiente de {item.name}: {item.quantity:.2f}{item.unit} disponível, {deduction:.2f}{item.unit} necessário")
+                    else:
+                        item.quantity -= deduction
+                        messages.append(f"Subtraído {deduction:.2f}{item.unit} de {item.name}")
 
             # Components (1-to-1)
             components = [
@@ -71,7 +76,11 @@ class ReloadingService:
                         InventoryItem.name.ilike(f"%{name}%")
                     ).first()
                     if item:
-                        item.quantity -= session_data.quantity
-                        messages.append(f"Subtraído {session_data.quantity}un de {item.name}")
+                        qty = session_data.quantity or 0
+                        if item.quantity < qty:
+                            messages.append(f"Estoque insuficiente de {item.name}: {item.quantity:.0f}un disponível, {qty}un necessário")
+                        else:
+                            item.quantity -= qty
+                            messages.append(f"Subtraído {qty}un de {item.name}")
 
         return True, messages
