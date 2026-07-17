@@ -8,7 +8,9 @@ def show_performance_tab(user_id):
     # --- Carregar todos os dados do banco ANTES da renderização ---
     with managed_session() as db:
         db_user = db.get(User, user_id)
-        # Serializar dados para não depender de lazy-loading após fechar a sessão
+        if not db_user:
+            st.error("Usuário não encontrado.")
+            return
         user_info = {
             "id": db_user.id,
             "name": getattr(db_user, "name", ""),

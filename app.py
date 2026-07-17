@@ -167,8 +167,7 @@ st.sidebar.divider()
 
 # Data & Selections
 db = BallisticsService.load_data()
-calibers = BallisticsService.get_calibers()
-calibers.append("Outro")
+calibers = BallisticsService.get_calibers() + ["Outro"]
 
 with st.expander("⚡ CONFIGURAÇÃO DE CARGA (PARAMETER INPUT)", expanded=True):
     c1, c2, c3 = st.columns(3)
