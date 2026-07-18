@@ -1,6 +1,11 @@
 from core.models import managed_session, InventoryItem
 
 
+def _escape_like(val):
+    """Escape SQL LIKE wildcards in user input."""
+    return val.replace("%", r"\%").replace("_", r"\_") if val else val
+
+
 class ReloadingService:
     @staticmethod
     def calculate_unit_cost(session_data, user_id):
@@ -12,7 +17,7 @@ class ReloadingService:
             powder = db.query(InventoryItem).filter(
                 InventoryItem.user_id == user_id,
                 InventoryItem.category == "Pólvora",
-                InventoryItem.name.ilike(f"%{session_data.powder}%")
+                InventoryItem.name.ilike(f"%{_escape_like(session_data.powder)}%")
             ).first()
 
             p_cost = 0
@@ -25,7 +30,7 @@ class ReloadingService:
                 item = db.query(InventoryItem).filter(
                     InventoryItem.user_id == user_id,
                     InventoryItem.category == cat,
-                    InventoryItem.name.ilike(f"%{name}%")
+                    InventoryItem.name.ilike(f"%{_escape_like(name)}%")
                 ).first()
                 return item.price_unit if item else 0
 
@@ -48,7 +53,7 @@ class ReloadingService:
                 item = db.query(InventoryItem).filter(
                     InventoryItem.user_id == user_id,
                     InventoryItem.category == "Pólvora",
-                    InventoryItem.name.ilike(f"%{session_data.powder}%")
+                    InventoryItem.name.ilike(f"%{_escape_like(session_data.powder)}%")
                 ).first()
                 if item:
                     charge = session_data.charge or 0
@@ -73,7 +78,7 @@ class ReloadingService:
                     item = db.query(InventoryItem).filter(
                         InventoryItem.user_id == user_id,
                         InventoryItem.category == cat,
-                        InventoryItem.name.ilike(f"%{name}%")
+                        InventoryItem.name.ilike(f"%{_escape_like(name)}%")
                     ).first()
                     if item:
                         qty = session_data.quantity or 0
