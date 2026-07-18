@@ -5,6 +5,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from io import BytesIO
 from datetime import datetime
+from xml.sax.saxutils import escape as xml_escape
 import cv2
 import io
 import os
@@ -17,6 +18,11 @@ def _get(obj, key, default=""):
     return getattr(obj, key, default)
 
 
+def _safe(value):
+    """Escape user content for safe embedding in ReportLab Paragraphs."""
+    return xml_escape(str(value)) if value else ""
+
+
 def create_inspection_report(user_data, firearms_data=None, sessions_data=None):
     """
     Gera relatório de acervo e atividades.
@@ -27,15 +33,16 @@ def create_inspection_report(user_data, firearms_data=None, sessions_data=None):
         sessions_data: lista de dicts com dados das sessões (opcional).
     """
     buffer = BytesIO()
-    user_name = _get(user_data, "name", "N/A")
+    user_name = _safe(_get(user_data, "name", "N/A"))
     doc = SimpleDocTemplate(buffer, pagesize=A4, title=f"Relatório {user_name}")
     elements = []
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='NormalCentered', parent=styles['Normal'], alignment=TA_CENTER))
 
     # Header
-    if os.path.exists("logo.png"):
-        im = Image("logo.png", width=50, height=50)
+    logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+    if os.path.exists(logo_path):
+        im = Image(logo_path, width=50, height=50)
         im.hAlign = 'LEFT'
         elements.append(im)
 
@@ -45,14 +52,14 @@ def create_inspection_report(user_data, firearms_data=None, sessions_data=None):
     elements.append(Spacer(1, 12))
 
     # Section 1: User Info
-    cr = _get(user_data, "cr_number") or "Não informado"
-    addr = _get(user_data, "address_acervo") or "Não informado"
+    cr = _safe(_get(user_data, "cr_number") or "Não informado")
+    addr = _safe(_get(user_data, "address_acervo") or "Não informado")
     cr_exp = _get(user_data, "cr_expiration")
     cr_exp_str = cr_exp.strftime('%d/%m/%Y') if cr_exp else 'N/A'
 
     data_user = [
         ["Nome Completo:", user_name],
-        ["CPF:", _get(user_data, "cpf", "N/A")],
+        ["CPF:", _safe(_get(user_data, "cpf", "N/A"))],
         ["CR (Exército):", f"{cr} (Validade: {cr_exp_str})"],
         ["Endereço do Acervo:", Paragraph(addr, styles['Normal'])]
     ]
@@ -124,8 +131,7 @@ def create_performance_report_v2(user, cv_results, analysis_img_bgr):
     Accepts user as dict or ORM object.
     """
     buffer = BytesIO()
-    user_name = _get(user, "name", "N/A")
-    _get(user, "id", 0)
+    user_name = _safe(_get(user, "name", "N/A"))
     doc = SimpleDocTemplate(buffer, pagesize=A4, title=f"Relatório Performance - {user_name}")
     elements = []
     styles = getSampleStyleSheet()
@@ -133,7 +139,7 @@ def create_performance_report_v2(user, cv_results, analysis_img_bgr):
     # 1. Header
     title = Paragraph("<b>RELATÓRIO TÉCNICO DE BALÍSTICA E PRECISÃO</b>", styles['Title'])
     elements.append(title)
-    elements.append(Paragraph(f"Atirador: {user_name} | Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    elements.append(Paragraph(f"Atirador: {_safe(user_name)} | Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 12))
 
     # 2. Analyzed Target Image
