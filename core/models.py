@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text, DateTime
-from datetime import datetime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from datetime import datetime, timezone
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from contextlib import contextmanager
 import bcrypt
 import json
@@ -172,7 +171,7 @@ class AuditLog(Base):
     record_id = Column(Integer)
     old_value = Column(Text) # JSON string
     new_value = Column(Text) # JSON string
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="audit_logs")
 

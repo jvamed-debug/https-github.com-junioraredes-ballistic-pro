@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from html import escape as html_escape
 from core.models import managed_session, User, ReloadSession
 from cv_utils import calculate_group_size_v2
 
@@ -37,7 +38,7 @@ def show_performance_tab(user_id):
                     </div>
                     <div style='text-align: right;'>
                         <p style='color: #94a3b8; font-family: "JetBrains Mono", monospace; font-size: 0.6rem; margin: 0;'>OPERADOR</p>
-                        <p style='color: #f1f5f9; font-weight: 600; margin: 0;'>{user_info["name"].upper()}</p>
+                        <p style='color: #f1f5f9; font-weight: 600; margin: 0;'>{html_escape(user_info["name"]).upper()}</p>
                     </div>
                 </div>
             </div>

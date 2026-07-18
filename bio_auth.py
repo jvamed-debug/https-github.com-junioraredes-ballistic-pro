@@ -1,12 +1,9 @@
 import json
 import os
 import hashlib
-import base64
 import streamlit as st
-from cryptography.fernet import Fernet
 
 CONFIG_FILE = "device_config.json"
-KEY_FILE = ".device_key"
 
 
 # Biometria Funcional (SG-002 / Auditoria WebAuthn)
@@ -33,46 +30,26 @@ def render_biometric_registration():
     return None
 
 # Funções Legadas / Fallback de Dispositivo
-def _get_encryption_key():
-    """Obtém chave de criptografia Fernet-compatível (env var ou Secrets)."""
-    fernet_env = os.environ.get("FERNET_KEY")
-    if fernet_env:
-        try:
-            key = fernet_env.encode() if isinstance(fernet_env, str) else fernet_env
-            Fernet(key)
-            return key
-        except Exception:
-            pass
-
-    try:
-        key_raw = st.secrets["device_encryption_key"]
-        if isinstance(key_raw, str):
-            key_raw = key_raw.encode()
-        key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32])
-        return key_b64
-    except (FileNotFoundError, KeyError):
-        return None
-
 def _encrypt(val):
-    """Criptografa um valor usando AES-256 (Fernet)."""
+    """Criptografa um valor usando a suite centralizada de core.models."""
     if not val:
         return ""
-    key = _get_encryption_key()
-    if not key:
-        return "" 
-    f = Fernet(key)
-    return f.encrypt(val.encode()).decode()
+    from core.models import get_encryption_suite
+    suite = get_encryption_suite()
+    if suite is None:
+        return ""
+    return suite.encrypt(val.encode()).decode()
 
 def _decrypt(val):
-    """Descriptografa um valor codificado."""
+    """Descriptografa um valor usando a suite centralizada de core.models."""
     if not val:
         return ""
-    key = _get_encryption_key()
-    if not key:
+    from core.models import get_encryption_suite
+    suite = get_encryption_suite()
+    if suite is None:
         return ""
     try:
-        f = Fernet(key)
-        return f.decrypt(val.encode()).decode()
+        return suite.decrypt(val.encode()).decode()
     except Exception:
         return ""
 
