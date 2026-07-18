@@ -28,15 +28,16 @@ def create_label_pdf(session, user_name):
     x_pos = 6 * mm
     
     # Left Column
-    c.drawString(x_pos, start_y, f"Data: {session.date.strftime('%d/%m/%Y')}")
-    c.drawString(x_pos, start_y - line_height, f"Calibre: {session.caliber}")
-    c.drawString(x_pos, start_y - 2*line_height, f"Projétil: {session.projectile}")
-    c.drawString(x_pos, start_y - 3*line_height, f"Pólvora: {session.powder}")
-    c.drawString(x_pos, start_y - 4*line_height, f"Carga: {session.charge} gr")
+    date_str = session.date.strftime('%d/%m/%Y') if session.date else "—"
+    c.drawString(x_pos, start_y, f"Data: {date_str}")
+    c.drawString(x_pos, start_y - line_height, f"Calibre: {session.caliber or '—'}")
+    c.drawString(x_pos, start_y - 2*line_height, f"Projétil: {session.projectile or '—'}")
+    c.drawString(x_pos, start_y - 3*line_height, f"Pólvora: {session.powder or '—'}")
+    c.drawString(x_pos, start_y - 4*line_height, f"Carga: {session.charge or 0} gr")
     
     # Right Column (Offset)
     x_pos_right = 55 * mm
-    c.drawString(x_pos_right, start_y, f"Qtd: {session.quantity}")
+    c.drawString(x_pos_right, start_y, f"Qtd: {session.quantity or 0}")
     c.drawString(x_pos_right, start_y - line_height, f"Espoleta: {session.primer or 'N/A'}")
     c.drawString(x_pos_right, start_y - 2*line_height, f"Estojo: {session.case or 'N/A'}")
     if session.velocity_avg:
