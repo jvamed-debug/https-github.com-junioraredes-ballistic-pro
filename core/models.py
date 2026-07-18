@@ -55,7 +55,12 @@ def get_encryption_suite():
     if isinstance(key_raw, str):
         key_raw = key_raw.encode()
 
-    key_b64 = base64.urlsafe_b64encode(key_raw.ljust(32)[:32])
+    if len(key_raw) == 32:
+        key_b64 = base64.urlsafe_b64encode(key_raw)
+    else:
+        import hashlib
+        derived = hashlib.sha256(key_raw).digest()
+        key_b64 = base64.urlsafe_b64encode(derived)
     return Fernet(key_b64)
 
 class EncryptedString(TypeDecorator):
