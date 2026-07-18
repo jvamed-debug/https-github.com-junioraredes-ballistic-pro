@@ -3,6 +3,31 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
+from services.reloading_service import _escape_like
+
+
+class TestEscapeLike:
+    def test_none_returns_none(self):
+        assert _escape_like(None) is None
+
+    def test_empty_returns_empty(self):
+        assert _escape_like("") == ""
+
+    def test_no_special_chars(self):
+        assert _escape_like("IMR 4064") == "IMR 4064"
+
+    def test_escapes_percent(self):
+        assert _escape_like("100%") == r"100\%"
+
+    def test_escapes_underscore(self):
+        assert _escape_like("name_test") == r"name\_test"
+
+    def test_escapes_backslash(self):
+        assert _escape_like(r"path\to") == r"path\\to"
+
+    def test_escapes_all_together(self):
+        assert _escape_like(r"50%_off\deal") == r"50\%\_off\\deal"
+
 
 class TestDeductInventory:
     def _make_session_data(self, **kwargs):
@@ -144,3 +169,26 @@ class TestCalculateUnitCost:
 
         cost = ReloadingService.calculate_unit_cost(session_data, user_id=1)
         assert cost > 0
+
+    @patch("services.reloading_service.managed_session")
+    def test_cost_grains_vs_grams_unit(self, mock_ctx):
+        from services.reloading_service import ReloadingService
+
+        powder_g = MagicMock()
+        powder_g.unit = "g"
+        powder_g.price_unit = 0.10
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.first.return_value = powder_g
+        mock_ctx.return_value.__enter__ = MagicMock(return_value=mock_db)
+        mock_ctx.return_value.__exit__ = MagicMock(return_value=False)
+
+        session_data = type("S", (), {
+            "powder": "Test", "charge": 15.4324, "projectile": "Test",
+            "primer": "Test", "case": "Test"
+        })()
+
+        cost = ReloadingService.calculate_unit_cost(session_data, user_id=1)
+        # 15.4324 grains / 15.4324 (conversion) = 1g * 0.10 price = 0.10 for powder
+        # plus 3 * 0.10 for other components = 0.40 total
+        assert abs(cost - 0.40) < 0.01
