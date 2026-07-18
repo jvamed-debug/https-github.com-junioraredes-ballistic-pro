@@ -1,4 +1,5 @@
 import streamlit as st
+from html import escape as html_escape
 from core.config import setup_app
 from core.auth import authenticate, register_user
 from core.models import init_db_if_empty, managed_session, User
@@ -154,13 +155,13 @@ st.sidebar.markdown(f"""
     <div style='text-align: center; padding: 1.5rem 0; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 2rem;'>
         <div style='width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);'></div>
         <span style='color: #94a3b8; font-family: "JetBrains Mono", monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;'>Sessão Ativa</span>
-        <h3 style='color: white; margin-top: 8px; font-weight: 700; font-size: 1.1rem;'>OPERADOR {st.session_state.get("user_name", "N/A")}</h3>
+        <h3 style='color: white; margin-top: 8px; font-weight: 700; font-size: 1.1rem;'>OPERADOR {html_escape(st.session_state.get("user_name", "N/A"))}</h3>
     </div>
 """, unsafe_allow_html=True)
 
 if st.sidebar.button("🚪 Logout", use_container_width=True):
-    for key in ["authenticated", "user_id", "user_name", "cv_stats"]:
-        st.session_state.pop(key, None)
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
     st.rerun()
 
 st.sidebar.divider()
