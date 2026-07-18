@@ -1,4 +1,5 @@
 import streamlit as st
+from html import escape as html_escape
 from services.ai_advisor import advisor
 
 
@@ -80,7 +81,7 @@ def _show_grouping_analysis():
             st.markdown(f"""
                 <div style='background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid #8b5cf6;'>
                     <p style='color: #8b5cf6; font-family: "JetBrains Mono", monospace; font-size: 0.65rem; font-weight: 700; margin-bottom: 10px;'>
-                        RESPOSTA [{result.provider.upper()}]
+                        RESPOSTA [{html_escape(result.provider.upper())}]
                     </p>
                 </div>
             """, unsafe_allow_html=True)
@@ -112,7 +113,7 @@ def _show_load_consultation(caliber, projectile, powder):
         st.markdown(f"""
             <div style='background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid #8b5cf6;'>
                 <p style='color: #8b5cf6; font-family: "JetBrains Mono", monospace; font-size: 0.65rem; font-weight: 700; margin-bottom: 10px;'>
-                    CONSULTORIA [{result.provider.upper()}]
+                    CONSULTORIA [{html_escape(result.provider.upper())}]
                 </p>
             </div>
         """, unsafe_allow_html=True)
@@ -151,7 +152,7 @@ def _show_performance_trend(user_id):
         st.markdown(f"""
             <div style='background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid #8b5cf6;'>
                 <p style='color: #8b5cf6; font-family: "JetBrains Mono", monospace; font-size: 0.65rem; font-weight: 700; margin-bottom: 10px;'>
-                    TENDENCIA [{result.provider.upper()}]
+                    TENDENCIA [{html_escape(result.provider.upper())}]
                 </p>
             </div>
         """, unsafe_allow_html=True)

@@ -263,7 +263,7 @@ def show_logbook_and_inventory():
                 with st.container():
                     c1, c2, c3, c4, c5 = st.columns([2, 1, 1, 1, 0.5])
                     c1.markdown(f"**{item['name']}** ({item['category']})")
-                    c2.markdown(f"<span style='color: {qty_color};'>{item['quantity']:.1f} {item['unit']}</span>", unsafe_allow_html=True)
+                    c2.markdown(f"<span style='color: {qty_color};'>{item['quantity']:.1f} {html_escape(str(item['unit']))}</span>", unsafe_allow_html=True)
                     c3.markdown(f"Lote: {item['batch_number'] or '—'}")
                     c4.markdown(f"R$ {total_val:.2f}" if total_val > 0 else "—")
                     if c5.button("🗑️", key=f"del_inv_{item['id']}"):
