@@ -3,7 +3,9 @@ from core.models import managed_session, InventoryItem
 
 def _escape_like(val):
     """Escape SQL LIKE wildcards in user input."""
-    return val.replace("%", r"\%").replace("_", r"\_") if val else val
+    if not val:
+        return val
+    return val.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
 
 
 class ReloadingService:
