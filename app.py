@@ -1,5 +1,6 @@
 import streamlit as st
 from html import escape as html_escape
+from datetime import datetime, timedelta
 from core.config import setup_app
 from core.auth import authenticate, register_user
 from core.models import init_db_if_empty, managed_session, User
@@ -26,6 +27,22 @@ if "user_id" not in st.session_state:
     st.session_state["user_id"] = None
 if "login_attempts" not in st.session_state:
     st.session_state["login_attempts"] = 0
+if "lockout_until" not in st.session_state:
+    st.session_state["lockout_until"] = None
+if "last_activity" not in st.session_state:
+    st.session_state["last_activity"] = None
+
+# Session timeout: 60 minutes of inactivity
+SESSION_TIMEOUT = timedelta(minutes=60)
+if st.session_state["authenticated"]:
+    now = datetime.now()
+    last = st.session_state.get("last_activity")
+    if last and (now - last) > SESSION_TIMEOUT:
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.warning("Sessão expirada por inatividade. Faça login novamente.")
+        st.rerun()
+    st.session_state["last_activity"] = now
 
 # 3. Auth Flow
 if not st.session_state["authenticated"]:
@@ -70,10 +87,15 @@ if not st.session_state["authenticated"]:
                 pass_in = st.text_input("Senha", type="password")
                 remember = st.checkbox("Habilitar Biometria neste dispositivo")
                 
-                if st.session_state["login_attempts"] >= 5:
-                    st.error("⚠️ Muitas tentativas falhas. Acesso bloqueado temporariamente por segurança.")
+                lockout = st.session_state.get("lockout_until")
+                if lockout and datetime.now() < lockout:
+                    remaining = int((lockout - datetime.now()).total_seconds())
+                    st.error(f"Muitas tentativas falhas. Tente novamente em {remaining}s.")
                     st.stop()
-                    
+                elif lockout and datetime.now() >= lockout:
+                    st.session_state["lockout_until"] = None
+                    st.session_state["login_attempts"] = 0
+
                 if st.form_submit_button("ENTRAR", use_container_width=True):
                     user = authenticate(user_in, pass_in)
                     if user:
@@ -86,6 +108,8 @@ if not st.session_state["authenticated"]:
                         st.rerun()
                     else:
                         st.session_state["login_attempts"] += 1
+                        if st.session_state["login_attempts"] >= 5:
+                            st.session_state["lockout_until"] = datetime.now() + timedelta(minutes=5)
                         st.error("Credenciais inválidas.")
         elif auth_mode == "Cadastro":
             with st.form("register_form"):
