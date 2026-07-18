@@ -69,8 +69,11 @@ def save_biometrics(username):
 
 def clear_biometrics():
     """Remove as credenciais biométricas salvas."""
-    if os.path.exists(CONFIG_FILE):
-        os.remove(CONFIG_FILE)
+    try:
+        if os.path.exists(CONFIG_FILE):
+            os.remove(CONFIG_FILE)
+    except OSError:
+        pass
 
 def check_biometrics_available():
     """Verifica se há um usuário salvo para biometria e valida integridade."""

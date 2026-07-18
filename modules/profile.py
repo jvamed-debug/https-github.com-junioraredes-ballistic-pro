@@ -3,6 +3,7 @@ import re
 import requests
 import json
 from datetime import datetime
+from html import escape as html_escape
 from core.models import managed_session, User, Firearm
 from ui.styles import apply_custom_styles
 from services.s3_service import s3_mgr
@@ -109,11 +110,12 @@ def show_profile():
     # Exibe status da criptografia
     enc_source = st.session_state.get("encryption_source", "Não Inicializado")
     status_color = "#10b981" if "Secrets" in enc_source else "#f59e0b"
-    
+    enc_source_safe = html_escape(str(enc_source))
+
     st.markdown(f"""
         <div style='padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid {status_color}33; border-left: 5px solid {status_color};'>
             <p style='margin:0; font-size: 0.75rem; color: #94a3b8; font-family: "JetBrains Mono", monospace;'>FONTE DE CRIPTOGRAFIA ATUAL</p>
-            <h4 style='margin:5px 0 0 0; color: white;'>{enc_source}</h4>
+            <h4 style='margin:5px 0 0 0; color: white;'>{enc_source_safe}</h4>
         </div>
     """, unsafe_allow_html=True)
     
@@ -215,7 +217,7 @@ def show_profile():
             with st.spinner("Buscando..."):
                 try:
                     clean_cep = re.sub(r'\D', '', cep)
-                    response = requests.get(f"https://viacep.com.br/ws/{clean_cep}/json/")
+                    response = requests.get(f"https://viacep.com.br/ws/{clean_cep}/json/", timeout=10)
                     if response.status_code == 200:
                         data = response.json()
                         if "erro" not in data:
@@ -299,15 +301,14 @@ def show_profile():
                 with managed_session() as db_del:
                     firearm_to_del = db_del.get(Firearm, fd['id'])
                     if firearm_to_del:
-                        from core.models import log_action
-                        # Log da remoção antes de deletar
-                        log_action(
+                        from core.models import AuditLog
+                        db_del.add(AuditLog(
                             user_id=user_id,
                             action="firearm_deleted",
                             table_name="firearms",
                             record_id=fd['id'],
-                            old={"model": fd['model'], "serial": fd['serial'], "sigma": fd['sigma'], "craf": fd['craf']}
-                        )
+                            old_value=json.dumps({"model": fd['model'], "serial": fd['serial'], "sigma": fd['sigma'], "craf": fd['craf']}),
+                        ))
                         db_del.delete(firearm_to_del)
                 st.success("Arma removida.")
                 st.rerun()
