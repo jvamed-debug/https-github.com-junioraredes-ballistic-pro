@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from html import escape as html_escape
 from core.models import managed_session, ReloadSession, InventoryItem
 
 
@@ -159,8 +160,8 @@ def _show_low_stock_alerts(user_id):
             st.markdown(f"""
                 <div style='background: rgba({'239, 68, 68' if is_empty else '245, 158, 11'}, 0.08); padding: 10px 15px; border-radius: 6px; border-left: 4px solid {color}; margin-bottom: 8px;'>
                     <span style='color: {color}; font-weight: 700; font-family: "JetBrains Mono"; font-size: 0.75rem;'>[{icon}] {status}</span>
-                    <span style='color: var(--text-body); margin-left: 10px;'>{name} ({cat})</span>
-                    <span style='color: var(--text-light); font-size: 0.8rem; float: right;'>{qty:.1f} {unit}</span>
+                    <span style='color: var(--text-body); margin-left: 10px;'>{html_escape(name)} ({html_escape(cat)})</span>
+                    <span style='color: var(--text-light); font-size: 0.8rem; float: right;'>{qty:.1f} {html_escape(unit)}</span>
                 </div>
             """, unsafe_allow_html=True)
     else:
@@ -213,8 +214,8 @@ def _show_expiration_alerts(user_id):
             icon = "!!" if is_expired else "!"
             st.markdown(f"""
                 <div style='background: rgba({'239, 68, 68' if is_expired else '245, 158, 11'}, 0.08); padding: 10px 15px; border-radius: 6px; border-left: 4px solid {color}; margin-bottom: 8px;'>
-                    <span style='color: {color}; font-weight: 700; font-family: "JetBrains Mono"; font-size: 0.75rem;'>[{icon}] {status}</span>
-                    <span style='color: var(--text-body); margin-left: 10px;'>{item_name}</span>
+                    <span style='color: {color}; font-weight: 700; font-family: "JetBrains Mono"; font-size: 0.75rem;'>[{icon}] {html_escape(str(status))}</span>
+                    <span style='color: var(--text-body); margin-left: 10px;'>{html_escape(item_name)}</span>
                     <span style='color: var(--text-light); font-size: 0.8rem; float: right;'>{exp_date.strftime('%d/%m/%Y')}</span>
                 </div>
             """, unsafe_allow_html=True)

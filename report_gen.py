@@ -120,7 +120,12 @@ def create_inspection_report(user_data, firearms_data=None, sessions_data=None):
     else:
         elements.append(Paragraph("Nenhuma sessão registrada.", styles['Normal']))
 
-    doc.build(elements)
+    try:
+        doc.build(elements)
+    except Exception:
+        buffer = BytesIO()
+        fallback = SimpleDocTemplate(buffer, pagesize=A4, title="Erro no Relatório")
+        fallback.build([Paragraph("<b>Erro ao gerar relatório. Verifique os dados informados.</b>", styles['Normal'])])
     buffer.seek(0)
     return buffer.getvalue()
 
@@ -193,6 +198,12 @@ def create_performance_report_v2(user, cv_results, analysis_img_bgr):
     """
     elements.append(Paragraph(conclusion, styles['Normal']))
 
-    doc.build(elements)
+    try:
+        doc.build(elements)
+    except Exception:
+        buffer = BytesIO()
+        fallback = SimpleDocTemplate(buffer, pagesize=A4, title="Erro no Relatório")
+        s = getSampleStyleSheet()
+        fallback.build([Paragraph("<b>Erro ao gerar relatório de performance.</b>", s['Normal'])])
     buffer.seek(0)
     return buffer.getvalue()

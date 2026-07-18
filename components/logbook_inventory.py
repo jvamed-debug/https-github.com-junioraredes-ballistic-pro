@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import date
+from html import escape as html_escape
 from core.models import managed_session, ReloadSession, InventoryItem, Firearm
 from services.reloading_service import ReloadingService
 from services.s3_service import s3_mgr
@@ -78,16 +79,19 @@ def show_logbook_and_inventory():
                     vel_str += "</span>"
                 firearm_str = ""
                 if s["firearm_model"]:
-                    firearm_str = f" | <span style='color: #a78bfa; font-size: 0.75rem;'>{s['firearm_model']}</span>"
+                    firearm_str = f" | <span style='color: #a78bfa; font-size: 0.75rem;'>{html_escape(s['firearm_model'])}</span>"
                 grouping_str = ""
                 if s["grouping_mm"]:
                     grouping_str = f" | <span style='color: #f59e0b; font-size: 0.75rem;'>{s['grouping_mm']:.1f}mm</span>"
+                cal_safe = html_escape(s['caliber'] or '')
+                powder_safe = html_escape(s['powder'] or '—')
+                proj_safe = html_escape(s['projectile'] or '—')
                 st.markdown(f"""
                     <div style='background: rgba(255,255,255,0.02); padding: 10px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;'>
                         <span style='color: #64748b; font-size: 0.75rem; font-family: "JetBrains Mono";'>{s_date}</span> |
-                        <b>{s['caliber']}</b> |
+                        <b>{cal_safe}</b> |
                         <span style='color: #475569;'>{s['quantity'] or 0}un</span> |
-                        <span style='color: #94a3b8; font-size: 0.8rem;'>{s['powder'] or '—'} ({s['charge'] or 0}gr) · {s['projectile'] or '—'}</span>{vel_str}{grouping_str}{firearm_str}{cost_str}
+                        <span style='color: #94a3b8; font-size: 0.8rem;'>{powder_safe} ({s['charge'] or 0}gr) · {proj_safe}</span>{vel_str}{grouping_str}{firearm_str}{cost_str}
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -193,8 +197,15 @@ def show_logbook_and_inventory():
                                 )
                                 db2.add(new_sess)
 
-                            # FUN-002: Deduzir insumos do inventário (sessão própria no serviço)
-                            _, deducted = ReloadingService.deduct_inventory(new_sess, user_id)
+                            sess_for_deduct = type("S", (), {
+                                "powder": r_powder or None,
+                                "charge": r_charge if r_charge > 0 else None,
+                                "quantity": r_qty,
+                                "projectile": r_proj or None,
+                                "primer": r_primer or None,
+                                "case": r_case or None,
+                            })()
+                            _, deducted = ReloadingService.deduct_inventory(sess_for_deduct, user_id)
 
                             if deducted:
                                 st.success(f"Sessão salva no Logbook! Insumos deduzidos: {len(deducted)} item(ns)")
