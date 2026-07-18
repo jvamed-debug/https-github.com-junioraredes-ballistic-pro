@@ -1,4 +1,5 @@
 import streamlit as st
+from html import escape as html_escape
 
 def show_reloading_data(db, selected_caliber, selected_projectile, selected_powder, is_manual_mode):
     # Dimensões do Calibre
@@ -130,14 +131,15 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             proj_val, proj_inch = fmt_dim(proj_dia)
             base_val, base_inch = fmt_dim(base_dia)
 
-            v_source = caliber_data.get("source", "PADRÃO")
-            v_year = caliber_data.get("year", "2024")
-            
+            v_source = html_escape(str(caliber_data.get("source", "PADRÃO")))
+            v_year = html_escape(str(caliber_data.get("year", "2024")))
+            cal_safe = html_escape(selected_caliber)
+
             st.markdown(f"""
             <div class="schematic-header" style="background: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px 8px 0 0;">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <span class="badge" style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px;">ESPECIFICAÇÕES NOMINAIS</span>
-                    <span class="caliber-name">{selected_caliber}</span>
+                    <span class="caliber-name">{cal_safe}</span>
                 </div>
                 <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                     <span style="color: #10b981; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; border: 1px solid #10b98133; background: #10b98111; padding: 4px 10px; border-radius: 6px;">
@@ -202,7 +204,7 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             <div style="background: rgba(16, 185, 129, 0.1); padding: 8px 16px; border-radius: 6px; border: 1px solid #10b981;">
                 <span style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 0.7rem;">DADOS OBC TI-44 √</span>
             </div>
-            <div style="color: #64748b; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">REF: {load_data.get('note', 'TI-44')}</div>
+            <div style="color: #64748b; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">REF: {html_escape(str(load_data.get('note', 'TI-44')))}</div>
         </div>
         """, unsafe_allow_html=True)
 
