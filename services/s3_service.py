@@ -32,7 +32,8 @@ class S3Service:
             return None
         
         try:
-            filename = f"{folder}/{os.urandom(8).hex()}_{file.name}"
+            safe_name = os.path.basename(file.name)
+            filename = f"{folder}/{os.urandom(8).hex()}_{safe_name}"
             self.client.upload_fileobj(
                 file,
                 self.bucket_name,
