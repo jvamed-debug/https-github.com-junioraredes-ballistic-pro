@@ -100,6 +100,34 @@ class TestRegisterUser:
         assert "sucesso" in msg.lower()
         mock_session.add.assert_called_once()
 
+    @patch("core.auth.log_action")
+    @patch("core.auth.managed_session")
+    def test_none_email_does_not_match_all_users(self, mock_session_ctx, mock_log):
+        """Regression: email=None should not query IS NULL and match all users without email."""
+        mock_session = MagicMock()
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+        mock_session_ctx.return_value.__enter__ = MagicMock(return_value=mock_session)
+        mock_session_ctx.return_value.__exit__ = MagicMock(return_value=False)
+
+        def capture_add(user):
+            user.id = 99
+
+        mock_session.add.side_effect = capture_add
+
+        ok, msg = register_user("newuser", "password123", "Test", None, None, None)
+        assert ok is True
+
+        filter_call = mock_session.query.return_value.filter
+        assert filter_call.called
+        from sqlalchemy import or_
+        args = filter_call.call_args
+        clause = args[0][0] if args[0] else None
+        assert clause is not None
+        clause_str = str(clause)
+        assert "email" not in clause_str.lower(), (
+            "Filter should not include email check when email is None"
+        )
+
 
 class TestRecoverPassword:
     @patch("core.auth.log_action")
