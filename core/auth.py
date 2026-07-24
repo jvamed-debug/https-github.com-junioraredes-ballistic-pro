@@ -29,9 +29,11 @@ def register_user(username, password, name, cpf, email, phone):
         return False, str(e)
 
     with managed_session() as session:
-        existing = session.query(User).filter(
-            (User.username == username) | (User.email == email)
-        ).first()
+        from sqlalchemy import or_
+        conditions = [User.username == username]
+        if email:
+            conditions.append(User.email == email)
+        existing = session.query(User).filter(or_(*conditions)).first()
         if existing:
             return False, "Dados informados já estão em uso ou são inválidos."
 

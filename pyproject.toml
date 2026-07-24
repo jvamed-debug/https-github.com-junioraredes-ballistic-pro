@@ -1,5 +1,12 @@
 [project]
 name = "ballistic-pro"
-version = "1.0.0"
+version = "1.1.0"
 description = "Sistema de gestão de recarga, acervo e análise balística"
 requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
