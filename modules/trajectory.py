@@ -61,10 +61,16 @@ def show_trajectory_tab(db, selected_caliber, selected_projectile):
             help="Altitude acima do nivel do mar. Brasilia ~1100m, Sao Paulo ~760m"
         )
         atm_press = st.number_input(
-            "Pressao (hPa)", min_value=800.0, max_value=1100.0, value=1013.25, step=1.0, key="traj_press"
+            "Pressao ao nivel do mar (hPa)", min_value=800.0, max_value=1100.0,
+            value=1013.25, step=1.0, key="traj_press",
+            help="Pressao reduzida ao nivel do mar (QNH) — o valor que apps de "
+                 "meteorologia mostram. A queda ate a sua altitude ja entra pelo "
+                 "campo Altitude; nao use aqui a pressao medida no local."
         )
         atm_humid = st.number_input(
-            "Umidade (%)", min_value=0, max_value=100, value=60, step=5, key="traj_humid"
+            "Umidade (%)", min_value=0, max_value=100, value=60, step=5, key="traj_humid",
+            help="Ar umido e menos denso e freia menos o projetil. O efeito e de "
+                 "cerca de 1% em dia quente e saturado."
         )
 
     st.divider()
