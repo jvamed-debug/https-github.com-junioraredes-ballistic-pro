@@ -1,6 +1,8 @@
 import streamlit as st
 from html import escape as html_escape
 
+from services.ballistics_service import BallisticsService
+
 def show_reloading_data(db, selected_caliber, selected_projectile, selected_powder, is_manual_mode):
     # Dimensões do Calibre
     caliber_data = db["calibers"].get(selected_caliber, {})
@@ -279,14 +281,10 @@ def show_calculator(selected_projectile):
         calorific = st.number_input("Poder Calorífico da Pólvora (J/g)", min_value=2000, max_value=6000, value=3800, key="calc_calorific", help="Ex: Pólvoras de base simples (~3400) vs base dupla (~4200)")
         efficiency = st.slider("Eficiência Térmica Estimada (%)", 5, 60, 25, key="calc_efficiency", help="Quanto da queima vira movimento. Geralmente entre 20% e 35%.")
     
-    # Cálculos Físicos
-    m_kg = proj_w * 0.0000647989
-    v_ms = target_vel * 0.3048
-    energy_j = 0.5 * m_kg * (v_ms ** 2)
-    
-    # Conversão de Energia -> Gramas -> Grains
-    powder_g = energy_j / (calorific * (efficiency / 100))
-    est_gr = powder_g * 15.4324
+    energy_j = BallisticsService.muzzle_energy_joules(proj_w, target_vel)
+    est_gr = BallisticsService.estimate_charge_grains(
+        proj_w, target_vel, calorific, efficiency
+    )
 
     # Interface de Resultados (HUD)
     res_col1, res_col2 = st.columns(2)
@@ -300,10 +298,14 @@ def show_calculator(selected_projectile):
         """, unsafe_allow_html=True)
 
     with res_col2:
-        status_color = "#ef4444" if est_gr > 50 else "#10b981"
+        # Sem semáforo aqui. O limiar fixo de 50 grains era cego ao calibre e
+        # errava nos dois sentidos: pintava de verde 15 grains num .38 Special
+        # — sobrecarga que arrebenta a arma — e de vermelho os 60 grains
+        # normais de um .30-06. Em modo manual não há dado de referência para
+        # julgar, e um verde sem base se lê como aprovação.
         st.markdown(f"""
-            <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid {status_color}; text-align: center;">
-                <p style="color: {status_color}; font-size: 0.7rem; font-family: 'JetBrains Mono'; margin: 0;">ESTIMATIVA TEÓRICA</p>
+            <div style="background: rgba(245, 158, 11, 0.08); padding: 15px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.4); text-align: center;">
+                <p style="color: #f59e0b; font-size: 0.7rem; font-family: 'JetBrains Mono'; margin: 0;">ESTIMATIVA TEÓRICA</p>
                 <p style="color: #f8fafc; font-size: 1.5rem; font-weight: 800; margin: 5px 0;">{est_gr:.2f} <span style="font-size: 0.8rem; color: #64748b;">grains</span></p>
             </div>
         """, unsafe_allow_html=True)
