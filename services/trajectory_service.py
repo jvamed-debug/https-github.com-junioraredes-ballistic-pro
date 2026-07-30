@@ -16,19 +16,50 @@ from dataclasses import dataclass, field
 
 @dataclass
 class AtmosphericConditions:
+    """Condicoes do ar no local do disparo.
+
+    `pressure_hpa` e a pressao reduzida ao nivel do mar (QNH) — o valor que
+    apps de meteorologia informam. A queda real de pressao ate a altitude do
+    atirador vem de `altitude_m`; informar aqui a pressao ja medida na
+    estacao contaria a altitude duas vezes.
+    """
+
     temperature_c: float = 15.0
     pressure_hpa: float = 1013.25
     humidity_pct: float = 50.0
     altitude_m: float = 0.0
 
+    # Constantes dos gases para ar seco e para vapor d'agua (J/(kg*K)).
+    _R_DRY = 287.058
+    _R_VAPOUR = 461.495
+
+    @property
+    def saturation_vapour_pressure_hpa(self) -> float:
+        """Pressao de vapor de saturacao pela equacao de Tetens."""
+        t = self.temperature_c
+        return 6.1078 * 10 ** (7.5 * t / (t + 237.3))
+
     @property
     def air_density(self) -> float:
+        """Densidade do ar em kg/m3.
+
+        Vapor d'agua e mais leve que o ar seco, entao ar umido e menos denso e
+        oferece menos arrasto. O termo de umidade responde por cerca de 1% em
+        dia quente e saturado — pequeno, mas era simplesmente ignorado antes,
+        e o campo aparece na interface como se tivesse efeito.
+        """
         t_k = self.temperature_c + 273.15
-        p_pa = self.pressure_hpa * 100
-        r = 287.058
-        rho = p_pa / (r * t_k)
-        alt_factor = math.exp(-self.altitude_m / 8500)
-        return rho * alt_factor
+        altitude_factor = math.exp(-self.altitude_m / 8500)
+
+        # Pressao no local, a partir da QNH corrigida pela altitude.
+        station_hpa = self.pressure_hpa * altitude_factor
+        vapour_hpa = (self.humidity_pct / 100) * self.saturation_vapour_pressure_hpa
+        vapour_hpa = min(vapour_hpa, station_hpa)
+        dry_hpa = station_hpa - vapour_hpa
+
+        return (dry_hpa * 100) / (self._R_DRY * t_k) + (vapour_hpa * 100) / (
+            self._R_VAPOUR * t_k
+        )
 
 
 @dataclass

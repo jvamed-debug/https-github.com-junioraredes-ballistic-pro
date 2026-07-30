@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date
 from html import escape as html_escape
 from core.models import managed_session, ReloadSession, InventoryItem, Firearm
+from services.cbc_powders import check_powder_for_caliber
 from services.reloading_service import ReloadingService
 from services.s3_service import s3_mgr
 
@@ -153,6 +154,10 @@ def show_logbook_and_inventory():
                 r_img = st.file_uploader("Foto do Alvo (Opcional)", type=["jpg", "png", "jpeg"])
                 r_notes = st.text_area("Observações Técnicas")
                 if st.form_submit_button("SALVAR SESSÃO", use_container_width=True):
+                    series_warning = check_powder_for_caliber(r_caliber, r_powder)
+                    if series_warning:
+                        st.error(f"⚠️ {series_warning}")
+
                     if r_caliber and r_qty > 0:
                         image_url = None
                         if r_img:

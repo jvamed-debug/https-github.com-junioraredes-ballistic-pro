@@ -1,6 +1,9 @@
 """Tests for services.trajectory_service — ballistic trajectory calculations."""
 
 import math
+
+import pytest
+
 from services.trajectory_service import (
     AtmosphericConditions,
     ProjectileData,
@@ -141,3 +144,67 @@ class TestCalculateTrajectory:
             self._make_projectile(), max_range_m=200, step_m=100, atmosphere=hot_high
         )
         assert len(result.points) > 0
+
+
+class TestHumidity:
+    """Humid air is less dense than dry air, so it slows the bullet less.
+    The field was on screen but ignored by the density calculation."""
+
+    def test_humidity_lowers_air_density(self):
+        dry = AtmosphericConditions(temperature_c=30, humidity_pct=0).air_density
+        wet = AtmosphericConditions(temperature_c=30, humidity_pct=100).air_density
+        assert wet < dry
+
+    def test_humidity_effect_is_about_one_percent_when_hot_and_saturated(self):
+        dry = AtmosphericConditions(temperature_c=30, humidity_pct=0).air_density
+        wet = AtmosphericConditions(temperature_c=30, humidity_pct=100).air_density
+        assert 0.010 < (dry - wet) / dry < 0.025
+
+    def test_humidity_barely_matters_when_cold(self):
+        """Cold air holds little vapour, so the correction nearly vanishes."""
+        dry = AtmosphericConditions(temperature_c=-10, humidity_pct=0).air_density
+        wet = AtmosphericConditions(temperature_c=-10, humidity_pct=100).air_density
+        assert (dry - wet) / dry < 0.002
+
+    def test_dry_sea_level_matches_the_standard_atmosphere(self):
+        rho = AtmosphericConditions(
+            temperature_c=15, pressure_hpa=1013.25, humidity_pct=0, altitude_m=0
+        ).air_density
+        assert rho == pytest.approx(1.2250, rel=0.001)
+
+    def test_saturation_pressure_matches_published_values(self):
+        """Tetens: 12.3 hPa at 10C, 42.4 hPa at 30C."""
+        assert AtmosphericConditions(temperature_c=10).saturation_vapour_pressure_hpa == pytest.approx(12.28, rel=0.01)
+        assert AtmosphericConditions(temperature_c=30).saturation_vapour_pressure_hpa == pytest.approx(42.43, rel=0.01)
+
+    def test_vapour_pressure_never_exceeds_station_pressure(self):
+        """Guards the dry term against going negative in absurd input."""
+        rho = AtmosphericConditions(
+            temperature_c=60, pressure_hpa=800, humidity_pct=100, altitude_m=5000
+        ).air_density
+        assert rho > 0
+
+
+class TestAltitudeIsSeaLevelReferenced:
+    def test_altitude_thins_the_air(self):
+        low = AtmosphericConditions(altitude_m=0).air_density
+        high = AtmosphericConditions(altitude_m=2000).air_density
+        assert high < low
+
+    def test_matches_standard_atmosphere_at_altitude(self):
+        """ISA at 2000m is 2C and 1.0066 kg/m3. Pressure is given as the
+        sea-level (QNH) figure a weather app reports, which is what the
+        altitude term then corrects down."""
+        rho = AtmosphericConditions(
+            temperature_c=2, pressure_hpa=1013.25, humidity_pct=0, altitude_m=2000
+        ).air_density
+        assert rho == pytest.approx(1.0066, rel=0.01)
+
+    def test_thinner_air_flattens_the_trajectory(self):
+        proj = ProjectileData(weight_grains=168, bc_g1=0.462, diameter_mm=7.82, muzzle_velocity_fps=2650)
+        sea = calculate_trajectory(proj, max_range_m=300, step_m=100,
+                                   atmosphere=AtmosphericConditions(altitude_m=0))
+        mountain = calculate_trajectory(proj, max_range_m=300, step_m=100,
+                                        atmosphere=AtmosphericConditions(altitude_m=2500))
+        assert mountain.points[-1].drop_cm > sea.points[-1].drop_cm
+        assert mountain.points[-1].velocity_fps > sea.points[-1].velocity_fps
