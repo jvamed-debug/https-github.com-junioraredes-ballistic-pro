@@ -132,13 +132,25 @@ class BallisticAdvisor:
         self._provider: LLMProviderInterface | None = None
 
     def configure(self, provider_name: str, api_key: str) -> bool:
+        """Adota o provider apenas se ele responder.
+
+        A atribuição só acontece depois do health check: um provider que falha
+        — chave inválida, sem rede, SDK ausente — deixaria `is_configured`
+        verdadeiro e as análises seguintes devolveriam a string de erro do SDK
+        no lugar do laudo, justamente quando o modo offline daria conta.
+        """
         if provider_name == "anthropic":
-            self._provider = AnthropicAdvisor(api_key)
+            candidate: LLMProviderInterface = AnthropicAdvisor(api_key)
         elif provider_name == "openai":
-            self._provider = OpenAIAdvisor(api_key)
+            candidate = OpenAIAdvisor(api_key)
         else:
             return False
-        return self._provider.health_check()
+
+        if not candidate.health_check():
+            return False
+
+        self._provider = candidate
+        return True
 
     @property
     def is_configured(self) -> bool:
