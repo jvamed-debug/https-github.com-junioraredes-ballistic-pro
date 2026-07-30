@@ -81,13 +81,17 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
     """
     Improved CV Analysis with Multi-Group support and POI calculation.
     """
+    # Definido antes do try: o tratamento de erro devolve esta imagem, e um
+    # upload ilegível falha já no Image.open — antes de haver o que devolver.
+    img_np = np.zeros((1, 1, 3), dtype=np.uint8)
+
     try:
         if isinstance(uploaded_image, Image.Image):
             image = uploaded_image
         else:
             image = Image.open(uploaded_image)
         img_np = np.array(image)
-        
+
         img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR) if len(img_np.shape) == 3 else cv2.cvtColor(img_np, cv2.COLOR_GRAY2BGR)
         gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (9, 9), 2)
@@ -240,4 +244,4 @@ def calculate_group_size_v2(uploaded_image, target_width_mm=210.0, sensitivity=1
 
     except Exception as e:
         print(f"CV Error: {e}")
-        return {"groups": [], "annotated_image": np.array(image), "pixel_per_mm": 1.0, "shot_count": 0}
+        return {"groups": [], "annotated_image": img_np, "pixel_per_mm": 1.0, "shot_count": 0}
