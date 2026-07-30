@@ -9,6 +9,9 @@ from services.trajectory_service import (
     ProjectileData,
     TrajectoryPoint,
     TrajectoryResult,
+    drag_coefficient_g1,
+    drag_coefficient_g7,
+    speed_of_sound_ms,
     calculate_trajectory,
 )
 
@@ -208,3 +211,115 @@ class TestAltitudeIsSeaLevelReferenced:
                                         atmosphere=AtmosphericConditions(altitude_m=2500))
         assert mountain.points[-1].drop_cm > sea.points[-1].drop_cm
         assert mountain.points[-1].velocity_fps > sea.points[-1].velocity_fps
+
+
+class TestDragCurves:
+    def test_g1_matches_the_standard_table_at_key_machs(self):
+        assert drag_coefficient_g1(0.50) == pytest.approx(0.2032, abs=1e-4)
+        assert drag_coefficient_g1(1.00) == pytest.approx(0.4805, abs=1e-4)
+        assert drag_coefficient_g1(1.40) == pytest.approx(0.6625, abs=1e-4)
+        assert drag_coefficient_g1(3.00) == pytest.approx(0.4957, abs=1e-4)
+
+    def test_g7_matches_the_standard_table_at_key_machs(self):
+        assert drag_coefficient_g7(0.50) == pytest.approx(0.1194, abs=1e-4)
+        assert drag_coefficient_g7(1.05) == pytest.approx(0.4043, abs=1e-4)
+        assert drag_coefficient_g7(2.00) == pytest.approx(0.2917, abs=1e-4)
+
+    def test_curves_interpolate_between_table_points(self):
+        mid = drag_coefficient_g1(0.5250)
+        assert 0.2020 < mid < 0.2032
+
+    def test_curves_clamp_outside_the_table(self):
+        assert drag_coefficient_g1(-1.0) == drag_coefficient_g1(0.0)
+        assert drag_coefficient_g1(99.0) == drag_coefficient_g1(4.0)
+
+    def test_drag_peaks_around_the_transonic_barrier(self):
+        """Both curves rise steeply through Mach 1 — the reason subsonic
+        transition upsets a bullet."""
+        assert drag_coefficient_g1(1.4) > drag_coefficient_g1(0.5) * 3
+        assert drag_coefficient_g7(1.05) > drag_coefficient_g7(0.5) * 3
+
+    def test_speed_of_sound_tracks_temperature(self):
+        assert speed_of_sound_ms(15) == pytest.approx(340.3, rel=0.005)
+        assert speed_of_sound_ms(0) == pytest.approx(331.3, rel=0.005)
+        assert speed_of_sound_ms(35) > speed_of_sound_ms(-5)
+
+    def test_g7_bc_selects_the_g7_curve(self):
+        assert ProjectileData(weight_grains=168, bc_g1=0.462).drag_model == "G1"
+        assert ProjectileData(weight_grains=168, bc_g7=0.224).drag_model == "G7"
+
+
+class TestAgainstPublishedData:
+    """Remaining velocity against published tables.
+
+    The drag term used to divide by BC *and* apply the projectile's own area
+    and mass. BC already carries sectional density, so counting it twice
+    penalised light bullets by 1/SD: the .308 came out right while the .223
+    lost 44% of its velocity by 300m. With area and mass gone the two SD
+    terms cancel and only BC remains.
+    """
+
+    def _velocities(self, bc, mv_fps, distances):
+        proj = ProjectileData(
+            weight_grains=100, bc_g1=bc, diameter_mm=7.0, muzzle_velocity_fps=mv_fps
+        )
+        result = calculate_trajectory(
+            proj, zero_range_m=100, max_range_m=max(distances), step_m=min(distances)
+        )
+        return {p.range_m: p.velocity_fps for p in result.points}
+
+    def test_308_168gr(self):
+        v = self._velocities(0.462, 2650, [100, 200, 300])
+        assert v[100] == pytest.approx(2440, rel=0.03)
+        assert v[200] == pytest.approx(2240, rel=0.03)
+        assert v[300] == pytest.approx(2040, rel=0.03)
+
+    def test_3006_180gr(self):
+        v = self._velocities(0.480, 2700, [100, 200, 300])
+        assert v[300] == pytest.approx(2120, rel=0.03)
+
+    def test_223_55gr_light_low_bc(self):
+        """The case the old model got worst. Held to 15% because a G1 BC
+        understates a spitzer's real supersonic performance — the residual is
+        the drag model's shape mismatch, not the arithmetic."""
+        v = self._velocities(0.243, 3240, [100, 200, 300])
+        assert v[100] == pytest.approx(2900, rel=0.06)
+        assert v[300] == pytest.approx(2300, rel=0.15)
+
+    def test_9mm_115gr_subsonic_pistol(self):
+        v = self._velocities(0.140, 1180, [50, 100])
+        assert v[50] == pytest.approx(1110, rel=0.10)
+        assert v[100] == pytest.approx(1050, rel=0.10)
+
+    def test_no_caliber_is_off_by_more_than_the_old_worst_case(self):
+        """The old model peaked at 44% error. Nothing may regress past 15%."""
+        cases = [
+            (0.462, 2650, {100: 2440, 200: 2240, 300: 2040}),
+            (0.243, 3240, {100: 2900, 200: 2590, 300: 2300}),
+            (0.480, 2700, {100: 2500, 200: 2310, 300: 2120}),
+            (0.400, 2960, {100: 2740, 200: 2530, 300: 2330}),
+            (0.243, 3680, {100: 3310, 200: 2960, 300: 2640}),
+        ]
+        for bc, mv, expected in cases:
+            got = self._velocities(bc, mv, list(expected))
+            for dist, want in expected.items():
+                error = abs(got[dist] - want) / want
+                assert error < 0.15, f"BC {bc} @ {dist}m: {error:.1%}"
+
+    def test_g1_and_g7_agree_when_given_equivalent_bcs(self):
+        """A G7 BC of 0.224 is the published equivalent of G1 0.462 for a
+        .308 168gr. Two independent curves must reach the same answer."""
+        g1 = ProjectileData(weight_grains=168, bc_g1=0.462, diameter_mm=7.82, muzzle_velocity_fps=2650)
+        g7 = ProjectileData(weight_grains=168, bc_g7=0.224, diameter_mm=7.82, muzzle_velocity_fps=2650)
+        r1 = calculate_trajectory(g1, max_range_m=300, step_m=100)
+        r7 = calculate_trajectory(g7, max_range_m=300, step_m=100)
+        assert r7.points[-1].velocity_fps == pytest.approx(r1.points[-1].velocity_fps, rel=0.02)
+        assert r7.points[-1].drop_cm == pytest.approx(r1.points[-1].drop_cm, rel=0.03)
+
+    def test_drop_matches_published_figures(self):
+        proj = ProjectileData(weight_grains=168, bc_g1=0.462, diameter_mm=7.82, muzzle_velocity_fps=2650)
+        r = calculate_trajectory(proj, zero_range_m=100, max_range_m=400, step_m=100)
+        drops = {p.range_m: p.drop_cm for p in r.points}
+        assert drops[200] == pytest.approx(-13.5, abs=2.0)
+        assert drops[300] == pytest.approx(-49.0, abs=4.0)
+        assert drops[400] == pytest.approx(-109.0, abs=8.0)

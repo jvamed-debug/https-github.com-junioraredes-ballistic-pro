@@ -35,7 +35,9 @@ def show_trajectory_tab(db, selected_caliber, selected_projectile):
         )
         proj_dia = st.number_input(
             "Diametro (mm)", min_value=4.0, max_value=20.0, value=7.62, step=0.01,
-            format="%.2f", key="traj_dia"
+            format="%.2f", key="traj_dia",
+            help="Registro apenas. O diametro nao entra no calculo: o "
+                 "coeficiente balistico ja o carrega, pela densidade seccional."
         )
 
         caliber_data = db["calibers"].get(selected_caliber, {})
