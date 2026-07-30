@@ -33,3 +33,7 @@ engineering-ai-platform/
 .vscode/
 *.swp
 *.swo
+
+# Cobertura de testes
+.coverage
+htmlcov/
