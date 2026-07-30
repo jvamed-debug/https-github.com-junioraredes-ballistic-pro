@@ -10,8 +10,72 @@ Implementa modelo de arrasto G1/G7 simplificado para calculo de:
 
 from __future__ import annotations
 
+import bisect
 import math
 from dataclasses import dataclass, field
+
+#  Coeficiente de arrasto do projetil padrao G1 (base plana, ogiva curta) em
+#  funcao do numero de Mach. Referencia classica de balistica externa.
+_G1_MACH = [
+    0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55,
+    0.60, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925,
+    0.95, 0.975, 1.00, 1.025, 1.05, 1.075, 1.10, 1.125, 1.15, 1.20, 1.25,
+    1.30, 1.35, 1.40, 1.50, 1.60, 1.80, 2.00, 2.20, 2.50, 3.00, 3.50, 4.00,
+]
+_G1_CD = [
+    0.2629, 0.2558, 0.2487, 0.2413, 0.2344, 0.2278, 0.2214, 0.2155, 0.2104,
+    0.2061, 0.2032, 0.2020, 0.2034, 0.2165, 0.2230, 0.2313, 0.2417, 0.2546,
+    0.2706, 0.2901, 0.3136, 0.3415, 0.3734, 0.4084, 0.4448, 0.4805, 0.5136,
+    0.5427, 0.5677, 0.5883, 0.6053, 0.6191, 0.6393, 0.6518, 0.6589, 0.6621,
+    0.6625, 0.6573, 0.6483, 0.6245, 0.5996, 0.5759, 0.5419, 0.4957, 0.4595,
+    0.4306,
+]
+
+#  Projetil padrao G7 (boat-tail, ogiva longa) — descreve muito melhor
+#  projeteis modernos de precisao.
+_G7_MACH = [
+    0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55,
+    0.60, 0.65, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90,
+    0.925, 0.95, 0.975, 1.00, 1.025, 1.05, 1.075, 1.10, 1.125, 1.15, 1.20,
+    1.25, 1.30, 1.35, 1.40, 1.50, 1.60, 1.80, 2.00, 2.20, 2.50, 3.00, 3.50,
+    4.00,
+]
+_G7_CD = [
+    0.1198, 0.1197, 0.1196, 0.1194, 0.1193, 0.1194, 0.1194, 0.1194, 0.1193,
+    0.1193, 0.1194, 0.1193, 0.1194, 0.1197, 0.1202, 0.1207, 0.1215, 0.1226,
+    0.1242, 0.1266, 0.1306, 0.1368, 0.1464, 0.1660, 0.2054, 0.2993, 0.3803,
+    0.4015, 0.4043, 0.4034, 0.4014, 0.3987, 0.3955, 0.3884, 0.3810, 0.3732,
+    0.3657, 0.3580, 0.3440, 0.3315, 0.3097, 0.2917, 0.2751, 0.2531, 0.2251,
+    0.2050, 0.1892,
+]
+
+#  Fecha a conversao entre o BC (lb/in2) e as unidades SI do resto da conta.
+#  Vem de (pi/4) x (lb/in2 -> kg/m2): e nele que a densidade seccional do
+#  projetil se cancela contra a que ja esta embutida no BC.
+_BC_TO_SI = 5.5851e-4
+
+
+def _interpolate(mach: float, machs: list[float], cds: list[float]) -> float:
+    if mach <= machs[0]:
+        return cds[0]
+    if mach >= machs[-1]:
+        return cds[-1]
+    i = bisect.bisect_left(machs, mach)
+    m0, m1 = machs[i - 1], machs[i]
+    c0, c1 = cds[i - 1], cds[i]
+    return c0 + (c1 - c0) * (mach - m0) / (m1 - m0)
+
+
+def drag_coefficient_g1(mach: float) -> float:
+    return _interpolate(mach, _G1_MACH, _G1_CD)
+
+
+def drag_coefficient_g7(mach: float) -> float:
+    return _interpolate(mach, _G7_MACH, _G7_CD)
+
+
+def speed_of_sound_ms(temperature_c: float) -> float:
+    return 331.3 * math.sqrt(1 + temperature_c / 273.15)
 
 
 @dataclass
@@ -82,6 +146,11 @@ class ProjectileData:
     def bc_effective(self) -> float:
         return self.bc_g7 if self.bc_g7 > 0 else self.bc_g1
 
+    @property
+    def drag_model(self) -> str:
+        """Um BC so vale com a curva de arrasto a que foi medido."""
+        return "G7" if self.bc_g7 > 0 else "G1"
+
 
 @dataclass
 class TrajectoryPoint:
@@ -126,8 +195,6 @@ def calculate_trajectory(
     v0 = projectile.muzzle_velocity_ms
     m = projectile.weight_kg
     rho = atmosphere.air_density
-    d = projectile.diameter_mm / 1000 if projectile.diameter_mm > 0 else 0.00762
-    area = math.pi * (d / 2) ** 2
 
     g = 9.80665
     dt = 0.0001
@@ -135,16 +202,19 @@ def calculate_trajectory(
 
     wind_cross = wind_speed_ms * math.sin(math.radians(wind_angle_deg))
 
-    def drag_coeff(v: float) -> float:
-        mach = v / 343.0
-        if mach < 0.8:
-            return 0.12
-        elif mach < 1.0:
-            return 0.12 + (mach - 0.8) * 2.0
-        elif mach < 1.2:
-            return 0.52 - (mach - 1.0) * 1.0
-        else:
-            return 0.32 / mach
+    sound_ms = speed_of_sound_ms(atmosphere.temperature_c)
+    cd_of = drag_coefficient_g7 if projectile.drag_model == "G7" else drag_coefficient_g1
+
+    #  Desaceleracao por arrasto: a = retard * v^2.
+    #
+    #  O BC ja carrega a densidade seccional do projetil (BC = SD / fator de
+    #  forma), entao ela nao pode entrar de novo por area e massa. A versao
+    #  anterior fazia as duas coisas, o que penalizava projetil leve na
+    #  proporcao de 1/SD: o .308 168gr saia certo enquanto o .223 55gr perdia
+    #  44% da velocidade a 300m contra o dado publicado. Com area e massa fora
+    #  da conta, os dois termos de SD se cancelam e sobra so o BC.
+    def retardation(v: float) -> float:
+        return _BC_TO_SI * rho * cd_of(v / sound_ms) / bc
 
     # First pass: find angle for zero
     def simulate(launch_angle: float, collect_range: float = max_range_m) -> list[TrajectoryPoint]:
@@ -162,8 +232,7 @@ def calculate_trajectory(
             if v < 10:
                 break
 
-            cd = drag_coeff(v)
-            retard = (rho * area * cd) / (2 * bc * m)
+            retard = retardation(v)
 
             ax = -retard * vx * v
             ay = -g - retard * vy * v
