@@ -40,3 +40,36 @@ class BallisticsService:
             return 0
         return (v_target * charge_current) / v_current
 
+    # Fatores de conversão exatos, isolados para que os testes possam fixá-los.
+    GRAIN_TO_KG = 0.0000647989
+    GRAM_TO_GRAIN = 15.4324
+    FPS_TO_MS = 0.3048
+
+    @classmethod
+    def muzzle_energy_joules(cls, projectile_grains: float, velocity_fps: float) -> float:
+        """Energia cinética na boca do cano, em joules."""
+        mass_kg = projectile_grains * cls.GRAIN_TO_KG
+        velocity_ms = velocity_fps * cls.FPS_TO_MS
+        return 0.5 * mass_kg * velocity_ms ** 2
+
+    @classmethod
+    def estimate_charge_grains(
+        cls,
+        projectile_grains: float,
+        velocity_fps: float,
+        calorific_j_per_g: float,
+        efficiency_percent: float,
+    ) -> float:
+        """Massa de pólvora que entregaria essa energia, pela conservação de energia.
+
+        Modelo termodinâmico de primeira ordem: energia do projétil dividida
+        pela energia útil por grama de pólvora. Ignora a curva de pressão, o
+        volume da câmara e o tempo de queima, então serve para comparar
+        ordens de grandeza — nunca para definir uma carga real.
+        """
+        if calorific_j_per_g <= 0 or efficiency_percent <= 0:
+            return 0.0
+        energy_j = cls.muzzle_energy_joules(projectile_grains, velocity_fps)
+        powder_g = energy_j / (calorific_j_per_g * (efficiency_percent / 100))
+        return powder_g * cls.GRAM_TO_GRAIN
+
