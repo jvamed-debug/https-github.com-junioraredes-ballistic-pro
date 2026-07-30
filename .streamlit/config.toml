@@ -2,18 +2,25 @@
 headless = true
 address = "0.0.0.0"
 port = 8501
-enableCORS = false
+# enableCORS é forçado a true sempre que a proteção XSRF está ligada;
+# declará-lo como false só gerava um aviso a cada inicialização.
 enableXsrfProtection = true
 maxUploadSize = 10
 fileWatcherType = "none"
+# Publica ./static em app/static — necessário para o manifest e os ícones da PWA.
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false
 
+# Espelha a paleta de ui/styles.py. Enquanto declarava tema claro, o app
+# piscava branco antes do CSS carregar e os menus nativos que o Streamlit
+# renderiza fora da árvore (selectbox, date picker) vinham claros sobre o
+# fundo escuro.
 [theme]
-base = "light"
-primaryColor = "#2563eb"
-backgroundColor = "#f4f4f5"
-secondaryBackgroundColor = "#ffffff"
-textColor = "#000000"
+base = "dark"
+primaryColor = "#f59e0b"
+backgroundColor = "#0a0e14"
+secondaryBackgroundColor = "#11151c"
+textColor = "#f8fafc"
 font = "sans serif"
