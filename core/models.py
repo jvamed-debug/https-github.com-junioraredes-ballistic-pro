@@ -338,12 +338,17 @@ def init_db_if_empty():
             except (FileNotFoundError, KeyError):
                 pass
             
-            # Busca senha no nível raiz ou dentro de [passwords]
-            admin_pass = st.secrets.get("admin_password")
-            if not admin_pass and "passwords" in st.secrets:
-                admin_pass = st.secrets["passwords"].get("admin_password")
-            
-            has_admin_secret = admin_pass is not None
+            # Busca senha na env var, no nível raiz dos secrets ou dentro de [passwords]
+            admin_pass = _os.environ.get("ADMIN_PASSWORD")
+            if not admin_pass:
+                try:
+                    admin_pass = st.secrets.get("admin_password")
+                    if not admin_pass and "passwords" in st.secrets:
+                        admin_pass = st.secrets["passwords"].get("admin_password")
+                except (FileNotFoundError, KeyError):
+                    admin_pass = None
+
+            has_admin_secret = bool(admin_pass)
             
             if is_production and not has_admin_secret:
                 print("[CRITICAL] Bloqueio de Segurança: Não foi possível criar admin padrão em produção sem 'admin_password' nos Secrets.")

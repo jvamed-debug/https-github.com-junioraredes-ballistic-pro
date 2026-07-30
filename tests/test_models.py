@@ -5,6 +5,8 @@ import base64
 import os
 from unittest.mock import patch, MagicMock
 
+from cryptography.fernet import Fernet
+
 
 class TestGetEncryptionSuite:
     @patch("core.models.st")
@@ -211,3 +213,53 @@ class TestCreateDbEngine:
             from core.models import create_db_engine
             engine = create_db_engine()
             assert "sqlite" in str(engine.url)
+
+
+class TestInitDbIfEmpty:
+    """The initial admin user is the only way into a fresh production deploy."""
+
+    def _run(self, env):
+        """Run init_db_if_empty against an empty in-memory DB, returning created users."""
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import core.models as models
+
+        engine = create_engine("sqlite:///:memory:")
+        models.Base.metadata.create_all(engine)
+        session = sessionmaker(bind=engine)()
+
+        secrets = MagicMock()
+        secrets.__contains__ = MagicMock(return_value=False)
+        secrets.__getitem__ = MagicMock(side_effect=KeyError)
+        secrets.get = MagicMock(return_value=None)
+
+        with patch.object(models, "get_session", return_value=session), \
+             patch.object(models, "st", MagicMock(secrets=secrets)), \
+             patch.dict(os.environ, env, clear=True):
+            models.init_db_if_empty()
+
+        query_session = sessionmaker(bind=engine)()
+        return query_session.query(models.User).all()
+
+    def test_admin_password_env_var_creates_admin_in_production(self):
+        users = self._run({
+            "DATABASE_URL": "postgresql://u:p@h/db",
+            "FERNET_KEY": Fernet.generate_key().decode(),
+            "ADMIN_PASSWORD": "senha-forte-do-deploy",
+        })
+        assert len(users) == 1
+        assert users[0].username == "atirador_pro"
+        assert users[0].check_password("senha-forte-do-deploy")
+
+    def test_production_without_admin_password_creates_nobody(self):
+        assert self._run({"DATABASE_URL": "postgresql://u:p@h/db"}) == []
+
+    def test_development_falls_back_to_default_password(self):
+        users = self._run({})
+        assert len(users) == 1
+        assert users[0].check_password("ballistic_admin_2025!")
+
+    def test_env_var_takes_priority_over_default(self):
+        users = self._run({"ADMIN_PASSWORD": "sobrescreve-o-padrao"})
+        assert users[0].check_password("sobrescreve-o-padrao")
+        assert not users[0].check_password("ballistic_admin_2025!")
