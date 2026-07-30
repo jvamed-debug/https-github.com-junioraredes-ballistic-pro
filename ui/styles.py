@@ -47,8 +47,21 @@ def apply_custom_styles():
         letter-spacing: 1px;
     }
 
-    p, span, div {
+    /* Escopado ao corpo da página: um seletor solto em `div` vaza para dentro
+       de todo componente aninhado e sobrescreve as cores próprias deles. */
+    .stMarkdown p, .stMarkdown span, .stMarkdown li {
         color: var(--text-body);
+    }
+
+    /* === Foco visível para navegação por teclado === */
+    .stButton > button:focus-visible,
+    .stDownloadButton > button:focus-visible,
+    .stTabs [data-baseweb="tab"]:focus-visible,
+    [data-testid="stSidebarCollapsedControl"] button:focus-visible,
+    a:focus-visible,
+    summary:focus-visible {
+        outline: 2px solid var(--accent-primary) !important;
+        outline-offset: 2px !important;
     }
 
     /* === Sidebar Tática === */
@@ -98,12 +111,24 @@ def apply_custom_styles():
     }
 
     /* === Guias (Tabs) - Estilo Painel === */
+    /* São oito guias; num celular elas não cabem lado a lado, então a lista
+       rola na horizontal em vez de espremer os rótulos. */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0;
         background-color: var(--card-bg);
         border: 1px solid var(--border-color);
         padding: 0;
         border-radius: var(--br-radius);
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-secondary) transparent;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { height: 3px; }
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track { background: transparent; }
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
+        background: var(--accent-secondary);
     }
 
     .stTabs [data-baseweb="tab"] {
@@ -112,7 +137,10 @@ def apply_custom_styles():
         border: none !important;
         border-right: 1px solid var(--border-color) !important;
         padding: 0 20px !important;
-        color: var(--text-light) !important;
+        white-space: nowrap;
+        /* --text-light sobre o fundo do painel dá 3.9:1, abaixo do mínimo de
+           4.5:1 da WCAG AA para este tamanho. --text-body dá 7.3:1. */
+        color: var(--text-body) !important;
         font-family: 'Rajdhani', sans-serif !important;
         font-weight: 600 !important;
         text-transform: uppercase;
@@ -234,15 +262,63 @@ def apply_custom_styles():
         .stMetric { padding: 1rem !important; }
         .stMetric [data-testid="stMetricValue"] { font-size: 1.4rem !important; }
         .header-title { font-size: 2.2rem !important; }
+
+        /* Alvos de toque de 44px: recarga é feita de pé, na bancada,
+           frequentemente com uma mão só. */
+        .stButton > button,
+        .stDownloadButton > button {
+            min-height: 44px;
+            padding: 0.75rem 1.25rem;
+        }
+
+        .stTextInput input,
+        .stNumberInput input,
+        .stDateInput input { min-height: 44px; }
+
+        .stTabs [data-baseweb="tab"] { padding: 0 14px !important; }
+
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
     }
 
-    /* Esconder Elementos do Streamlit */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* === Movimento reduzido === */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+        .stButton > button:active { transform: none; }
+    }
+
+    /* === Esconder Elementos do Streamlit ===
+       O cabeçalho não pode ser ocultado por inteiro: no mobile ele abriga o
+       botão que reabre a sidebar recolhida, e sem ele o logout fica inacessível. */
+    #MainMenu {display: none;}
+    footer {display: none;}
     div.stDeployButton {display: none;}
     [data-testid="stToolbar"] {display: none;}
-    
+    [data-testid="stDecoration"] {display: none;}
+
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: auto !important;
+    }
+
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+    }
+
+    [data-testid="stSidebarCollapsedControl"] button {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--accent-primary) !important;
+        color: var(--accent-primary) !important;
+    }
+
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;

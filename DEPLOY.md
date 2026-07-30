@@ -20,7 +20,7 @@
    - **Password:** gere uma senha forte
    - **Database:** `ballistic_db`
 3. Salve e aguarde o container iniciar
-4. Copie a connection string interna: `postgresql://postgres:SENHA@db.ballistic-pro.internal:5432/ballistic_db`
+4. Copie a connection string interna: `postgresql://postgres:SENHA@ballistic-pro_db:5432/ballistic_db`
 
 ## 3. Criar o Serviço da Aplicação
 
@@ -37,8 +37,13 @@ Em **Environment**, adicione:
 
 | Variável | Valor |
 |----------|-------|
-| `DATABASE_URL` | `postgresql://postgres:SENHA@db.ballistic-pro.internal:5432/ballistic_db` |
+| `DATABASE_URL` | `postgresql://postgres:SENHA@ballistic-pro_db:5432/ballistic_db` |
 | `FERNET_KEY` | Gere com: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+| `ADMIN_PASSWORD` | Senha do usuário inicial `atirador_pro` |
+
+> O hostname interno do EasyPanel segue o formato `NOME_PROJETO_NOME_SERVICO`. Com o projeto `ballistic-pro` e o serviço Postgres chamado `db`, o host é `ballistic-pro_db`. Você também pode copiar a *Internal Connection URL* direto da aba de credenciais do serviço Postgres.
+
+`ADMIN_PASSWORD` é obrigatória no primeiro deploy: em produção a aplicação se recusa a criar o usuário inicial com uma senha padrão. Sem ela o banco sobe vazio e não há como entrar. Depois de criar sua própria conta, remova a variável.
 
 Variáveis opcionais (S3, AI):
 
