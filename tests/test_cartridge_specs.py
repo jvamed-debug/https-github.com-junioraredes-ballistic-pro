@@ -8,11 +8,14 @@ import pytest
 
 from services.cartridge_specs import (
     LARGE_PISTOL,
+    LARGE_RIFLE,
     SMALL_PISTOL,
+    SMALL_RIFLE,
     SPECS,
     check_overall_length,
     check_primer_size,
     get_spec,
+    get_usage_warning,
 )
 
 
@@ -93,3 +96,50 @@ class TestPrimerSize:
         """Free text that names no size gives nothing to check."""
         assert check_primer_size("9mm Luger", "CBC 1 1/2") is None
         assert check_primer_size("9mm Luger", "") is None
+
+
+class TestRifleCartridges:
+    def test_rifle_pressures_match_the_manual(self):
+        assert SPECS[".308 WINCHESTER"].max_pressure_cup == 52_000
+        assert SPECS[".308 WINCHESTER"].max_pressure_psi == 62_000
+        assert SPECS[".30-06 SPRING."].max_pressure_cup == 50_000
+        assert SPECS[".223 REMINGTON"].max_pressure_psi == 55_000
+        assert SPECS[".22-250 REMINGTON"].max_pressure_psi == 65_000
+        assert SPECS[".30-30 WINCHESTER"].max_pressure_cup == 38_000
+
+    def test_rifle_primers_are_recorded(self):
+        assert SPECS[".223 REMINGTON"].primer == SMALL_RIFLE
+        assert SPECS[".308 WINCHESTER"].primer == LARGE_RIFLE
+        assert SPECS[".30-06 SPRING."].primer == LARGE_RIFLE
+
+    def test_lever_action_cartridges_use_pistol_primers(self):
+        """Straight-walled nineteenth-century designs fired from a long gun
+        still take a pistol primer, and their pressure ceilings are low."""
+        assert SPECS[".44 - 40 WINCHESTER"].primer == LARGE_PISTOL
+        assert SPECS[".32-20 WINCHESTER"].primer == SMALL_PISTOL
+        assert SPECS[".44 - 40 WINCHESTER"].max_pressure_cup == 13_000
+
+    def test_rifle_and_pistol_primers_are_not_interchangeable(self):
+        assert check_primer_size(".308 WINCHESTER", "CBC Small Pistol") is not None
+        assert check_primer_size("9mm Luger", "Large Rifle 9 1/2") is not None
+        assert check_primer_size(".308 WINCHESTER", "CBC 9 1/2 Large Rifle") is None
+
+
+class TestUsageWarnings:
+    def test_the_44_40_carbine_restriction_is_carried(self):
+        """The manual sets this one in capitals: the published charges exceed
+        what a revolver in this caliber is built for."""
+        warning = get_usage_warning(".44 - 40 WINCHESTER")
+        assert warning is not None
+        assert "NAO USE ESTAS CARGAS EM REVOLVERES" in warning
+
+    def test_military_ammunition_warnings_are_carried(self):
+        assert "militar" in get_usage_warning(".308 WINCHESTER")
+        assert "militar" in get_usage_warning(".223 REMINGTON")
+
+    def test_357_maximum_is_flagged_as_not_for_revolvers(self):
+        assert "revolveres" in get_usage_warning(".357 MAXIMUM")
+
+    def test_cartridges_without_a_restriction_return_none(self):
+        assert get_usage_warning("9mm Luger") is None
+        assert get_usage_warning(".338 Lapua") is None

@@ -28,6 +28,8 @@ class CartridgeSpec:
     #  Limite separado para cargas +P, quando o cartucho admite.
     max_pressure_cup_plus_p: int | None = None
     max_pressure_psi_plus_p: int | None = None
+    #  Restricao de uso que o manual faz questao de destacar.
+    usage_warning: str | None = None
 
     @property
     def accepts_plus_p(self) -> bool:
@@ -39,6 +41,9 @@ class CartridgeSpec:
 
 SMALL_PISTOL = "Small Pistol"
 LARGE_PISTOL = "Large Pistol"
+SMALL_PISTOL_MAGNUM = "Small Pistol Magnum"
+SMALL_RIFLE = "Small Rifle"
+LARGE_RIFLE = "Large Rifle"
 
 
 _SPECS = [
@@ -63,6 +68,46 @@ _SPECS = [
     CartridgeSpec(
         ".38 SUPER AUTO", 33_000, None, 32.51, SMALL_PISTOL, (0.355, 0.356),
         max_pressure_cup_plus_p=33_000,
+    ),
+
+    #  Armas longas raiadas.
+    CartridgeSpec(".22-250 REMINGTON", 53_000, 65_000, 59.69, LARGE_RIFLE, (0.223, 0.224)),
+    CartridgeSpec(
+        ".223 REMINGTON", 52_000, 55_000, 57.40, SMALL_RIFLE, (0.223, 0.224),
+        usage_warning="Nao use municao militar 5,56x45 em arma civil.",
+    ),
+    CartridgeSpec(
+        ".308 WINCHESTER", 52_000, 62_000, 71.12, LARGE_RIFLE, (0.308,),
+        usage_warning="Nao use municao militar 7,62x51 em arma civil.",
+    ),
+    CartridgeSpec(".30-06 SPRING.", 50_000, 60_000, 84.84, LARGE_RIFLE, (0.308,)),
+    CartridgeSpec(".30-30 WINCHESTER", 38_000, 42_000, 64.77, LARGE_RIFLE, (0.308,)),
+    CartridgeSpec("7X57 MAUSER", 46_000, 51_000, 77.85, LARGE_RIFLE, (0.284,)),
+    CartridgeSpec("7MM-08 REMINGTON", 52_000, 61_000, 71.12, LARGE_RIFLE, (0.284,)),
+    CartridgeSpec("7-30 WATERS", 40_000, 45_000, 64.77, LARGE_RIFLE, (0.284,)),
+    CartridgeSpec("6,5X55 MAUSER", 46_200, None, 80.00, LARGE_RIFLE, (0.264,)),
+    CartridgeSpec("30 M1 CARABINA", 40_000, None, 42.67, SMALL_RIFLE, (0.308,)),
+
+    #  Cartuchos de estojo reto usados em carabina de alavanca. Espoleta de
+    #  pistola apesar da arma longa, e limites de pressao baixos: sao projetos
+    #  do fim do seculo XIX.
+    CartridgeSpec(".32-20 WINCHESTER", 16_000, None, 40.39, SMALL_PISTOL, (0.312, 0.313)),
+    CartridgeSpec(".38-40 WINCHESTER", 14_000, None, 40.44, LARGE_PISTOL, (0.400,)),
+    CartridgeSpec(
+        ".44 - 40 WINCHESTER", 13_000, None, 40.44, LARGE_PISTOL, (0.427, 0.430),
+        usage_warning=(
+            "As cargas publicadas pela Revista Magnum para este calibre sao "
+            "exclusivas de carabina Winchester 1892 em perfeito estado ou Puma "
+            "065, que suportam pressao maior que o limite SAAMI. O manual e "
+            "explicito: NAO USE ESTAS CARGAS EM REVOLVERES."
+        ),
+    ),
+    CartridgeSpec(
+        ".357 MAXIMUM", 51_500, None, 50.55, SMALL_PISTOL_MAGNUM, (0.357,),
+        usage_warning=(
+            "As cargas publicadas sao para Thompson/Contender ou arma longa "
+            "adaptada, nao para os revolveres existentes neste calibre."
+        ),
     ),
 ]
 
@@ -110,9 +155,25 @@ def check_primer_size(caliber: str | None, primer: str | None) -> str | None:
     if not (mentions_small or mentions_large):
         return None
 
-    wanted_small = spec.primer == SMALL_PISTOL
+    wanted_small = spec.primer.startswith("Small")
     if wanted_small and mentions_large:
-        return f"{spec.name} usa espoleta {SMALL_PISTOL}, nao Large."
+        return f"{spec.name} usa espoleta {spec.primer}, nao Large."
     if not wanted_small and mentions_small:
-        return f"{spec.name} usa espoleta {LARGE_PISTOL}, nao Small."
+        return f"{spec.name} usa espoleta {spec.primer}, nao Small."
+
+    #  Espoleta de pistola e de rifle nao sao intercambiaveis: a de rifle tem
+    #  copo mais espesso e mistura mais energetica.
+    mentions_rifle = "rifle" in text
+    mentions_pistol = "pistol" in text
+    wanted_rifle = "Rifle" in spec.primer
+    if wanted_rifle and mentions_pistol:
+        return f"{spec.name} usa espoleta {spec.primer}, nao de pistola."
+    if not wanted_rifle and mentions_rifle:
+        return f"{spec.name} usa espoleta {spec.primer}, nao de rifle."
     return None
+
+
+def get_usage_warning(caliber: str | None) -> str | None:
+    """Restricao de uso que o manual destaca para o cartucho."""
+    spec = get_spec(caliber)
+    return spec.usage_warning if spec else None
