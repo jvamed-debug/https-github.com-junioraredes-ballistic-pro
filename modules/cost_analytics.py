@@ -116,19 +116,19 @@ def show_cost_analytics(user_id):
 
         # Full inventory table
         st.markdown("##### Inventario Completo")
-        st.dataframe(df_inv, use_container_width=True, hide_index=True)
+        st.dataframe(df_inv, width='stretch', hide_index=True)
 
         # CSV exports
         exp_c1, exp_c2 = st.columns(2)
         with exp_c1:
             csv_inv = df_inv.to_csv(index=False).encode("utf-8")
-            st.download_button("EXPORTAR INVENTARIO (CSV)", csv_inv, "inventario.csv", "text/csv", use_container_width=True)
+            st.download_button("EXPORTAR INVENTARIO (CSV)", csv_inv, "inventario.csv", "text/csv", width='stretch')
 
         if sess_data:
             with exp_c2:
                 df_sess = pd.DataFrame(sess_data)
                 csv_sess = df_sess.to_csv(index=False).encode("utf-8")
-                st.download_button("EXPORTAR SESSOES (CSV)", csv_sess, "sessoes.csv", "text/csv", use_container_width=True)
+                st.download_button("EXPORTAR SESSOES (CSV)", csv_sess, "sessoes.csv", "text/csv", width='stretch')
     else:
         st.info("Nenhum item no inventario. Adicione insumos na aba **Log** para ver analises de custo.")
 

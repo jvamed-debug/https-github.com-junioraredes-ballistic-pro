@@ -83,7 +83,7 @@ def show_profile():
             old_pass = st.text_input("Senha Atual", type="password")
             new_pass = st.text_input("Nova Senha (min. 8 caracteres)", type="password")
             confirm_pass = st.text_input("Confirme a Nova Senha", type="password")
-            if st.form_submit_button("ALTERAR SENHA", use_container_width=True):
+            if st.form_submit_button("ALTERAR SENHA", width='stretch'):
                 if not old_pass or not new_pass:
                     st.error("Preencha todos os campos.")
                 elif new_pass != confirm_pass:
@@ -140,14 +140,14 @@ def show_profile():
         data=backup_json,
         file_name=f"ballistic_pro_backup_{user_data['name'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
         mime="application/json",
-        use_container_width=True
+        width='stretch'
     )
 
     # SQLite backup (local only)
     import os
     if os.path.exists("ballistics.db"):
         from utils.backup_mgr import run_backup
-        if st.button("Backup do Banco Local (SQLite)", use_container_width=True):
+        if st.button("Backup do Banco Local (SQLite)", width='stretch'):
             path = run_backup()
             if path:
                 st.success(f"Backup salvo em: {path}")
@@ -197,7 +197,7 @@ def show_profile():
         new_cr_exp = st.date_input("Validade do CR", value=u["cr_expiration"], format="DD/MM/YYYY")
         
         st.markdown("---")
-        if st.button("📄 Gerar Relatório de Acervo (PDF)", use_container_width=True):
+        if st.button("📄 Gerar Relatório de Acervo (PDF)", width='stretch'):
             with st.spinner("Gerando relatório..."):
                 pdf_data = create_inspection_report(user_data, firearms_data, sessions_data)
                 st.download_button(
@@ -213,7 +213,7 @@ def show_profile():
         addr_cols = st.columns([1, 1])
         cep = addr_cols[0].text_input("CEP", value=st.session_state.get("cep_val", ""), max_chars=9, placeholder="00000-000")
         
-        if addr_cols[1].button("🔍 Buscar CEP", use_container_width=True) and len(cep) >= 8:
+        if addr_cols[1].button("🔍 Buscar CEP", width='stretch') and len(cep) >= 8:
             with st.spinner("Buscando..."):
                 try:
                     clean_cep = re.sub(r'\D', '', cep)
@@ -239,7 +239,7 @@ def show_profile():
         bairro = c_bairro.text_input("Bairro", value=st.session_state.get("addr_neigh", ""), key="addr_neigh_key")
         cidade_uf = c_cidade.text_input("Cidade/UF", value=st.session_state.get("addr_city", ""), key="addr_city_key")
 
-    if st.button("Salvar Perfil Completo", use_container_width=True):
+    if st.button("Salvar Perfil Completo", width='stretch'):
         full_address = f"{logradouro}, {numero}"
         if complemento:
             full_address += f", {complemento}"
@@ -291,7 +291,7 @@ def show_profile():
     if firearms_data:
         for fd in firearms_data:
             if fd["image_url"]:
-                st.image(fd["image_url"], use_container_width=True)
+                st.image(fd["image_url"], width='stretch')
             
             cols = st.columns([3, 2, 2, 1])
             cols[0].markdown(f"**{fd['model']}** – Série: {fd['serial']}")

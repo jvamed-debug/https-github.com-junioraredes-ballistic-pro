@@ -104,7 +104,7 @@ def show_trajectory_tab(db, selected_caliber, selected_projectile):
             key="traj_wind_dir"
         )
 
-    if st.button("CALCULAR TRAJETORIA", use_container_width=True, type="primary"):
+    if st.button("CALCULAR TRAJETORIA", width='stretch', type="primary"):
         projectile = ProjectileData(
             weight_grains=proj_weight,
             bc_g1=proj_bc,
@@ -170,7 +170,7 @@ def show_trajectory_tab(db, selected_caliber, selected_projectile):
         df = pd.DataFrame(table_data)
 
         st.markdown("##### Tabela Balistica")
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width='stretch', hide_index=True)
 
         # Charts
         chart_c1, chart_c2 = st.columns(2)
@@ -223,5 +223,5 @@ def show_trajectory_tab(db, selected_caliber, selected_projectile):
             data=csv_data,
             file_name="tabela_balistica.csv",
             mime="text/csv",
-            use_container_width=True,
+            width='stretch',
         )
