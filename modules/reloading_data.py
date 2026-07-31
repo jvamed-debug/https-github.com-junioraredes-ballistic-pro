@@ -2,6 +2,7 @@ import streamlit as st
 from html import escape as html_escape
 
 from services.ballistics_service import BallisticsService
+from services.cartridge_specs import get_usage_warning
 from services.cbc_powders import check_powder_is_referenced
 
 def show_reloading_data(db, selected_caliber, selected_projectile, selected_powder, is_manual_mode):
@@ -239,6 +240,10 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
         
         #  Uma carga que nao consta em nenhuma fonte publicada nao pode ser
         #  apresentada com o mesmo peso das que constam.
+        usage = get_usage_warning(selected_caliber)
+        if usage:
+            st.warning(usage)
+
         provenance = check_powder_is_referenced(selected_caliber, selected_powder)
         if provenance:
             if "Nao use sem confirmar" in provenance:

@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import date
 from html import escape as html_escape
 from core.models import managed_session, ReloadSession, InventoryItem, Firearm
-from services.cartridge_specs import check_primer_size
+from services.cartridge_specs import check_primer_size, get_usage_warning
 from services.cbc_powders import check_powder_for_caliber, check_powder_is_referenced
 from services.reloading_service import ReloadingService
 from services.s3_service import s3_mgr
@@ -169,6 +169,10 @@ def show_logbook_and_inventory():
                     primer_warning = check_primer_size(r_caliber, r_primer)
                     if primer_warning:
                         st.warning(primer_warning)
+
+                    usage = get_usage_warning(r_caliber)
+                    if usage:
+                        st.warning(usage)
 
                     if r_caliber and r_qty > 0:
                         image_url = None

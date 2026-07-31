@@ -161,8 +161,17 @@ MAGNUM_TESTED: dict[str, set[str]] = {
     ".380 AUTO": {"CBC 209", "CBC 216", "CBC 219"},
     ".40 S&W": {"CBC 207", "CBC 210", "CBC 217"},
     ".44 REM. MAGNUM": {"CBC 207", "CBC 220"},
+    ".44 - 40 WINCHESTER": {"CBC 216", "CBC 217", "CBC 219"},
     ".45 AUTO": {"CBC 209", "CBC 216", "CBC 217", "CBC 219"},
     "9mm Luger": {"CBC 207", "CBC 210", "CBC 216", "CBC 217", "CBC 219"},
+    #  Armas longas raiadas. A 126 aparece testada no .223 e no .30-06, o que
+    #  o texto da CBC nao deixava claro — ele descreve a 126 com "calibres
+    #  como o", enumeracao que nao pretende ser fechada.
+    ".22-250 REMINGTON": {"CBC 102"},
+    ".223 REMINGTON": {"CBC 102", "CBC 126"},
+    ".308 WINCHESTER": {"CBC 102"},
+    ".30-06 SPRING.": {"CBC 102", "CBC 126"},
+    ".30-30 WINCHESTER": {"CBC 102", "CBC 126"},
 }
 
 
