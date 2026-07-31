@@ -323,3 +323,92 @@ class TestAgainstPublishedData:
         assert drops[200] == pytest.approx(-13.5, abs=2.0)
         assert drops[300] == pytest.approx(-49.0, abs=4.0)
         assert drops[400] == pytest.approx(-109.0, abs=8.0)
+
+
+class TestWindDrift:
+    """Drift used to accumulate `wind * dt * (1 - v/v0) * 0.5`. The 0.5 was a
+    fudge with nothing behind it, and it left drift about 43% short of
+    published tables — the dangerous direction, since a shooter who trusts the
+    figure holds too little wind and misses.
+
+    Drag now acts on velocity relative to the moving air mass, which produces
+    the lag that causes drift without any correction factor.
+    """
+
+    MPH_10 = 4.4704
+
+    def _proj(self):
+        return ProjectileData(
+            weight_grains=168, bc_g1=0.462, diameter_mm=7.82, muzzle_velocity_fps=2650
+        )
+
+    def _drift_at(self, distance, wind_ms, angle_deg=90.0):
+        r = calculate_trajectory(
+            self._proj(), zero_range_m=100, max_range_m=distance, step_m=100,
+            wind_speed_ms=wind_ms, wind_angle_deg=angle_deg,
+        )
+        return next(p for p in r.points if p.range_m == distance).wind_drift_cm
+
+    def test_matches_published_tables_within_a_fifth(self):
+        """Published .308 168gr figures for a 10 mph full-value crosswind.
+        The point-mass response runs about 15% high — a known trait of the
+        model, and far better than the 43% shortfall it replaces."""
+        for distance, published in ((100, 2.0), (200, 8.6), (300, 20.3), (400, 38.6)):
+            got = self._drift_at(distance, self.MPH_10)
+            assert got == pytest.approx(published, rel=0.20), f"{distance}m"
+
+    def test_drift_is_never_short_of_published(self):
+        """Erring high costs a hit; erring low is the one that surprises."""
+        for distance, published in ((200, 8.6), (300, 20.3), (400, 38.6)):
+            assert self._drift_at(distance, self.MPH_10) >= published
+
+    def test_head_and_tail_wind_cause_no_lateral_drift(self):
+        assert self._drift_at(300, self.MPH_10, angle_deg=0.0) == pytest.approx(0.0, abs=0.05)
+        assert self._drift_at(300, self.MPH_10, angle_deg=180.0) == pytest.approx(0.0, abs=0.05)
+
+    def test_oblique_wind_follows_the_cosine(self):
+        """A 45 degree wind is a 0.707 value wind, not a half value one."""
+        full = self._drift_at(300, self.MPH_10, angle_deg=90.0)
+        oblique = self._drift_at(300, self.MPH_10, angle_deg=45.0)
+        assert oblique / full == pytest.approx(0.707, rel=0.02)
+
+    def test_drift_scales_with_wind_speed(self):
+        single = self._drift_at(300, self.MPH_10)
+        double = self._drift_at(300, self.MPH_10 * 2)
+        assert double == pytest.approx(single * 2, rel=0.05)
+
+    def test_drift_grows_faster_than_distance(self):
+        """Drift comes from lag time, which compounds as the bullet slows."""
+        d200 = self._drift_at(200, self.MPH_10)
+        d400 = self._drift_at(400, self.MPH_10)
+        assert d400 > d200 * 4
+
+    def test_headwind_costs_velocity_and_tailwind_saves_it(self):
+        """The old model ignored the along-track component entirely."""
+        def velocity(angle):
+            r = calculate_trajectory(
+                self._proj(), zero_range_m=100, max_range_m=300, step_m=100,
+                wind_speed_ms=8.94, wind_angle_deg=angle,
+            )
+            return next(p for p in r.points if p.range_m == 300).velocity_fps
+
+        assert velocity(180) < velocity(90) < velocity(0)
+
+    def test_still_air_leaves_the_trajectory_untouched(self):
+        r = calculate_trajectory(
+            self._proj(), zero_range_m=100, max_range_m=300, step_m=100, wind_speed_ms=0.0
+        )
+        point = next(p for p in r.points if p.range_m == 300)
+        assert all(p.wind_drift_cm == 0.0 for p in r.points)
+        assert point.velocity_fps == pytest.approx(2040, rel=0.03)
+        assert point.drop_cm == pytest.approx(-49.0, abs=4.0)
+
+
+class TestRangeBounds:
+    def test_points_stop_at_the_requested_range(self):
+        """Asking for 300m used to return a 400m row as well."""
+        proj = ProjectileData(weight_grains=168, bc_g1=0.462, muzzle_velocity_fps=2650)
+        for max_range, step in ((300, 100), (400, 100), (500, 25)):
+            r = calculate_trajectory(proj, max_range_m=max_range, step_m=step)
+            assert r.points[-1].range_m == max_range
+            assert r.points[0].range_m == step

@@ -200,7 +200,10 @@ def calculate_trajectory(
     dt = 0.0001
     sight_height_m = sight_height_cm / 100
 
+    #  O vento entra decomposto: a parcela lateral desloca o projetil, a
+    #  frontal soma ou subtrai da velocidade relativa ao ar e altera a queda.
     wind_cross = wind_speed_ms * math.sin(math.radians(wind_angle_deg))
+    wind_along = wind_speed_ms * math.cos(math.radians(wind_angle_deg))
 
     sound_ms = speed_of_sound_ms(atmosphere.temperature_c)
     cd_of = drag_coefficient_g7 if projectile.drag_model == "G7" else drag_coefficient_g1
@@ -218,33 +221,40 @@ def calculate_trajectory(
 
     # First pass: find angle for zero
     def simulate(launch_angle: float, collect_range: float = max_range_m) -> list[TrajectoryPoint]:
-        x, y = 0.0, -sight_height_m
+        x, y, z = 0.0, -sight_height_m, 0.0
         vx = v0 * math.cos(launch_angle)
         vy = v0 * math.sin(launch_angle)
+        vz = 0.0
         t = 0.0
-        drift_x = 0.0
 
         points = []
         next_range = step_m
 
-        while x <= collect_range + step_m:
-            v = math.sqrt(vx ** 2 + vy ** 2)
-            if v < 10:
+        #  A margem de um passo garante que o ultimo alvo seja alcancado; a
+        #  coleta abaixo e que limita ao alcance pedido.
+        while x <= collect_range + step_m and next_range <= collect_range:
+            #  O arrasto age contra o ar, nao contra o solo. Trabalhar com a
+            #  velocidade relativa a massa de ar em movimento ja produz o
+            #  atraso que gera a deriva — nao ha fator de ajuste envolvido.
+            rel_x = vx - wind_along
+            rel_z = vz - wind_cross
+            v_rel = math.sqrt(rel_x ** 2 + vy ** 2 + rel_z ** 2)
+            if v_rel < 10:
                 break
 
-            retard = retardation(v)
+            retard = retardation(v_rel)
 
-            ax = -retard * vx * v
-            ay = -g - retard * vy * v
+            vx += -retard * rel_x * v_rel * dt
+            vy += (-g - retard * vy * v_rel) * dt
+            vz += -retard * rel_z * v_rel * dt
 
-            vx += ax * dt
-            vy += ay * dt
             x += vx * dt
             y += vy * dt
+            z += vz * dt
             t += dt
 
-            if wind_cross != 0:
-                drift_x += wind_cross * dt * (1 - v / v0) * 0.5
+            #  Velocidade em relacao ao solo, que e a que o cronografo mede.
+            v = math.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
 
             if x >= next_range:
                 drop_cm_val = y * 100
@@ -261,7 +271,7 @@ def calculate_trajectory(
                 energy_j_val = 0.5 * m * v ** 2
                 energy_ftlbs = energy_j_val * 0.737562
 
-                drift_cm = drift_x * 100
+                drift_cm = z * 100
                 drift_moa = (drift_cm / range_m) * 34.377 if range_m > 0 else 0
 
                 points.append(TrajectoryPoint(
