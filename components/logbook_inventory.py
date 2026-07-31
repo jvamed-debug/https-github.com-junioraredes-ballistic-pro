@@ -52,6 +52,24 @@ def _render_pending_reload_warnings():
             st.warning(text)
 
 
+def _render_pending_deductions():
+    """Mostra o que saiu do estoque na gravacao anterior e consome o registro."""
+    if "reload_deductions" not in st.session_state:
+        return
+    deducted = st.session_state.pop("reload_deductions")
+    if deducted:
+        st.success(f"Sessão salva. Insumos deduzidos: {len(deducted)} item(ns)")
+        with st.expander("Ver deduções"):
+            for msg in deducted:
+                st.caption(f"• {msg}")
+    else:
+        st.success("Sessão salva no Logbook!")
+        st.caption(
+            "ℹ️ Nenhum insumo correspondente encontrado no estoque para "
+            "dedução automática."
+        )
+
+
 def show_logbook_and_inventory():
     if "user_id" not in st.session_state:
         st.error("Login necessário.")
@@ -64,6 +82,7 @@ def show_logbook_and_inventory():
 
     with log_tab:
         st.markdown("### 📔 REGISTRO DE OPERAÇÕES (LOGBOOK)")
+        _render_pending_deductions()
         _render_pending_reload_warnings()
         st.markdown("""
             <div style='background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-primary); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
@@ -263,14 +282,11 @@ def show_logbook_and_inventory():
                             })()
                             _, deducted = ReloadingService.deduct_inventory(sess_for_deduct, user_id)
 
-                            if deducted:
-                                st.success(f"Sessão salva no Logbook! Insumos deduzidos: {len(deducted)} item(ns)")
-                                with st.expander("Ver deduções"):
-                                    for msg in deducted:
-                                        st.caption(f"• {msg}")
-                            else:
-                                st.success("Sessão salva no Logbook!")
-                                st.caption("ℹ️ Nenhum insumo correspondente encontrado no estoque para dedução automática.")
+                            #  O que saiu do estoque so existe aqui: a lista de
+                            #  sessoes confirma a gravacao, mas nada mostra
+                            #  quanta polvora e quantas espoletas foram
+                            #  debitadas. Guardado para depois do rerun.
+                            st.session_state["reload_deductions"] = list(deducted)
                             st.rerun()
                         except Exception as e:
                             st.error(f"Dados técnicos inválidos: {str(e)}")

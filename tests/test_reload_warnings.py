@@ -11,6 +11,8 @@ Collecting them as data instead of drawing them lets the result cross the
 rerun in session_state, and makes the decision testable without Streamlit.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from components.logbook_inventory import BLOCKING, CAUTION, collect_reload_warnings
@@ -98,3 +100,66 @@ class TestCombinations:
             isinstance(severity, str) and isinstance(text, str)
             for severity, text in warnings
         )
+
+
+class TestDeductionHandoff:
+    """What left the stock only exists in the save branch. The session list
+    confirms the record, but nothing else says how much powder and how many
+    primers were debited — so it has to cross the rerun too."""
+
+    def _render(self, state):
+        import components.logbook_inventory as mod
+
+        calls = []
+        fake = MagicMock()
+        fake.session_state = state
+        fake.success.side_effect = lambda m: calls.append(("success", m))
+        fake.caption.side_effect = lambda m: calls.append(("caption", m))
+        fake.expander.return_value.__enter__ = lambda s: None
+        fake.expander.return_value.__exit__ = lambda s, *a: None
+        with patch.object(mod, "st", fake):
+            mod._render_pending_deductions()
+        return calls
+
+    def test_reports_what_was_debited(self):
+        state = {"reload_deductions": ["Pólvora CBC 216: -180g", "Espoleta: -50un"]}
+        calls = self._render(state)
+        assert any("2 item(ns)" in m for kind, m in calls if kind == "success")
+
+    def test_an_empty_deduction_list_still_confirms_the_save(self):
+        """Distinct from 'no save happened' — the user pressed save and
+        nothing matched their stock, which they should be told."""
+        calls = self._render({"reload_deductions": []})
+        assert any(kind == "success" for kind, _ in calls)
+        assert any("Nenhum insumo" in m for kind, m in calls if kind == "caption")
+
+    def test_nothing_is_drawn_when_no_save_happened(self):
+        assert self._render({}) == []
+
+    def test_the_record_is_consumed_so_it_shows_once(self):
+        state = {"reload_deductions": ["Pólvora: -180g"]}
+        self._render(state)
+        assert "reload_deductions" not in state
+
+
+class TestWarningHandoff:
+    def test_warnings_are_consumed_so_they_show_once(self):
+        import components.logbook_inventory as mod
+
+        state = {"reload_warnings": [(BLOCKING, "perigo")]}
+        fake = MagicMock()
+        fake.session_state = state
+        with patch.object(mod, "st", fake):
+            mod._render_pending_reload_warnings()
+        assert "reload_warnings" not in state
+        fake.error.assert_called_once()
+
+    def test_nothing_is_drawn_without_pending_warnings(self):
+        import components.logbook_inventory as mod
+
+        fake = MagicMock()
+        fake.session_state = {}
+        with patch.object(mod, "st", fake):
+            mod._render_pending_reload_warnings()
+        fake.error.assert_not_called()
+        fake.warning.assert_not_called()

@@ -40,7 +40,12 @@ if st.session_state["authenticated"]:
     if last and (now - last) > SESSION_TIMEOUT:
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.warning("Sessão expirada por inatividade. Faça login novamente.")
+        #  Depois da limpeza, para sobreviver a ela; e depois do rerun, porque
+        #  um aviso desenhado aqui seria descartado no redesenho e o usuario
+        #  cairia na tela de login sem saber por que foi deslogado.
+        st.session_state["logout_reason"] = (
+            "Sessão expirada por inatividade. Faça login novamente."
+        )
         st.rerun()
     st.session_state["last_activity"] = now
 
@@ -49,6 +54,9 @@ if not st.session_state["authenticated"]:
     show_header()
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        logout_reason = st.session_state.pop("logout_reason", None)
+        if logout_reason:
+            st.warning(logout_reason)
         auth_mode = st.radio("Selecione", ["Login", "Cadastro", "Recuperar"], horizontal=True)
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
         
