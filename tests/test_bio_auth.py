@@ -152,3 +152,43 @@ class TestClearBiometrics:
         with patch("bio_auth.CONFIG_FILE", config_file):
             from bio_auth import clear_biometrics
             clear_biometrics()
+
+
+class TestPasskeysWithoutSecrets:
+    """Reading st.secrets with no secrets file raises
+    StreamlitSecretNotFoundError, and that is the normal state of a deploy
+    that passes everything through environment variables. Unguarded, the
+    login screen died before it drew the password form."""
+
+    def test_missing_secrets_file_does_not_raise(self):
+        from streamlit.errors import StreamlitSecretNotFoundError
+        import bio_auth
+
+        secrets = MagicMock()
+        secrets.__contains__ = MagicMock(
+            side_effect=StreamlitSecretNotFoundError("No secrets found.")
+        )
+        with patch.object(bio_auth, "st", MagicMock(secrets=secrets)):
+            assert bio_auth._passkeys_configured() is False
+            assert bio_auth.render_biometric_login() is None
+            assert bio_auth.render_biometric_registration() is None
+
+    def test_secrets_present_but_library_absent_stays_off(self):
+        """HAS_PASSKEYS guards the widget calls; without it a configured
+        secret would reach an undefined name."""
+        import bio_auth
+
+        secrets = MagicMock()
+        secrets.__contains__ = MagicMock(return_value=True)
+        with patch.object(bio_auth, "HAS_PASSKEYS", False), \
+             patch.object(bio_auth, "st", MagicMock(secrets=secrets)):
+            assert bio_auth._passkeys_configured() is False
+
+    def test_configured_passkeys_are_used(self):
+        import bio_auth
+
+        secrets = MagicMock()
+        secrets.__contains__ = MagicMock(return_value=True)
+        with patch.object(bio_auth, "HAS_PASSKEYS", True), \
+             patch.object(bio_auth, "st", MagicMock(secrets=secrets)):
+            assert bio_auth._passkeys_configured() is True

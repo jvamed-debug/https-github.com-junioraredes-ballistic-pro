@@ -28,7 +28,8 @@ def show_performance_tab(user_id):
     # Sessão fechada com segurança aqui ↑
 
     st.markdown("### 📊 DASHBOARD DE PERFORMANCE OPERACIONAL")
-    st.markdown("""
+    operator_name = html_escape(str(user_info.get("name") or "—")).upper()
+    st.markdown(f"""
         <div style='background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); padding: 2px; border-radius: 12px; margin-bottom: 25px;'>
             <div style='background: #0f172a; padding: 20px; border-radius: 10px;'>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
@@ -38,12 +39,12 @@ def show_performance_tab(user_id):
                     </div>
                     <div style='text-align: right;'>
                         <p style='color: #94a3b8; font-family: "JetBrains Mono", monospace; font-size: 0.6rem; margin: 0;'>OPERADOR</p>
-                        <p style='color: #f1f5f9; font-weight: 600; margin: 0;'>{html_escape(user_info["name"]).upper()}</p>
+                        <p style='color: #f1f5f9; font-weight: 600; margin: 0;'>{operator_name}</p>
                     </div>
                 </div>
             </div>
         </div>
-    """.format(user_info=user_info), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
     # 1. Historical Trends
     if sessions_data:
