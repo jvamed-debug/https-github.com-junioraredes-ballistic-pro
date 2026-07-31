@@ -35,6 +35,33 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short
 
+  # Sobe o app e o abre num navegador. Existe porque a suite unitaria nao
+  # alcanca codigo de renderizacao: a tela de login quebrada (#36), o KeyError
+  # da aba de performance (#36) e os avisos de seguranca descartados pelo
+  # rerun (#38) passaram todos por ela com o CI verde.
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest playwright
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run browser smoke test
+        run: pytest -m browser -v --tb=short
+
   lint:
     runs-on: ubuntu-latest
     steps:
