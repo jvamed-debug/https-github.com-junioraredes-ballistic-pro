@@ -16,9 +16,11 @@ from services.cbc_powders import (
     SERIES_100,
     SERIES_200,
     check_powder_for_caliber,
+    check_powder_is_referenced,
     compare_burn_rate,
     get_cartridge_type,
     get_powder,
+    referenced_powders,
 )
 
 
@@ -154,3 +156,76 @@ class TestCatalogueRespectsTheSeriesRule:
                     if get_powder(powder) is None:
                         unclassified.append(powder)
         assert sorted(set(unclassified)) == []
+
+
+class TestProvenanceCheck:
+    """Distinct from the series check. That one catches what CBC forbids
+    outright; this catches the pairing no published source lists at all —
+    which may be an omission or may be an error, and the difference matters
+    to whoever is at the bench."""
+
+    def test_flags_a_powder_faster_than_anything_referenced(self):
+        warning = check_powder_is_referenced(".357 MAGNUM", "CBC 216")
+        assert warning is not None
+        assert "Nao use sem confirmar" in warning
+        assert "CBC 207" in warning and "CBC 220" in warning
+
+    def test_slower_than_referenced_is_a_softer_warning(self):
+        """CBC describes 126 with 'calibres como o', wording that does not
+        claim to be exhaustive, and it burns slower than the 102 it lists for
+        .308 — the safe direction."""
+        warning = check_powder_is_referenced(".308 WINCHESTER", "CBC 126")
+        assert warning is not None
+        assert "lado seguro" in warning
+        assert "Nao use sem confirmar" not in warning
+
+    def test_referenced_pairings_are_silent(self):
+        assert check_powder_is_referenced(".357 MAGNUM", "CBC 220") is None
+        assert check_powder_is_referenced(".308 WINCHESTER", "CBC 102") is None
+        assert check_powder_is_referenced("9mm Luger", "CBC 231") is None
+        assert check_powder_is_referenced(".45 AUTO", "CBC 219") is None
+
+    def test_silent_without_a_basis(self):
+        assert check_powder_is_referenced(".338 Lapua", "CBC 216") is None
+        assert check_powder_is_referenced(".357 MAGNUM", "IMR 4064") is None
+        assert check_powder_is_referenced(None, None) is None
+
+    def test_both_sources_contribute(self):
+        """9mm is listed by CBC for 231 and tested by Magnum with 216;
+        neither alone covers both."""
+        assert "CBC 231" in referenced_powders("9mm Luger")
+        assert "CBC 216" in referenced_powders("9mm Luger")
+
+
+class TestCatalogueProvenance:
+    """The shipped catalogue carries three loads that pair a high-pressure
+    revolver cartridge with a powder faster than anything either source lists
+    for it. Pinned so they cannot be quietly forgotten, and so a fourth
+    cannot be added without the test failing."""
+
+    UNREFERENCED_AND_FASTER = {
+        (".357 MAGNUM", "CBC 216"),
+        (".357 MAGNUM", "CBC 219"),
+        (".44 REM. MAGNUM", "CBC 219"),
+    }
+
+    def _scan(self):
+        data = json.load(open("database.json", encoding="utf-8"))
+        severe, mild = set(), set()
+        for caliber, cal_data in data["calibers"].items():
+            for _projectile, proj_data in cal_data.get("projectiles", {}).items():
+                for powder in proj_data.get("powders", {}):
+                    warning = check_powder_is_referenced(caliber, powder)
+                    if not warning:
+                        continue
+                    target = severe if "Nao use sem confirmar" in warning else mild
+                    target.add((caliber, powder))
+        return severe, mild
+
+    def test_the_known_severe_pairings_are_exactly_these(self):
+        severe, _ = self._scan()
+        assert severe == self.UNREFERENCED_AND_FASTER
+
+    def test_no_severe_pairing_outside_the_two_magnum_revolvers(self):
+        severe, _ = self._scan()
+        assert {c for c, _ in severe} == {".357 MAGNUM", ".44 REM. MAGNUM"}
