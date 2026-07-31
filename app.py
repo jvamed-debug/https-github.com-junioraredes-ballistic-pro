@@ -72,7 +72,7 @@ if not st.session_state["authenticated"]:
             saved_user = check_biometrics_available()
             if saved_user:
                 st.info(f"Acesso rápido disponível para: **{saved_user}**")
-                if st.button("🔓 LOGIN RÁPIDO (DISPOSITIVO)", use_container_width=True):
+                if st.button("🔓 LOGIN RÁPIDO (DISPOSITIVO)", width='stretch'):
                     with managed_session() as db_sess:
                         user_db = db_sess.query(User).filter(User.username == saved_user).first()
                         if user_db:
@@ -96,7 +96,7 @@ if not st.session_state["authenticated"]:
                     st.session_state["lockout_until"] = None
                     st.session_state["login_attempts"] = 0
 
-                if st.form_submit_button("ENTRAR", use_container_width=True):
+                if st.form_submit_button("ENTRAR", width='stretch'):
                     user = authenticate(user_in, pass_in)
                     if user:
                         st.session_state["login_attempts"] = 0
@@ -121,7 +121,7 @@ if not st.session_state["authenticated"]:
                 reg_pass = st.text_input("Senha (mín. 8 caracteres)", type="password")
                 reg_pass_conf = st.text_input("Confirme a Senha", type="password")
                 
-                if st.form_submit_button("CRIAR CONTA", use_container_width=True):
+                if st.form_submit_button("CRIAR CONTA", width='stretch'):
                     if reg_pass != reg_pass_conf:
                         st.error("As senhas não coincidem.")
                     elif not reg_user or not reg_pass or not reg_email:
@@ -148,7 +148,7 @@ if not st.session_state["authenticated"]:
                     "E-mail ou Telefone cadastrado",
                     placeholder="email@exemplo.com ou (XX) XXXXX-XXXX"
                 )
-                if st.form_submit_button("SOLICITAR RECUPERACAO", use_container_width=True):
+                if st.form_submit_button("SOLICITAR RECUPERACAO", width='stretch'):
                     if recovery_input:
                         from core.auth import recover_password
                         _, msg = recover_password(recovery_input)
@@ -183,7 +183,7 @@ st.sidebar.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-if st.sidebar.button("🚪 Logout", use_container_width=True):
+if st.sidebar.button("🚪 Logout", width='stretch'):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()

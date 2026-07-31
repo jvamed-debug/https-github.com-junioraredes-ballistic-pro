@@ -21,7 +21,7 @@ def show_ai_advisor_tab(db, selected_caliber, selected_projectile, selected_powd
         provider = cfg_c1.selectbox("Provedor", ["anthropic", "openai"], key="ai_provider")
         api_key = cfg_c2.text_input("API Key", type="password", key="ai_api_key")
 
-        if st.button("Conectar IA", use_container_width=True):
+        if st.button("Conectar IA", width='stretch'):
             if api_key:
                 ok = advisor.configure(provider, api_key)
                 if ok:
@@ -65,7 +65,7 @@ def _show_grouping_analysis():
         groups = st.session_state["cv_stats"]["groups"]
         st.info(f"Dados de CV detectados: {len(groups)} grupo(s) da ultima analise de alvo.")
 
-        if st.button("Analisar Agrupamento com IA", use_container_width=True):
+        if st.button("Analisar Agrupamento com IA", width='stretch'):
             groups_data = []
             for g in groups:
                 groups_data.append({
@@ -99,7 +99,7 @@ def _show_load_consultation(caliber, projectile, powder):
     sd = c2.number_input("Desvio Padrao (fps)", min_value=0.0, step=0.1, key="ai_sd")
     grouping = c2.number_input("Agrupamento (mm)", min_value=0.0, step=1.0, key="ai_group")
 
-    if st.button("Consultar IA sobre Carga", use_container_width=True):
+    if st.button("Consultar IA sobre Carga", width='stretch'):
         current_data = {
             "charge": charge,
             "velocity": velocity,
@@ -145,7 +145,7 @@ def _show_performance_trend(user_id):
 
     st.info(f"Analisando {len(sessions_summary)} sessoes mais recentes.")
 
-    if st.button("Analisar Tendencia com IA", use_container_width=True):
+    if st.button("Analisar Tendencia com IA", width='stretch'):
         with st.spinner("Analisando tendencias..."):
             result = advisor.analyze_performance_trend(sessions_summary)
 

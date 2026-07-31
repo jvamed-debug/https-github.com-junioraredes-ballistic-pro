@@ -154,7 +154,7 @@ def show_logbook_and_inventory():
                 r_case = r_col2.text_input("Estojo", placeholder="Ex: CBC latão")
                 r_img = st.file_uploader("Foto do Alvo (Opcional)", type=["jpg", "png", "jpeg"])
                 r_notes = st.text_area("Observações Técnicas")
-                if st.form_submit_button("SALVAR SESSÃO", use_container_width=True):
+                if st.form_submit_button("SALVAR SESSÃO", width='stretch'):
                     series_warning = check_powder_for_caliber(r_caliber, r_powder)
                     if series_warning:
                         st.error(f"⚠️ {series_warning}")
@@ -310,7 +310,7 @@ def show_logbook_and_inventory():
                 i_price = i_col2.number_input("Custo Total (R$)", min_value=0.0, step=0.01)
                 i_exp = i_col2.date_input("Validade", value=None)
                 
-                if st.form_submit_button("ATUALIZAR ESTOQUE", use_container_width=True):
+                if st.form_submit_button("ATUALIZAR ESTOQUE", width='stretch'):
                     if i_name and i_qty > 0:
                         # M6: Validação Pydantic
                         from schemas import InventoryItemCreate

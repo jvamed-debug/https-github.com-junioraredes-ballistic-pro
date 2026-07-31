@@ -72,3 +72,46 @@ def test_no_format_call_over_an_fstring_expression(path):
 def test_modules_parse(path):
     """A syntax error here never reaches the test suite otherwise."""
     ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+APP_SOURCES = sorted(
+    p for p in ROOT.rglob("*.py")
+    if "tests" not in p.parts
+    and ".venv" not in p.parts
+    and "scratch" not in p.parts
+    and not p.name.startswith(".")
+)
+
+
+def test_there_are_app_sources_to_check():
+    assert len(APP_SOURCES) >= 10
+
+
+def test_no_deprecated_use_container_width():
+    """Streamlit set 2025-12-31 as the removal date for this parameter, and
+    that date has passed. requirements.txt pins no upper bound inside 1.x, so
+    the Docker build installs whatever is current — leaving these calls would
+    make the deploy break on a version bump rather than on a code change.
+    The replacement is width='stretch'.
+    """
+    offenders = [
+        f"{p.relative_to(ROOT)}:{i}"
+        for p in APP_SOURCES
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
+        if "use_container_width" in line
+    ]
+    assert not offenders, f"use_container_width foi removido do Streamlit: {offenders}"
+
+
+def test_requirements_floor_supports_the_width_parameter():
+    """width landed in 1.48 for buttons and 1.49 for image and dataframe, so
+    the floor has to clear 1.49 or the replacement breaks the minimum."""
+    import re
+
+    text = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+    match = re.search(r"^streamlit>=(\d+)\.(\d+)", text, re.MULTILINE)
+    assert match, "requirements.txt nao declara um piso para streamlit"
+    major, minor = int(match.group(1)), int(match.group(2))
+    assert (major, minor) >= (1, 49), f"piso {major}.{minor} nao suporta width='stretch'"

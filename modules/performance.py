@@ -97,7 +97,7 @@ def show_performance_tab(user_id):
                 center_x = pc1.number_input("X Centro", value=0)
                 center_y = pc2.number_input("Y Centro", value=0)
 
-        if st.button("🚀 Executar Análise Inteligente", use_container_width=True):
+        if st.button("🚀 Executar Análise Inteligente", width='stretch'):
             with st.spinner("Inteligência computacional em curso..."):
                 results = calculate_group_size_v2(
                     target_img,
@@ -113,7 +113,7 @@ def show_performance_tab(user_id):
         if "cv_stats" in st.session_state:
             res = st.session_state["cv_stats"]
 
-            st.image(res["annotated_image"], caption="Alvo Processado (Verificado)", use_container_width=True)
+            st.image(res["annotated_image"], caption="Alvo Processado (Verificado)", width='stretch')
 
             for group in res["groups"]:
                 with st.expander(f"📌 Grupo {group['id']} - Detalhes", expanded=True):
@@ -157,6 +157,6 @@ def show_performance_tab(user_id):
                 data=perf_report_pdf,
                 file_name=f"laudo_performance_{datetime.now().strftime('%Y%m%d')}.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                width='stretch'
             )
 
