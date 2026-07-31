@@ -7,6 +7,12 @@ requires-python = ">=3.11"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+#  O smoke de navegador sobe o app e leva dezenas de segundos, entao fica
+#  fora da rodada padrao. Para executa-lo: pytest -m browser
+addopts = "-m 'not browser'"
+markers = [
+    "browser: sobe o app e o exercita num navegador (requer playwright)",
+]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]

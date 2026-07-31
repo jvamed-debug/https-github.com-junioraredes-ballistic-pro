@@ -112,10 +112,29 @@ Veja `.env.example` para referencia completa.
 
 ```bash
 pip install pytest
-pytest tests/ -v
+pytest
 ```
 
-44 testes cobrindo: trajetoria balistica, servico de dados, schemas Pydantic, consultor IA (offline) e agrupamento de tiros.
+374 testes cobrindo trajetoria balistica validada contra dados publicados,
+tabelas de polvora e cartucho da CBC e da Revista Magnum, visao computacional
+de alvos, modelos e criptografia PII, servicos de recarga e S3, e o consultor
+IA em modo offline.
+
+### Smoke de navegador
+
+```bash
+pip install playwright && python -m playwright install chromium
+pytest -m browser
+```
+
+Sobe o app com um banco descartavel, faz login e percorre as abas. Fica fora
+da rodada padrao porque leva cerca de um minuto.
+
+Vale rodar antes de um deploy: a suite unitaria nao executa codigo de
+renderizacao, e tres falhas que derrubavam telas inteiras passaram por ela com
+o CI verde — a tela de login quebrando sem `secrets.toml`, a aba de
+performance levantando `KeyError` a cada abertura, e os avisos de seguranca do
+diario sendo descartados pelo `st.rerun()` antes de aparecerem.
 
 ## Estrutura do Projeto
 
