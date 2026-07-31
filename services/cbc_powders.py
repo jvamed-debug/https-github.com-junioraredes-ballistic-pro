@@ -113,6 +113,120 @@ CARTRIDGE_TYPE: dict[str, str] = {
 }
 
 
+#  Polvoras que cada fonte indica para cada cartucho.
+#
+#  CBC = Manual de Recarga da propria fabricante, que descreve para quais
+#  calibres cada polvora se destina.
+#  MAGNUM = Revista Magnum, Edicao Especial no 44, cujas tabelas trazem cargas
+#  efetivamente testadas com pressao medida.
+#
+#  Uma combinacao ausente das duas nao esta necessariamente errada — nenhuma
+#  fonte se declara exaustiva — mas nao tem respaldo publicado, e num catalogo
+#  de recarga a procedencia do numero importa tanto quanto o numero.
+CBC_MANUAL_INDICATIONS: dict[str, set[str]] = {
+    ".25 AUTO": {"CBC 222", "CBC 246"},
+    ".32 AUTO": {"CBC 212", "CBC 246"},
+    ".32 S&W": {"CBC 212", "CBC 216", "CBC 250"},
+    ".32 S&W CURTO": {"CBC 250"},
+    ".32 S&W L": {"CBC 216", "CBC 250"},
+    ".357 MAGNUM": {"CBC 207", "CBC 220"},
+    ".38 S&W": {"CBC 212", "CBC 216"},
+    ".38 SPL": {"CBC 207", "CBC 216", "CBC 217", "CBC 219", "CBC 231", "CBC 250"},
+    ".38 SPL CURTO": {"CBC 212", "CBC 216", "CBC 250"},
+    ".380 AUTO": {"CBC 212", "CBC 217", "CBC 218", "CBC 219", "CBC 266"},
+    ".40 S&W": {"CBC 207", "CBC 231", "CBC 246", "CBC 266"},
+    ".44 - 40 WINCHESTER": {"CBC 212", "CBC 217", "CBC 219", "CBC 250", "CBC 266"},
+    ".44 REM. MAGNUM": {"CBC 244"},
+    ".44 S&W SPECIAL": {"CBC 212", "CBC 216", "CBC 250"},
+    ".45 AUTO": {"CBC 212", "CBC 217", "CBC 219", "CBC 266"},
+    ".45 COLT": {"CBC 212", "CBC 216", "CBC 250"},
+    "9mm Luger": {"CBC 207", "CBC 217", "CBC 231", "CBC 246", "CBC 266"},
+    ".223 REMINGTON": {"CBC 102"},
+    ".22-250 REMINGTON": {"CBC 126"},
+    ".243 WINCHESTER": {"CBC 126"},
+    ".30-06 SPRING.": {"CBC 126"},
+    ".30-30 WINCHESTER": {"CBC 126"},
+    ".308 WINCHESTER": {"CBC 102"},
+    ".45-70 GOVERNEMENT": {"CBC 129"},
+}
+
+MAGNUM_TESTED: dict[str, set[str]] = {
+    ".25 AUTO": {"CBC 209", "CBC 216"},
+    ".32 AUTO": {"CBC 209", "CBC 216", "CBC 219"},
+    ".32 S&W": {"CBC 216"},
+    ".32 S&W L": {"CBC 209", "CBC 216", "CBC 219"},
+    ".357 MAGNUM": {"CBC 207", "CBC 220"},
+    ".38 S&W": {"CBC 216"},
+    ".38 SPL": {"CBC 207", "CBC 209", "CBC 216", "CBC 217", "CBC 219"},
+    ".380 AUTO": {"CBC 209", "CBC 216", "CBC 219"},
+    ".40 S&W": {"CBC 207", "CBC 210", "CBC 217"},
+    ".44 REM. MAGNUM": {"CBC 207", "CBC 220"},
+    ".45 AUTO": {"CBC 209", "CBC 216", "CBC 217", "CBC 219"},
+    "9mm Luger": {"CBC 207", "CBC 210", "CBC 216", "CBC 217", "CBC 219"},
+}
+
+
+def referenced_powders(caliber: str | None) -> set[str]:
+    """Uniao das polvoras que as fontes publicadas indicam para o cartucho."""
+    if not caliber:
+        return set()
+    key = " ".join(str(caliber).split()).upper()
+    found: set[str] = set()
+    for table in (CBC_MANUAL_INDICATIONS, MAGNUM_TESTED):
+        for known, powders in table.items():
+            if known.upper() == key:
+                found |= powders
+    return found
+
+
+def check_powder_is_referenced(caliber: str | None, powder: str | None) -> str | None:
+    """Avisa quando nenhuma fonte publicada indica a polvora para o cartucho.
+
+    Distinto de check_powder_for_caliber: aquele pega a troca entre series,
+    que o fabricante proibe expressamente. Este pega a combinacao que apenas
+    nao consta em lugar nenhum — pode ser omissao das fontes, pode ser erro,
+    e quem recarrega merece saber a diferenca.
+
+    Devolve None quando o cartucho nao esta mapeado ou a polvora esta fora do
+    catalogo CBC, porque ai nao ha o que comparar.
+    """
+    p = get_powder(powder)
+    if p is None:
+        return None
+    known = referenced_powders(caliber)
+    if not known or p.name in known:
+        return None
+
+    #  Nem toda ausencia pesa igual. Trocar por uma polvora mais LENTA que as
+    #  indicadas erra para o lado seguro, e a propria CBC descreve algumas
+    #  polvoras com "calibres como o", redacao que nao pretende ser exaustiva.
+    #  Ja uma polvora mais VIVA que qualquer uma das indicadas queima antes de
+    #  o projetil sair da frente, e e assim que se estoura uma camara.
+    referenced = [POWDERS[n] for n in known if n in POWDERS]
+    same_series = [q for q in referenced if q.series == p.series]
+    if not same_series:
+        return None
+
+    fastest_listed = min(q.burn_rank for q in same_series)
+    listed = ", ".join(sorted(known))
+
+    if p.burn_rank < fastest_listed:
+        faster_than = min(same_series, key=lambda q: q.burn_rank)
+        return (
+            f"{p.name} nao consta em nenhuma fonte publicada para {caliber}, e "
+            f"queima mais rapido que {faster_than.name}, a mais viva que as "
+            f"fontes indicam. Polvora mais viva na mesma carga eleva o pico de "
+            f"pressao. Fontes listam: {listed}. Nao use sem confirmar numa "
+            "tabela do fabricante."
+        )
+
+    return (
+        f"{p.name} nao consta nas fontes publicadas para {caliber}, que listam "
+        f"{listed}. Queima mais lenta que as indicadas, o que erra para o lado "
+        "seguro, mas confirme numa tabela do fabricante."
+    )
+
+
 def get_powder(name: str | None) -> Powder | None:
     """Localiza uma polvora do catalogo CBC, tolerando espacos e caixa."""
     if not name:

@@ -2,6 +2,7 @@ import streamlit as st
 from html import escape as html_escape
 
 from services.ballistics_service import BallisticsService
+from services.cbc_powders import check_powder_is_referenced
 
 def show_reloading_data(db, selected_caliber, selected_projectile, selected_powder, is_manual_mode):
     # Dimensões do Calibre
@@ -236,6 +237,15 @@ def show_reloading_data(db, selected_caliber, selected_projectile, selected_powd
             </div>
             """, unsafe_allow_html=True)
         
+        #  Uma carga que nao consta em nenhuma fonte publicada nao pode ser
+        #  apresentada com o mesmo peso das que constam.
+        provenance = check_powder_is_referenced(selected_caliber, selected_powder)
+        if provenance:
+            if "Nao use sem confirmar" in provenance:
+                st.error(f"⚠️ {provenance}")
+            else:
+                st.warning(provenance)
+
         if load_data.get("max", 0) > 0 and load_data.get("min", 0) > 0:
             range_val = load_data["max"] - load_data["min"]
             st.markdown(f"""
