@@ -7,6 +7,51 @@ from services.cbc_powders import check_powder_for_caliber, check_powder_is_refer
 from services.reloading_service import ReloadingService
 from services.s3_service import s3_mgr
 
+#  Severidades, da mais grave para a mais branda.
+BLOCKING = "erro"
+CAUTION = "aviso"
+
+
+def collect_reload_warnings(caliber, powder, primer):
+    """Reune os avisos de seguranca de uma sessao de recarga.
+
+    Devolve pares (severidade, texto) em vez de desenhar direto, para que o
+    resultado possa atravessar o st.rerun() que fecha o salvamento.
+    """
+    warnings = []
+
+    series = check_powder_for_caliber(caliber, powder)
+    if series:
+        warnings.append((BLOCKING, series))
+
+    provenance = check_powder_is_referenced(caliber, powder)
+    if provenance:
+        severity = BLOCKING if "Nao use sem confirmar" in provenance else CAUTION
+        warnings.append((severity, provenance))
+
+    primer_warning = check_primer_size(caliber, primer)
+    if primer_warning:
+        warnings.append((CAUTION, primer_warning))
+
+    usage = get_usage_warning(caliber)
+    if usage:
+        warnings.append((CAUTION, usage))
+
+    return warnings
+
+
+def _render_pending_reload_warnings():
+    """Mostra os avisos guardados na gravacao anterior e os consome."""
+    warnings = st.session_state.pop("reload_warnings", None)
+    if not warnings:
+        return
+    for severity, text in warnings:
+        if severity == BLOCKING:
+            st.error(f"⚠️ {text}")
+        else:
+            st.warning(text)
+
+
 def show_logbook_and_inventory():
     if "user_id" not in st.session_state:
         st.error("Login necessário.")
@@ -19,6 +64,7 @@ def show_logbook_and_inventory():
 
     with log_tab:
         st.markdown("### 📔 REGISTRO DE OPERAÇÕES (LOGBOOK)")
+        _render_pending_reload_warnings()
         st.markdown("""
             <div style='background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-primary); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <p style='color: var(--text-light); font-size: 0.8rem; margin: 0;'>
@@ -155,24 +201,13 @@ def show_logbook_and_inventory():
                 r_img = st.file_uploader("Foto do Alvo (Opcional)", type=["jpg", "png", "jpeg"])
                 r_notes = st.text_area("Observações Técnicas")
                 if st.form_submit_button("SALVAR SESSÃO", width='stretch'):
-                    series_warning = check_powder_for_caliber(r_caliber, r_powder)
-                    if series_warning:
-                        st.error(f"⚠️ {series_warning}")
-
-                    provenance = check_powder_is_referenced(r_caliber, r_powder)
-                    if provenance:
-                        if "Nao use sem confirmar" in provenance:
-                            st.error(f"⚠️ {provenance}")
-                        else:
-                            st.warning(provenance)
-
-                    primer_warning = check_primer_size(r_caliber, r_primer)
-                    if primer_warning:
-                        st.warning(primer_warning)
-
-                    usage = get_usage_warning(r_caliber)
-                    if usage:
-                        st.warning(usage)
+                    #  Guardados para depois do st.rerun() que fecha o salvamento.
+                    #  Desenhar aqui nao adianta: o rerun redesenha a pagina do
+                    #  zero e leva junto tudo o que foi escrito nesta passagem,
+                    #  entao o aviso aparecia por uma fracao de segundo e sumia.
+                    st.session_state["reload_warnings"] = collect_reload_warnings(
+                        r_caliber, r_powder, r_primer
+                    )
 
                     if r_caliber and r_qty > 0:
                         image_url = None
