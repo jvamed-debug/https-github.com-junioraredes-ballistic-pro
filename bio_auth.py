@@ -13,9 +13,25 @@ try:
 except ImportError:
     HAS_PASSKEYS = False
 
+def _passkeys_configured():
+    """Diz se ha configuracao de passkey utilizavel.
+
+    Consultar st.secrets sem arquivo de secrets levanta
+    StreamlitSecretNotFoundError, e essa e a situacao normal de um deploy que
+    passa tudo por variavel de ambiente: sem este guarda, a tela de login
+    quebrava antes de desenhar o formulario de senha.
+    """
+    if not HAS_PASSKEYS:
+        return False
+    try:
+        return "streamlit-passwordless" in st.secrets
+    except Exception:
+        return False
+
+
 def render_biometric_login():
     """Renderiza interface de login biométrico (WebAuthn)."""
-    if "streamlit-passwordless" in st.secrets:
+    if _passkeys_configured():
         # Modo Funcional (Produção/HTTPS)
         # Retorna o usuário logado via passkey
         return signin_widget()
@@ -23,7 +39,7 @@ def render_biometric_login():
 
 def render_biometric_registration():
     """Renderiza interface de registro de nova passkey."""
-    if "streamlit-passwordless" in st.secrets:
+    if _passkeys_configured():
         st.markdown("##### 🔐 Ativar Biometria (Passkey)")
         st.caption("Registre este dispositivo para logins futuros sem senha.")
         return register_widget()
