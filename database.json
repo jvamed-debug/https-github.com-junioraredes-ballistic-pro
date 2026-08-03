@@ -64,32 +64,6 @@
       "proj_dia": "9.07 mm (0.357\")",
       "base_dia": "9.63 mm (0.379\")"
     },
-    ".357 MAGNUM": {
-      "projectiles": {
-        "158gr ETOG / FMJ": {
-          "powders": {
-            "CBC 216": {
-              "min": 5.8,
-              "max": 6.4,
-              "unit": "grains",
-              "velocity": 1150,
-              "note": "Ref: TI-44 CBC v2024. Carga padrão."
-            },
-            "CBC 219": {
-              "min": 13.5,
-              "max": 15.0,
-              "unit": "grains",
-              "velocity": 1350,
-              "note": "Ref: TI-44 CBC v2024. Magnum Load."
-            }
-          }
-        }
-      },
-      "max_oal": "40.39 mm (1.590\")",
-      "max_case": "32.77 mm (1.290\")",
-      "proj_dia": "9.07 mm (0.357\")",
-      "base_dia": "9.63 mm (0.379\")"
-    },
     ".44 S&W SPECIAL": {
       "projectiles": {
         "240gr CHPP": {
@@ -134,25 +108,6 @@
       "max_case": "33.15 mm (1.305\")",
       "proj_dia": "10.85 mm (0.427\")",
       "base_dia": "11.96 mm (0.471\")"
-    },
-    ".44 REM. MAGNUM": {
-      "projectiles": {
-        "240gr ETOG / FMJ": {
-          "powders": {
-            "CBC 219": {
-              "min": 18.0,
-              "max": 20.0,
-              "unit": "grains",
-              "velocity": 1300,
-              "note": "Ref: TI-44 CBC v2024. Magnum Load."
-            }
-          }
-        }
-      },
-      "max_oal": "40.89 mm (1.610\")",
-      "max_case": "32.64 mm (1.285\")",
-      "proj_dia": "10.90 mm (0.429\")",
-      "base_dia": "11.61 mm (0.457\")"
     },
     ".45 COLT": {
       "projectiles": {
