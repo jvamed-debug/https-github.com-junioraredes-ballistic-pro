@@ -25,10 +25,6 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 if "user_id" not in st.session_state:
     st.session_state["user_id"] = None
-if "login_attempts" not in st.session_state:
-    st.session_state["login_attempts"] = 0
-if "lockout_until" not in st.session_state:
-    st.session_state["lockout_until"] = None
 if "last_activity" not in st.session_state:
     st.session_state["last_activity"] = None
 
@@ -94,31 +90,33 @@ if not st.session_state["authenticated"]:
                 user_in = st.text_input("Usuário")
                 pass_in = st.text_input("Senha", type="password")
                 remember = st.checkbox("Habilitar Biometria neste dispositivo")
-                
-                lockout = st.session_state.get("lockout_until")
-                if lockout and datetime.now() < lockout:
-                    remaining = int((lockout - datetime.now()).total_seconds())
-                    st.error(f"Muitas tentativas falhas. Tente novamente em {remaining}s.")
-                    st.stop()
-                elif lockout and datetime.now() >= lockout:
-                    st.session_state["lockout_until"] = None
-                    st.session_state["login_attempts"] = 0
 
                 if st.form_submit_button("ENTRAR", width='stretch'):
-                    user = authenticate(user_in, pass_in)
-                    if user:
-                        st.session_state["login_attempts"] = 0
-                        st.session_state["authenticated"] = True
-                        st.session_state["user_id"] = user.id
-                        st.session_state["user_name"] = user.name or user.username
-                        if remember:
-                            save_biometrics(user.username)
-                        st.rerun()
+                    from core.auth import (
+                        login_lock_remaining,
+                        record_failed_login,
+                        clear_login_attempts,
+                    )
+                    #  O bloqueio e verificado no servidor, keyed pelo login
+                    #  tentado — reconectar (nova sessao) nao o zera mais.
+                    remaining = login_lock_remaining(user_in)
+                    if remaining > 0:
+                        st.error(
+                            f"Muitas tentativas falhas. Tente novamente em {remaining}s."
+                        )
                     else:
-                        st.session_state["login_attempts"] += 1
-                        if st.session_state["login_attempts"] >= 5:
-                            st.session_state["lockout_until"] = datetime.now() + timedelta(minutes=5)
-                        st.error("Credenciais inválidas.")
+                        user = authenticate(user_in, pass_in)
+                        if user:
+                            clear_login_attempts(user_in)
+                            st.session_state["authenticated"] = True
+                            st.session_state["user_id"] = user.id
+                            st.session_state["user_name"] = user.name or user.username
+                            if remember:
+                                save_biometrics(user.username)
+                            st.rerun()
+                        else:
+                            record_failed_login(user_in)
+                            st.error("Credenciais inválidas.")
         elif auth_mode == "Cadastro":
             with st.form("register_form"):
                 reg_name = st.text_input("Nome Completo")
