@@ -198,16 +198,10 @@ class TestProvenanceCheck:
 
 
 class TestCatalogueProvenance:
-    """The shipped catalogue carries three loads that pair a high-pressure
-    revolver cartridge with a powder faster than anything either source lists
-    for it. Pinned so they cannot be quietly forgotten, and so a fourth
-    cannot be added without the test failing."""
-
-    UNREFERENCED_AND_FASTER = {
-        (".357 MAGNUM", "CBC 216"),
-        (".357 MAGNUM", "CBC 219"),
-        (".44 REM. MAGNUM", "CBC 219"),
-    }
+    """The three loads that paired a high-pressure revolver cartridge with a
+    powder faster than anything either source referenced (.357 Magnum with CBC
+    216 and 219, .44 Rem. Magnum with CBC 219) have been removed. Pinned so no
+    such load can be reintroduced without this test failing."""
 
     def _scan(self):
         data = json.load(open("database.json", encoding="utf-8"))
@@ -222,10 +216,11 @@ class TestCatalogueProvenance:
                     target.add((caliber, powder))
         return severe, mild
 
-    def test_the_known_severe_pairings_are_exactly_these(self):
+    def test_the_catalogue_ships_no_unreferenced_and_faster_load(self):
         severe, _ = self._scan()
-        assert severe == self.UNREFERENCED_AND_FASTER
+        assert severe == set()
 
-    def test_no_severe_pairing_outside_the_two_magnum_revolvers(self):
-        severe, _ = self._scan()
-        assert {c for c, _ in severe} == {".357 MAGNUM", ".44 REM. MAGNUM"}
+    def test_the_removed_magnum_loads_are_gone(self):
+        data = json.load(open("database.json", encoding="utf-8"))
+        assert ".357 MAGNUM" not in data["calibers"]
+        assert ".44 REM. MAGNUM" not in data["calibers"]
