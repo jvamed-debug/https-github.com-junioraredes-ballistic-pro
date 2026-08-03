@@ -1,15 +1,60 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text, DateTime, event
 from datetime import datetime, timezone
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from contextlib import contextmanager
 import bcrypt
+import hashlib
+import hmac
 import json
 import base64
+import os
 from cryptography.fernet import Fernet
 from sqlalchemy.types import TypeDecorator, String as SQLString
 import streamlit as st
 
 Base = declarative_base()
+
+
+# ── Índice cego (blind index) para campos cifrados pesquisáveis ──
+#
+# O Fernet é NÃO-determinístico: o mesmo texto cifra de forma diferente a cada
+# gravação. Isso torna impossível procurar por um campo cifrado (email == x
+# nunca casa) e faz a constraint `unique` da coluna cifrada nunca disparar.
+# Para email/telefone — que precisam ser únicos e pesquisáveis — guardamos, ao
+# lado do valor cifrado, um HMAC-SHA256 determinístico do valor normalizado.
+# O HMAC preserva a confidencialidade (não é reversível sem a chave) mas é
+# estável, então serve de índice e de constraint de unicidade.
+def _blind_index_key() -> bytes:
+    raw = os.environ.get("BLIND_INDEX_KEY") or os.environ.get("FERNET_KEY")
+    if not raw:
+        try:
+            raw = st.secrets.get("device_encryption_key")
+        except Exception:
+            raw = None
+    if not raw:
+        # Fallback de desenvolvimento: deterministico para os testes locais,
+        # sem valor de seguranca (nao ha chave configurada nesse modo).
+        raw = "ballistic-pro-dev-blind-index"
+    if isinstance(raw, str):
+        raw = raw.encode()
+    #  Deriva uma chave dedicada a partir do material de chave, para nao
+    #  reutilizar a chave de cifra diretamente.
+    return hashlib.sha256(b"blind-index|" + raw).digest()
+
+
+def blind_index(value):
+    """HMAC determinístico de um valor, ou None se vazio.
+
+    Normaliza (strip + lowercase) para que 'A@X.com' e 'a@x.com' colidam — o
+    que é o comportamento correto para e-mail. A mesma normalização vale para
+    escrita e busca, mantendo as duas consistentes.
+    """
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if not text:
+        return None
+    return hmac.new(_blind_index_key(), text.encode(), hashlib.sha256).hexdigest()
 
 # Configuração de Criptografia (SG-001 / Auditoria SEC-002)
 def get_encryption_suite():
@@ -95,8 +140,13 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     name = Column(String)
     cpf = Column(EncryptedString) # PII Criptografado
-    email = Column(EncryptedString, unique=True) # PII Criptografado
+    #  A coluna `email` guarda o valor cifrado (nao-deterministico), entao NAO
+    #  leva `unique`: a constraint nunca dispararia. A unicidade e a busca
+    #  ficam no `email_hash` (blind index), abaixo.
+    email = Column(EncryptedString) # PII Criptografado
+    email_hash = Column(String(64), unique=True, index=True) # HMAC de email p/ busca e unicidade
     phone = Column(EncryptedString)
+    phone_hash = Column(String(64), index=True) # HMAC de telefone p/ busca (recuperacao)
     cr_number = Column(EncryptedString) # Certificado de Registro (Exército)
     cr_expiration = Column(Date) # Validade do CR
     address_acervo = Column(EncryptedString) # Endereço do Acervo
@@ -112,6 +162,35 @@ class User(Base):
 
     def check_password(self, password):
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+
+
+#  Mantem email_hash/phone_hash sincronizados com email/phone em toda gravacao,
+#  qualquer que seja o caminho (construtor, atribuicao de atributo). No momento
+#  do evento, target.email ainda e o texto claro — a cifra so acontece no bind
+#  do SQL —, entao e daqui que sai o HMAC. Sem isto, cada ponto que escreve um
+#  email teria de lembrar de recalcular o hash, e um esquecido reabriria a
+#  brecha de unicidade.
+@event.listens_for(User, "before_insert")
+@event.listens_for(User, "before_update")
+def _sync_user_blind_indexes(mapper, connection, target):
+    target.email_hash = blind_index(target.email)
+    target.phone_hash = blind_index(target.phone)
+
+
+class LoginAttempt(Base):
+    """Tentativas de login malsucedidas, para limitar forca-bruta no servidor.
+
+    O bloqueio antigo vivia em st.session_state (por sessao do Streamlit),
+    entao bastava reconectar para zera-lo. Persistido no banco, o limite passa
+    a valer entre sessoes.
+    """
+    __tablename__ = 'login_attempts'
+    id = Column(Integer, primary_key=True)
+    identifier = Column(String(150), index=True, nullable=False)
+    #  UTC ingenuo (nao-aware) para casar com o que o SQLite devolve na leitura
+    #  e evitar comparacao aware-vs-naive nas queries de janela.
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 
 class Firearm(Base):
     __tablename__ = 'firearms'
@@ -227,9 +306,24 @@ def ensure_schema_compliance(engine_to_check):
     """
     from sqlalchemy import inspect, text
     inspector = inspect(engine_to_check)
-    
-    # 1. Verificar Tabelas Críticas
+
     existing_tables = inspector.get_table_names()
+
+    # 0. Colunas de blind index em users (bancos criados antes desta versao).
+    #    create_all cria tabelas novas mas nao adiciona colunas a tabelas que
+    #    ja existem, entao email_hash/phone_hash precisam de ALTER aqui.
+    if 'users' in existing_tables:
+        user_cols = [c['name'] for c in inspector.get_columns('users')]
+        with engine_to_check.begin() as conn:
+            for col_name in ('email_hash', 'phone_hash'):
+                if col_name not in user_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} VARCHAR(64)"))
+                        print(f"[SCHEMA] Coluna {col_name} adicionada a users.")
+                    except Exception as e:
+                        print(f"[SCHEMA] Falha ao adicionar {col_name}: {e}")
+
+    # 1. Verificar Tabelas Críticas
     if 'inventory_items' not in existing_tables:
         return
 
@@ -324,7 +418,29 @@ def log_action(user_id, action, table_name, record_id=None, old=None, new=None):
         db.add(log)
 
 
+def backfill_blind_indexes():
+    """Preenche email_hash/phone_hash de usuarios gravados antes desta versao.
+
+    Carregar cada usuario pela ORM decifra email/phone; salvar de volta dispara
+    o evento before_update, que recalcula os hashes. Roda so nos que ainda
+    estao sem hash, entao e barato apos a primeira passada.
+    """
+    try:
+        with managed_session() as db:
+            pendentes = db.query(User).filter(
+                User.email.isnot(None), User.email_hash.is_(None)
+            ).all()
+            for user in pendentes:
+                user.email_hash = blind_index(user.email)
+                user.phone_hash = blind_index(user.phone)
+            if pendentes:
+                print(f"[SCHEMA] Blind index preenchido para {len(pendentes)} usuario(s).")
+    except Exception as e:
+        print(f"[SCHEMA] Falha no backfill de blind index: {e}")
+
+
 def init_db_if_empty():
+    backfill_blind_indexes()
     session = get_session()
     try:
         if session.query(User).count() == 0:
