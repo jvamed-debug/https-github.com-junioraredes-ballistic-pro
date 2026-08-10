@@ -27,6 +27,9 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@db:5432/ballistic_db}
       - FERNET_KEY=${FERNET_KEY:-}
+      #  Segredo do JWT. Em producao defina explicitamente; na falta, cai para
+      #  FERNET_KEY.
+      - JWT_SECRET=${JWT_SECRET:-}
       #  Origens do frontend liberadas para CORS (ex.: https://app.exemplo.com).
       #  '*' so em desenvolvimento; restrinja em producao.
       - API_CORS_ORIGINS=${API_CORS_ORIGINS:-*}

@@ -15,7 +15,7 @@ uvicorn api.main:app --reload --port 8000
 - Documentação interativa (OpenAPI): `http://localhost:8000/docs`
 - Sonda de saúde: `GET /api/health`
 
-## Endpoints (Fase 1a — stateless, sem auth)
+## Endpoints de balística (Fase 1a — stateless, sem auth)
 
 | Método | Rota                          | Descrição                                             |
 |--------|-------------------------------|-------------------------------------------------------|
@@ -24,6 +24,23 @@ uvicorn api.main:app --reload --port 8000
 | GET    | `/api/catalog`                | Catálogo completo (calibres → projéteis → pólvoras).  |
 | GET    | `/api/catalog/caliber/{nome}` | Detalhes de um calibre (404 se não existir).          |
 | POST   | `/api/trajectory`             | Trajetória externa; inclui o cartão de DOPE se o corpo trouxer `dope`. |
+
+## Endpoints de autenticação (Fase 1b — JWT)
+
+Reaproveitam `core.auth` (bcrypt, unicidade por blind index, bloqueio de
+força-bruta persistido, recuperação anti-enumeração). A API só emite/valida o
+token JWT. Envie o token nas rotas protegidas como `Authorization: Bearer <token>`.
+
+| Método | Rota                | Descrição                                                    |
+|--------|---------------------|--------------------------------------------------------------|
+| POST   | `/api/auth/register`| Cria conta. 400 se os dados já estiverem em uso.             |
+| POST   | `/api/auth/login`   | Retorna `{access_token, token_type}`. 401 se inválido; 429 se bloqueado por tentativas. |
+| POST   | `/api/auth/recover` | Dispara recuperação. Mensagem sempre genérica (anti-enumeração). |
+| GET    | `/api/auth/me`      | Perfil do usuário autenticado.                               |
+| PUT    | `/api/auth/me`      | Atualiza o perfil (CPF normalizado; blind index recalculado).|
+
+O segredo do JWT vem de `JWT_SECRET` (ou `FERNET_KEY` como fallback). Defina
+`JWT_SECRET` em produção. Token expira em 12h.
 
 ### Exemplo — trajetória + cartão de DOPE
 
