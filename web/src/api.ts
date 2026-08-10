@@ -140,6 +140,8 @@ export const api = {
       body: JSON.stringify(body),
     }),
   me: () => request<User>("/api/auth/me"),
+  updateProfile: (body: Partial<Pick<User, "name" | "email" | "phone" | "cpf">>) =>
+    request<User>("/api/auth/me", { method: "PUT", body: JSON.stringify(body) }),
   logout: () => localStorage.removeItem("token"),
   hasToken: () => !!localStorage.getItem("token"),
 
@@ -147,6 +149,8 @@ export const api = {
   listInventory: () => request<InventoryItem[]>("/api/inventory"),
   createInventory: (body: Omit<InventoryItem, "id">) =>
     request<InventoryItem>("/api/inventory", { method: "POST", body: JSON.stringify(body) }),
+  updateInventory: (id: number, body: Omit<InventoryItem, "id">) =>
+    request<InventoryItem>(`/api/inventory/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteInventory: (id: number) =>
     request<void>(`/api/inventory/${id}`, { method: "DELETE" }),
 
