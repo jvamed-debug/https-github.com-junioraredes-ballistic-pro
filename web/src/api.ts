@@ -71,6 +71,8 @@ export type Firearm = {
   image_url?: string | null;
 };
 
+export type Advice = { content: string; provider: string; confidence: string };
+
 export type LogEntry = {
   id: number;
   caliber: string;
@@ -167,4 +169,12 @@ export const api = {
     request<LogEntry>("/api/logbook", { method: "POST", body: JSON.stringify(body) }),
   deleteLog: (id: number) =>
     request<void>(`/api/logbook/${id}`, { method: "DELETE" }),
+
+  // Consultor (IA)
+  adviseLoad: (body: {
+    caliber: string; projectile?: string | null; powder?: string | null;
+    charge?: number | null; velocity?: number | null; sd?: number | null; grouping?: number | null;
+  }) => request<Advice>("/api/advisor/load", { method: "POST", body: JSON.stringify(body) }),
+  adviseTrend: (sessions: { velocity_avg?: number | null; velocity_sd?: number | null; grouping_mm?: number | null }[]) =>
+    request<Advice>("/api/advisor/trend", { method: "POST", body: JSON.stringify({ sessions }) }),
 };

@@ -56,6 +56,19 @@ alterar/apagar um registro alheio responde **404** (não vaza a existência).
 | GET/POST | `/api/logbook` | Lista / cria sessões de recarga (data → hoje se omitida). |
 | DELETE | `/api/logbook/{id}` | Remove uma sessão. |
 
+## Consultor / IA (protegido por JWT)
+
+Reaproveita `services.ai_advisor`. **Modo offline por regras é o padrão** —
+determinístico, sem chave nem rede. Se o ambiente definir `ANTHROPIC_API_KEY`
+ou `OPENAI_API_KEY` (e o SDK correspondente estiver instalado), usa o LLM; o
+`health_check` derruba para offline se algo falhar, então a resposta nunca vira
+uma mensagem de erro do SDK.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/advisor/load` | Sugestão de carga a partir de calibre/carga/velocidade/SD/agrupamento. |
+| POST | `/api/advisor/trend` | Tendência de performance a partir de uma lista de sessões. |
+
 ### Exemplo — trajetória + cartão de DOPE
 
 ```bash

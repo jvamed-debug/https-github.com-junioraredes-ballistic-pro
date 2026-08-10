@@ -194,3 +194,34 @@ class LogbookIn(BaseModel):
 class LogbookOut(LogbookIn):
     id: int
     date: date
+
+
+# ---------------------------------------------------------------------------
+# Consultor (IA) — modo offline por regras; usa LLM se houver chave no ambiente
+# ---------------------------------------------------------------------------
+
+
+class LoadAdviceIn(BaseModel):
+    caliber: str = Field(..., min_length=1)
+    projectile: Optional[str] = None
+    powder: Optional[str] = None
+    charge: Optional[float] = None
+    velocity: Optional[float] = None
+    sd: Optional[float] = None
+    grouping: Optional[float] = None
+
+
+class TrendSessionIn(BaseModel):
+    velocity_avg: Optional[float] = None
+    velocity_sd: Optional[float] = None
+    grouping_mm: Optional[float] = None
+
+
+class TrendAdviceIn(BaseModel):
+    sessions: list[TrendSessionIn] = Field(default_factory=list)
+
+
+class AdviceOut(BaseModel):
+    content: str
+    provider: str
+    confidence: str

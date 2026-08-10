@@ -5,6 +5,7 @@ import { Dope } from "./pages/Dope.tsx";
 import { Inventory } from "./pages/Inventory.tsx";
 import { Logbook } from "./pages/Logbook.tsx";
 import { Costs } from "./pages/Costs.tsx";
+import { Advisor } from "./pages/Advisor.tsx";
 import { Profile } from "./pages/Profile.tsx";
 
 const TABS = [
@@ -12,6 +13,7 @@ const TABS = [
   { id: "inv", label: "📦 Inventário" },
   { id: "log", label: "📔 Logbook" },
   { id: "cost", label: "💰 Custos" },
+  { id: "ia", label: "🤖 IA" },
   { id: "profile", label: "👤 Perfil" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -95,6 +97,7 @@ export function App() {
         {tab === "inv" && <Inventory />}
         {tab === "log" && <Logbook />}
         {tab === "cost" && <Costs />}
+        {tab === "ia" && <Advisor />}
         {tab === "profile" && <Profile user={user} onUpdated={setUser} />}
       </main>
     </div>
