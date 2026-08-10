@@ -1,0 +1,38 @@
+# API REST (FastAPI) do Ballistic Pro — servida por uvicorn.
+#
+# Roda como um servico separado do app Streamlit, compartilhando o mesmo
+# codigo (core/, services/). No EasyPanel, aponte este Dockerfile para o
+# servico "api" e exponha a porta 8000.
+FROM python:3.11-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /app
+COPY --from=builder /install /usr/local
+COPY . .
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl --fail http://localhost:8000/api/health || exit 1
+
+ENTRYPOINT ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

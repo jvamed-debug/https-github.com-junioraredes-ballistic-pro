@@ -18,6 +18,23 @@ services:
       db:
         condition: service_healthy
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@db:5432/ballistic_db}
+      - FERNET_KEY=${FERNET_KEY:-}
+      #  Origens do frontend liberadas para CORS (ex.: https://app.exemplo.com).
+      #  '*' so em desenvolvimento; restrinja em producao.
+      - API_CORS_ORIGINS=${API_CORS_ORIGINS:-*}
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:15-alpine
     environment:
