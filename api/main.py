@@ -10,7 +10,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import ballistics
+from api.routers import auth, ballistics
 
 app = FastAPI(
     title="Ballistic Pro API",
@@ -36,6 +36,7 @@ app.add_middleware(
 )
 
 app.include_router(ballistics.router)
+app.include_router(auth.router)
 
 
 @app.get("/api/health", tags=["meta"])

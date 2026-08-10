@@ -7,9 +7,10 @@ frontend consome com tipos.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class AtmosphereIn(BaseModel):
@@ -85,3 +86,58 @@ class TrajectoryResponse(BaseModel):
     summary: dict
     points: list[TrajectoryPointOut]
     dope_card: Optional[list[DopeEntryOut]] = None
+
+
+# ---------------------------------------------------------------------------
+# Autenticacao e usuario
+# ---------------------------------------------------------------------------
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8)
+    name: Optional[str] = None
+    cpf: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RecoverRequest(BaseModel):
+    identifier: str = Field(..., description="E-mail ou telefone cadastrado.")
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class MessageResponse(BaseModel):
+    detail: str
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    cpf: Optional[str] = None
+    cr_number: Optional[str] = None
+    cr_expiration: Optional[date] = None
+    address_acervo: Optional[str] = None
+    is_premium: bool = False
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    cpf: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    cr_number: Optional[str] = None
+    cr_expiration: Optional[date] = None
+    address_acervo: Optional[str] = None
