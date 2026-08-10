@@ -1,0 +1,22 @@
+# Frontend web (React + PWA) do Ballistic Pro.
+#
+# Build estático com Vite e servido por nginx, que tambem faz proxy de /api
+# para o servico da API (uvicorn:8000). No EasyPanel, aponte este Dockerfile
+# para o servico "web" e exponha a porta 80.
+FROM node:22-alpine AS build
+
+WORKDIR /web
+COPY web/package.json web/package-lock.json* ./
+RUN npm ci
+
+COPY web/ ./
+# Vazio = mesma origem (/api via nginx). Defina apenas se a API estiver em
+# outro host.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
+
+FROM nginx:alpine
+COPY web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /web/dist /usr/share/nginx/html
+EXPOSE 80
