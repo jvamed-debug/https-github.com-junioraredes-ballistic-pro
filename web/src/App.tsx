@@ -6,12 +6,14 @@ import { Inventory } from "./pages/Inventory.tsx";
 import { Logbook } from "./pages/Logbook.tsx";
 import { Costs } from "./pages/Costs.tsx";
 import { Advisor } from "./pages/Advisor.tsx";
+import { Performance } from "./pages/Performance.tsx";
 import { Profile } from "./pages/Profile.tsx";
 
 const TABS = [
   { id: "dope", label: "🎯 DOPE" },
   { id: "inv", label: "📦 Inventário" },
   { id: "log", label: "📔 Logbook" },
+  { id: "perf", label: "📈 Performance" },
   { id: "cost", label: "💰 Custos" },
   { id: "ia", label: "🤖 IA" },
   { id: "profile", label: "👤 Perfil" },
@@ -96,6 +98,7 @@ export function App() {
         {tab === "dope" && <Dope />}
         {tab === "inv" && <Inventory />}
         {tab === "log" && <Logbook />}
+        {tab === "perf" && <Performance />}
         {tab === "cost" && <Costs />}
         {tab === "ia" && <Advisor />}
         {tab === "profile" && <Profile user={user} onUpdated={setUser} />}
