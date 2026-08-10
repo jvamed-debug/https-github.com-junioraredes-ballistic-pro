@@ -1,10 +1,63 @@
 import streamlit as st
 import pandas as pd
+from html import escape as html_escape
 from services.trajectory_service import (
     calculate_trajectory,
+    build_dope_card,
     ProjectileData,
     AtmosphericConditions,
 )
+
+
+#  Valores de clique de torre mais comuns, por unidade. O texto e o rotulo; o
+#  numero e o valor de um clique na propria unidade (0.1 mil, 0.25 MOA, ...).
+_CLICK_OPTIONS = {
+    "MIL": [("0.1 mil (padrao)", 0.1), ("0.05 mil", 0.05)],
+    "MOA": [("1/4 MOA (padrao)", 0.25), ("1/8 MOA", 0.125), ("1/2 MOA", 0.5)],
+}
+
+
+def _render_dope_card_html(entries, unit, click_label, incline_deg, header):
+    """Monta um cartao de DOPE imprimivel (HTML) para plastificar e levar ao
+    campo. So texto/tabela, sem dependencia externa."""
+    rows = []
+    for e in entries:
+        wind = "—" if e.windage_dir == "-" else f"{e.windage:.1f} {e.windage_dir}"
+        rows.append(
+            f"<tr><td>{int(e.range_m)}</td>"
+            f"<td class='up'>{e.elevation:.1f}<span>{e.elevation_clicks} clk</span></td>"
+            f"<td class='wd'>{wind}<span>{e.windage_clicks} clk</span></td>"
+            f"<td>{int(e.velocity_fps)}</td><td>{int(e.energy_ftlbs)}</td>"
+            f"<td>{e.time_of_flight_s:.2f}</td></tr>"
+        )
+    incline_txt = f" · Angulo {incline_deg:+.0f}°" if incline_deg else ""
+    return f"""<!doctype html><html lang='pt-br'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Cartao de DOPE</title><style>
+  * {{ box-sizing: border-box; }}
+  body {{ font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0;
+    background: #0f172a; color: #e2e8f0; padding: 16px; }}
+  .card {{ max-width: 520px; margin: 0 auto; background: #1e293b;
+    border: 1px solid #334155; border-radius: 12px; overflow: hidden; }}
+  header {{ padding: 14px 16px; background: #111827; border-bottom: 2px solid #f59e0b; }}
+  header h1 {{ margin: 0; font-size: 1rem; letter-spacing: .04em; text-transform: uppercase; }}
+  header p {{ margin: 4px 0 0; font-size: .72rem; color: #94a3b8; }}
+  table {{ width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }}
+  th, td {{ padding: 8px 6px; text-align: center; font-size: .82rem;
+    border-bottom: 1px solid #334155; }}
+  th {{ font-size: .62rem; text-transform: uppercase; letter-spacing: .05em;
+    color: #94a3b8; background: #0f172a; }}
+  td span {{ display: block; font-size: .6rem; color: #64748b; }}
+  td.up {{ color: #fca5a5; font-weight: 700; }}
+  td.wd {{ color: #fcd34d; font-weight: 700; }}
+  td:first-child {{ font-weight: 700; color: #fff; }}
+  @media print {{ body {{ background: #fff; color: #000; }}
+    .card {{ border-color: #000; }} th {{ background: #eee; color: #000; }} }}
+</style></head><body><div class='card'>
+<header><h1>Cartao de DOPE</h1><p>{html_escape(header)} · Torre {html_escape(click_label)}{incline_txt}</p></header>
+<table><thead><tr><th>Dist (m)</th><th>Elev ({unit})</th><th>Vento ({unit})</th>
+<th>Vel (fps)</th><th>En (ft·lb)</th><th>ToF (s)</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div></body></html>"""
 
 
 def show_trajectory_tab(db, selected_caliber, selected_projectile):
@@ -222,6 +275,97 @@ def show_trajectory_tab(db, selected_caliber, selected_projectile):
             label="EXPORTAR TABELA (CSV)",
             data=csv_data,
             file_name="tabela_balistica.csv",
+            mime="text/csv",
+            width='stretch',
+        )
+
+        st.divider()
+        _show_dope_card(result, selected_caliber, selected_projectile)
+
+
+def _show_dope_card(result, selected_caliber, selected_projectile):
+    """Cartao de DOPE: a trajetoria ja calculada, traduzida para o que se dial
+    na torre da luneta em cliques, com opcao de compensacao de angulo."""
+    st.markdown("### 🎯 Cartao de DOPE (Correcao de Torre)")
+    st.caption(
+        "A correcao de elevacao (come-up) e de vento que voce dial na luneta "
+        "para acertar em cada distancia, ja convertida em cliques da torre."
+    )
+
+    d1, d2, d3 = st.columns(3)
+    with d1:
+        dope_unit = st.radio(
+            "Unidade da torre", ["MIL", "MOA"], horizontal=True, key="dope_unit"
+        )
+    with d2:
+        click_opts = _CLICK_OPTIONS[dope_unit]
+        click_choice = st.selectbox(
+            "Valor do clique", options=click_opts,
+            format_func=lambda x: x[0], key=f"dope_click_{dope_unit}",
+        )
+        click_value = click_choice[1]
+        click_label = click_choice[0]
+    with d3:
+        incline_deg = st.slider(
+            "Angulo de tiro (°)", min_value=-60, max_value=60, value=0, step=5,
+            key="dope_incline",
+            help="Aclive (+) ou declive (-). Reduz a elevacao necessaria por "
+                 "cos(angulo) — a 'regra do atirador'. Subir ou descer o mesmo "
+                 "angulo pede a mesma correcao.",
+        )
+
+    entries = build_dope_card(
+        result, unit=dope_unit, click_value=click_value, incline_deg=float(incline_deg)
+    )
+    if not entries:
+        st.info("Calcule a trajetoria acima para gerar o cartao.")
+        return
+
+    dope_rows = []
+    for e in entries:
+        wind = "—" if e.windage_dir == "-" else f"{e.windage:.1f} {e.windage_dir}"
+        dope_rows.append({
+            "Dist (m)": int(e.range_m),
+            f"Elevacao ({dope_unit})": e.elevation,
+            "Elev (cliques)": e.elevation_clicks,
+            f"Vento ({dope_unit})": wind,
+            "Vento (cliques)": e.windage_clicks,
+            "Vel (fps)": int(e.velocity_fps),
+        })
+    dope_df = pd.DataFrame(dope_rows)
+    st.dataframe(dope_df, width='stretch', hide_index=True)
+    st.caption(
+        "Vento: **E** = dial para a esquerda (tiro foi para a direita), "
+        "**D** = dial para a direita. Elevacao positiva = dial para cima."
+    )
+    if incline_deg:
+        st.caption(
+            f"Elevacao compensada para tiro a {incline_deg:+d}° "
+            "(aproximacao pela regra do atirador)."
+        )
+
+    header = f"{selected_caliber} · {selected_projectile}"
+    if selected_caliber == "Outro":
+        header = "Configuracao manual"
+    card_html = _render_dope_card_html(
+        entries, dope_unit, click_label, float(incline_deg), header
+    )
+
+    exp1, exp2 = st.columns(2)
+    with exp1:
+        st.download_button(
+            label="📇 BAIXAR CARTAO (HTML p/ imprimir)",
+            data=card_html.encode("utf-8"),
+            file_name="cartao_dope.html",
+            mime="text/html",
+            width='stretch',
+        )
+    with exp2:
+        dope_csv = dope_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="EXPORTAR DOPE (CSV)",
+            data=dope_csv,
+            file_name="cartao_dope.csv",
             mime="text/csv",
             width='stretch',
         )
