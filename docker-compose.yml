@@ -38,6 +38,16 @@ services:
       db:
         condition: service_healthy
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "8080:80"
+    restart: always
+    depends_on:
+      - api
+
   db:
     image: postgres:15-alpine
     environment:

@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Tema tático escuro, alinhado ao app Streamlit atual. */
+:root {
+  --bg: #0a0e14;
+  --panel: #131a24;
+  --panel-2: #1b2431;
+  --border: #263041;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #3b82f6;
+  --up: #fca5a5;
+  --wind: #fcd34d;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Respeita o notch do iPhone. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+input, select, button { font: inherit; }
+
+.field {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  outline: none;
+}
+.field:focus { border-color: var(--accent); }
+
+.btn {
+  width: 100%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.tabnum { font-variant-numeric: tabular-nums; }
