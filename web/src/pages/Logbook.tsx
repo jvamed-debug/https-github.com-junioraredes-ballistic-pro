@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type Firearm, type LogEntry } from "../api.ts";
+import { downloadCsv, toCsv } from "../csv.ts";
 
 export function Logbook() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -61,6 +62,18 @@ export function Logbook() {
 
   const gunName = (id?: number | null) => guns.find((g) => g.id === id)?.model;
 
+  function exportCsv() {
+    const csv = toCsv(
+      ["Data", "Calibre", "Qtd", "Pólvora", "Carga(gr)", "Vel(fps)", "SD", "Agrup(mm)", "Arma"],
+      logs.map((s) => [
+        s.date, s.caliber, s.quantity, s.powder ?? "", s.charge ?? "",
+        s.velocity_avg ?? "", s.velocity_sd ?? "", s.grouping_mm ?? "",
+        gunName(s.firearm_id) ?? "",
+      ]),
+    );
+    downloadCsv("logbook.csv", csv);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <section className="card p-4">
@@ -104,8 +117,15 @@ export function Logbook() {
       </section>
 
       <section className="card overflow-hidden">
-        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
-          Histórico ({logs.length})
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <span className="text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+            Histórico ({logs.length})
+          </span>
+          {logs.length > 0 && (
+            <button onClick={exportCsv} className="rounded-md border border-[var(--border)] px-3 py-1 text-xs text-[var(--muted)]">
+              ⬇ CSV
+            </button>
+          )}
         </div>
         {logs.length === 0 ? (
           <p className="p-4 text-sm text-[var(--muted)]">Nenhum registro ainda.</p>

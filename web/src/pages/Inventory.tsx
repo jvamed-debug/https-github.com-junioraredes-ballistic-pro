@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, type InventoryItem } from "../api.ts";
+import { downloadCsv, toCsv } from "../csv.ts";
 
 const CATEGORIES = ["Pólvora", "Projétil", "Espoleta", "Estojo", "Munição", "Outro"];
 const UNITS = ["g", "grains", "un"];
@@ -76,6 +77,29 @@ export function Inventory() {
     await load();
   }
 
+  const [search, setSearch] = useState("");
+  const [filterCat, setFilterCat] = useState("Todas");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter(
+      (i) =>
+        (filterCat === "Todas" || i.category === filterCat) &&
+        (!q || i.name.toLowerCase().includes(q)),
+    );
+  }, [items, search, filterCat]);
+
+  function exportCsv() {
+    const csv = toCsv(
+      ["Categoria", "Nome", "Quantidade", "Unidade", "Preço/un", "Lote", "Validade"],
+      filtered.map((i) => [
+        i.category, i.name, i.quantity, i.unit, i.price_unit ?? 0,
+        i.batch_number ?? "", i.expiration_date ?? "",
+      ]),
+    );
+    downloadCsv("inventario.csv", csv);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <section className="card p-4">
@@ -98,14 +122,32 @@ export function Inventory() {
       </section>
 
       <section className="card overflow-hidden">
-        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
-          Inventário ({items.length})
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
+          <span className="text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+            Inventário ({filtered.length}/{items.length})
+          </span>
+          {items.length > 0 && (
+            <button onClick={exportCsv} className="rounded-md border border-[var(--border)] px-3 py-1 text-xs text-[var(--muted)]">
+              ⬇ CSV
+            </button>
+          )}
         </div>
+        {items.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3">
+            <input className="field" placeholder="Buscar por nome…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <select className="field" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
+              <option>Todas</option>
+              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
         {items.length === 0 ? (
           <p className="p-4 text-sm text-[var(--muted)]">Nenhum item ainda.</p>
+        ) : filtered.length === 0 ? (
+          <p className="p-4 text-sm text-[var(--muted)]">Nenhum item corresponde ao filtro.</p>
         ) : (
           <ul>
-            {items.map((i) => (
+            {filtered.map((i) => (
               <li key={i.id} className="border-t border-[var(--border)] px-4 py-3 first:border-t-0">
                 {editing === i.id ? (
                   <div className="flex flex-col gap-2">
