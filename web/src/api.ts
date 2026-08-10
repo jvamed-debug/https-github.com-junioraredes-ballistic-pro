@@ -50,6 +50,44 @@ export type User = {
   is_premium: boolean;
 };
 
+export type InventoryItem = {
+  id: number;
+  category: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  price_unit: number;
+  batch_number?: string | null;
+  expiration_date?: string | null;
+};
+
+export type Firearm = {
+  id: number;
+  model: string;
+  serial?: string | null;
+  sigma?: string | null;
+  craf?: string | null;
+  expiration?: string | null;
+  image_url?: string | null;
+};
+
+export type LogEntry = {
+  id: number;
+  caliber: string;
+  date: string;
+  quantity: number;
+  projectile?: string | null;
+  powder?: string | null;
+  charge?: number | null;
+  primer?: string | null;
+  case?: string | null;
+  velocity_avg?: number | null;
+  velocity_sd?: number | null;
+  grouping_mm?: number | null;
+  firearm_id?: number | null;
+  notes?: string | null;
+};
+
 function tokenHeader(): Record<string, string> {
   const t = localStorage.getItem("token");
   return t ? { Authorization: `Bearer ${t}` } : {};
@@ -74,6 +112,8 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     }
     throw new Error(detail);
   }
+  // 204 No Content (ex.: DELETE) não tem corpo para desserializar.
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -102,4 +142,25 @@ export const api = {
   me: () => request<User>("/api/auth/me"),
   logout: () => localStorage.removeItem("token"),
   hasToken: () => !!localStorage.getItem("token"),
+
+  // Inventário
+  listInventory: () => request<InventoryItem[]>("/api/inventory"),
+  createInventory: (body: Omit<InventoryItem, "id">) =>
+    request<InventoryItem>("/api/inventory", { method: "POST", body: JSON.stringify(body) }),
+  deleteInventory: (id: number) =>
+    request<void>(`/api/inventory/${id}`, { method: "DELETE" }),
+
+  // Armas
+  listFirearms: () => request<Firearm[]>("/api/firearms"),
+  createFirearm: (body: Omit<Firearm, "id" | "image_url">) =>
+    request<Firearm>("/api/firearms", { method: "POST", body: JSON.stringify(body) }),
+  deleteFirearm: (id: number) =>
+    request<void>(`/api/firearms/${id}`, { method: "DELETE" }),
+
+  // Logbook
+  listLogbook: () => request<LogEntry[]>("/api/logbook"),
+  createLog: (body: Partial<LogEntry> & { caliber: string; quantity: number }) =>
+    request<LogEntry>("/api/logbook", { method: "POST", body: JSON.stringify(body) }),
+  deleteLog: (id: number) =>
+    request<void>(`/api/logbook/${id}`, { method: "DELETE" }),
 };

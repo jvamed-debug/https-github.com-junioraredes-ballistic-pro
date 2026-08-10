@@ -2,10 +2,22 @@ import { useEffect, useState } from "react";
 import { api, type User } from "./api.ts";
 import { Login } from "./pages/Login.tsx";
 import { Dope } from "./pages/Dope.tsx";
+import { Inventory } from "./pages/Inventory.tsx";
+import { Logbook } from "./pages/Logbook.tsx";
+import { Costs } from "./pages/Costs.tsx";
+
+const TABS = [
+  { id: "dope", label: "🎯 DOPE" },
+  { id: "inv", label: "📦 Inventário" },
+  { id: "log", label: "📔 Logbook" },
+  { id: "cost", label: "💰 Custos" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
+  const [tab, setTab] = useState<TabId>("dope");
 
   // Ao abrir, se há token salvo, tenta recuperar o usuário. Token expirado
   // (401) simplesmente cai para a tela de login.
@@ -59,8 +71,28 @@ export function App() {
           </button>
         </div>
       </header>
+      <nav className="flex gap-1 overflow-x-auto border-b border-[var(--border)] px-2 py-2">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={
+              "whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold " +
+              (tab === t.id
+                ? "bg-[var(--panel-2)] text-white"
+                : "text-[var(--muted)]")
+            }
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
       <main className="flex-1 p-4">
-        <Dope />
+        {tab === "dope" && <Dope />}
+        {tab === "inv" && <Inventory />}
+        {tab === "log" && <Logbook />}
+        {tab === "cost" && <Costs />}
       </main>
     </div>
   );
