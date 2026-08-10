@@ -175,6 +175,107 @@ class TrajectoryResult:
     summary: dict = field(default_factory=dict)
 
 
+#  Fatores de conversao de centimetros de desvio no alvo para angulo, por
+#  distancia. 1 MOA ~ 2.908 cm a 100 m; 1 mil (milirradiano) = 10 cm a 100 m.
+_CM_TO_MOA_AT_100 = 34.377  # cm/m -> MOA
+_CM_TO_MIL_AT_100 = 10.0    # cm/m -> mil
+
+
+def _cm_to_angle(cm: float, range_m: float, unit: str) -> float:
+    """Converte um deslocamento no alvo (cm) para a correcao angular na mira."""
+    if range_m <= 0:
+        return 0.0
+    factor = _CM_TO_MIL_AT_100 if unit.upper() == "MIL" else _CM_TO_MOA_AT_100
+    return (cm / range_m) * factor
+
+
+@dataclass
+class DopeEntry:
+    """Uma linha do cartao de DOPE: o que dialar na torre para acertar naquela
+    distancia, ja em cliques.
+
+    `elevation` e a subida de elevacao (come-up) e `windage` e a correcao
+    lateral, ambas em MOA ou mil conforme a unidade escolhida. `*_clicks` sao
+    essas mesmas correcoes convertidas para cliques da torre pelo valor do
+    clique informado (ex.: 1/4 MOA = 0.25, 0.1 mil). `windage_dir` diz para
+    que lado corrigir: 'E' (dialar para a esquerda, vento empurrou o tiro para
+    a direita) ou 'D' (o contrario).
+    """
+
+    range_m: float
+    unit: str
+    elevation: float
+    elevation_clicks: int
+    windage: float
+    windage_dir: str
+    windage_clicks: int
+    drop_cm: float
+    wind_drift_cm: float
+    velocity_fps: float
+    energy_ftlbs: float
+    time_of_flight_s: float
+
+
+def build_dope_card(
+    result: TrajectoryResult,
+    unit: str = "MIL",
+    click_value: float = 0.1,
+    incline_deg: float = 0.0,
+) -> list[DopeEntry]:
+    """Transforma uma trajetoria calculada num cartao de DOPE em cliques.
+
+    `unit` e 'MIL' ou 'MOA'. `click_value` e o valor de um clique da torre na
+    MESMA unidade (1/4 MOA -> 0.25; 1/8 MOA -> 0.125; 0.1 mil -> 0.1).
+
+    `incline_deg` aplica a "regra do atirador": mirando em subida ou descida,
+    so a componente horizontal da distancia puxa o projetil, entao a elevacao
+    necessaria cai por cos(angulo). E uma aproximacao de campo (nao reintegra a
+    trajetoria no plano inclinado), mas e a correcao padrao e vale para os dois
+    sentidos, pois cos(+a) = cos(-a). O vento nao e afetado.
+    """
+    unit = "MIL" if unit.upper() == "MIL" else "MOA"
+    cos_incline = math.cos(math.radians(incline_deg))
+    if click_value <= 0:
+        click_value = 0.1 if unit == "MIL" else 0.25
+
+    entries: list[DopeEntry] = []
+    for p in result.points:
+        #  Come-up: a queda fica abaixo da linha de visada (drop negativo),
+        #  entao a correcao e dialar para CIMA o mesmo tanto. O cosseno do
+        #  angulo reduz essa subida no tiro inclinado.
+        come_up_cm = -p.drop_cm * cos_incline
+        elevation = _cm_to_angle(come_up_cm, p.range_m, unit)
+        elevation_clicks = round(elevation / click_value)
+
+        #  Deriva positiva = tiro foi para a direita => corrigir para a
+        #  esquerda ('E'). A magnitude e o quanto dialar.
+        drift_cm = p.wind_drift_cm
+        windage = abs(_cm_to_angle(drift_cm, p.range_m, unit))
+        windage_clicks = round(windage / click_value)
+        if drift_cm > 0:
+            windage_dir = "E"
+        elif drift_cm < 0:
+            windage_dir = "D"
+        else:
+            windage_dir = "-"
+
+        entries.append(DopeEntry(
+            range_m=p.range_m,
+            unit=unit,
+            elevation=round(elevation, 2),
+            elevation_clicks=elevation_clicks,
+            windage=round(windage, 2),
+            windage_dir=windage_dir,
+            windage_clicks=windage_clicks,
+            drop_cm=p.drop_cm,
+            wind_drift_cm=p.wind_drift_cm,
+            velocity_fps=p.velocity_fps,
+            energy_ftlbs=p.energy_ftlbs,
+            time_of_flight_s=p.time_of_flight_s,
+        ))
+    return entries
+
+
 def calculate_trajectory(
     projectile: ProjectileData,
     zero_range_m: float = 100.0,
