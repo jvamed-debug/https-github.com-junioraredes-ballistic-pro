@@ -52,6 +52,30 @@ export function Inventory() {
     await load();
   }
 
+  const [editing, setEditing] = useState<number | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+
+  function startEdit(i: InventoryItem) {
+    setEditing(i.id);
+    setEditQty(String(i.quantity));
+    setEditPrice(String(i.price_unit ?? 0));
+  }
+
+  async function saveEdit(i: InventoryItem) {
+    await api.updateInventory(i.id, {
+      category: i.category,
+      name: i.name,
+      quantity: parseFloat(editQty) || 0,
+      unit: i.unit,
+      price_unit: parseFloat(editPrice) || 0,
+      batch_number: i.batch_number ?? null,
+      expiration_date: i.expiration_date ?? null,
+    });
+    setEditing(null);
+    await load();
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <section className="card p-4">
@@ -82,20 +106,38 @@ export function Inventory() {
         ) : (
           <ul>
             {items.map((i) => (
-              <li key={i.id} className="flex items-center justify-between border-t border-[var(--border)] px-4 py-3 first:border-t-0">
-                <div>
-                  <div className="font-semibold">{i.name}</div>
-                  <div className="text-xs text-[var(--muted)]">
-                    {i.category} · {i.quantity} {i.unit}
-                    {i.price_unit > 0 && ` · R$ ${i.price_unit.toFixed(2)}/${i.unit}`}
+              <li key={i.id} className="border-t border-[var(--border)] px-4 py-3 first:border-t-0">
+                {editing === i.id ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm font-semibold">{i.name}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input className="field" inputMode="decimal" value={editQty} onChange={(e) => setEditQty(e.target.value)} placeholder={`Qtd (${i.unit})`} />
+                      <input className="field" inputMode="decimal" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} placeholder="Preço/un" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => saveEdit(i)} className="btn" style={{ paddingBlock: 8 }}>Salvar</button>
+                      <button onClick={() => setEditing(null)} className="btn btn-ghost" style={{ paddingBlock: 8 }}>Cancelar</button>
+                    </div>
                   </div>
-                </div>
-                <button
-                  onClick={() => remove(i.id)}
-                  className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-red-400"
-                >
-                  Remover
-                </button>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold">{i.name}</div>
+                      <div className="text-xs text-[var(--muted)]">
+                        {i.category} · {i.quantity} {i.unit}
+                        {i.price_unit > 0 && ` · R$ ${i.price_unit.toFixed(2)}/${i.unit}`}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => startEdit(i)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]">
+                        Editar
+                      </button>
+                      <button onClick={() => remove(i.id)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-red-400">
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
