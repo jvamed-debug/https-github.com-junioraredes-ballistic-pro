@@ -42,6 +42,20 @@ token JWT. Envie o token nas rotas protegidas como `Authorization: Bearer <token
 O segredo do JWT vem de `JWT_SECRET` (ou `FERNET_KEY` como fallback). Defina
 `JWT_SECRET` em produção. Token expira em 12h.
 
+## Endpoints de dados do usuário (Fase 1c — protegidos por JWT)
+
+Todos no escopo do usuário autenticado: cada consulta filtra por dono, e
+alterar/apagar um registro alheio responde **404** (não vaza a existência).
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET/POST | `/api/inventory` | Lista / cria itens de inventário. |
+| PUT/DELETE | `/api/inventory/{id}` | Atualiza / remove um item. |
+| GET/POST | `/api/firearms` | Lista / cria armas (serial/sigma/craf cifrados). |
+| PUT/DELETE | `/api/firearms/{id}` | Atualiza / remove uma arma. |
+| GET/POST | `/api/logbook` | Lista / cria sessões de recarga (data → hoje se omitida). |
+| DELETE | `/api/logbook/{id}` | Remove uma sessão. |
+
 ### Exemplo — trajetória + cartão de DOPE
 
 ```bash

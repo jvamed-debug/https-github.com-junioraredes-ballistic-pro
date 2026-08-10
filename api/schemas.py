@@ -141,3 +141,56 @@ class ProfileUpdateRequest(BaseModel):
     cr_number: Optional[str] = None
     cr_expiration: Optional[date] = None
     address_acervo: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Dados do usuario: inventario, armas e logbook (todos no escopo do usuario)
+# ---------------------------------------------------------------------------
+
+
+class InventoryIn(BaseModel):
+    category: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=100)
+    quantity: float = Field(0.0, ge=0)
+    unit: str = Field(..., min_length=1, max_length=10)
+    price_unit: float = Field(0.0, ge=0)
+    batch_number: Optional[str] = None
+    expiration_date: Optional[date] = None
+
+
+class InventoryOut(InventoryIn):
+    id: int
+
+
+class FirearmIn(BaseModel):
+    model: str = Field(..., min_length=2, max_length=100)
+    serial: Optional[str] = None
+    sigma: Optional[str] = None
+    craf: Optional[str] = None
+    expiration: Optional[date] = None
+
+
+class FirearmOut(FirearmIn):
+    id: int
+    image_url: Optional[str] = None
+
+
+class LogbookIn(BaseModel):
+    caliber: str = Field(..., min_length=2)
+    date: Optional[date] = None  # default: hoje, resolvido no endpoint
+    quantity: int = Field(1, ge=1)
+    projectile: Optional[str] = None
+    powder: Optional[str] = None
+    charge: Optional[float] = Field(None, ge=0)
+    primer: Optional[str] = None
+    case: Optional[str] = None
+    velocity_avg: Optional[float] = Field(None, ge=0)
+    velocity_sd: Optional[float] = Field(None, ge=0)
+    grouping_mm: Optional[float] = Field(None, ge=0)
+    firearm_id: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class LogbookOut(LogbookIn):
+    id: int
+    date: date
