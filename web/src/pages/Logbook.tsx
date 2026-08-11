@@ -17,6 +17,24 @@ export function Logbook() {
   const [firearmId, setFirearmId] = useState("");
 
   const [gunModel, setGunModel] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  function resetForm() {
+    setCaliber(""); setQuantity(""); setPowder(""); setCharge(""); setVel(""); setGroup(""); setFirearmId("");
+    setEditingId(null);
+  }
+
+  function startEdit(s: LogEntry) {
+    setEditingId(s.id);
+    setCaliber(s.caliber);
+    setQuantity(String(s.quantity));
+    setPowder(s.powder ?? "");
+    setCharge(s.charge != null ? String(s.charge) : "");
+    setVel(s.velocity_avg != null ? String(s.velocity_avg) : "");
+    setGroup(s.grouping_mm != null ? String(s.grouping_mm) : "");
+    setFirearmId(s.firearm_id != null ? String(s.firearm_id) : "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function load() {
     try {
@@ -29,24 +47,29 @@ export function Logbook() {
   }
   useEffect(() => { load(); }, []);
 
-  async function addSession(e: React.FormEvent) {
+  async function submitSession(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
+    const payload = {
+      caliber,
+      quantity: parseInt(quantity) || 1,
+      powder: powder || null,
+      charge: charge ? parseFloat(charge) : null,
+      velocity_avg: vel ? parseFloat(vel) : null,
+      grouping_mm: group ? parseFloat(group) : null,
+      firearm_id: firearmId ? parseInt(firearmId) : null,
+    };
     try {
-      await api.createLog({
-        caliber,
-        quantity: parseInt(quantity) || 1,
-        powder: powder || null,
-        charge: charge ? parseFloat(charge) : null,
-        velocity_avg: vel ? parseFloat(vel) : null,
-        grouping_mm: group ? parseFloat(group) : null,
-        firearm_id: firearmId ? parseInt(firearmId) : null,
-      });
-      setCaliber(""); setQuantity(""); setPowder(""); setCharge(""); setVel(""); setGroup("");
+      if (editingId != null) {
+        await api.updateLog(editingId, payload);
+      } else {
+        await api.createLog(payload);
+      }
+      resetForm();
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao registrar.");
+      setError(e instanceof Error ? e.message : "Falha ao salvar.");
     } finally {
       setBusy(false);
     }
@@ -78,9 +101,9 @@ export function Logbook() {
     <div className="flex flex-col gap-4">
       <section className="card p-4">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
-          Registrar recarga
+          {editingId != null ? "Editar recarga" : "Registrar recarga"}
         </h2>
-        <form onSubmit={addSession} className="grid grid-cols-2 gap-2">
+        <form onSubmit={submitSession} className="grid grid-cols-2 gap-2">
           <input className="field" placeholder="Calibre (ex.: .308 WIN)" value={caliber} onChange={(e) => setCaliber(e.target.value)} required />
           <input className="field" inputMode="numeric" placeholder="Quantidade" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
           <input className="field" placeholder="Pólvora" value={powder} onChange={(e) => setPowder(e.target.value)} />
@@ -91,7 +114,14 @@ export function Logbook() {
             <option value="">Sem arma associada</option>
             {guns.map((g) => <option key={g.id} value={g.id}>{g.model}</option>)}
           </select>
-          <button className="btn col-span-2" disabled={busy}>{busy ? "…" : "REGISTRAR"}</button>
+          {editingId != null ? (
+            <div className="col-span-2 flex gap-2">
+              <button className="btn" disabled={busy}>{busy ? "…" : "SALVAR"}</button>
+              <button type="button" className="btn btn-ghost" onClick={resetForm}>Cancelar</button>
+            </div>
+          ) : (
+            <button className="btn col-span-2" disabled={busy}>{busy ? "…" : "REGISTRAR"}</button>
+          )}
         </form>
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
       </section>
@@ -146,9 +176,14 @@ export function Logbook() {
                     {gunName(s.firearm_id) && ` · ${gunName(s.firearm_id)}`}
                   </div>
                 </div>
-                <button onClick={() => api.deleteLog(s.id).then(load)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-red-400">
-                  Remover
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => startEdit(s)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]">
+                    Editar
+                  </button>
+                  <button onClick={() => api.deleteLog(s.id).then(load)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-red-400">
+                    Remover
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

@@ -129,3 +129,26 @@ class TestLogbook:
         assert client.get("/api/logbook", headers=hb).json() == []
         assert client.delete(f"/api/logbook/{sid}", headers=hb).status_code == 404
         assert client.delete(f"/api/logbook/{sid}", headers=ha).status_code == 204
+
+    def test_update_changes_fields_and_keeps_date(self, client):
+        h = _auth(client)
+        created = client.post("/api/logbook", headers=h, json={
+            "caliber": "9mm", "quantity": 10, "charge": 5.0,
+        }).json()
+        original_date = created["date"]
+        r = client.put(f"/api/logbook/{created['id']}", headers=h, json={
+            "caliber": "9mm Luger", "quantity": 25, "charge": 5.4, "velocity_avg": 1150,
+        })
+        assert r.status_code == 200
+        body = r.json()
+        assert body["caliber"] == "9mm Luger"
+        assert body["quantity"] == 25
+        assert body["velocity_avg"] == 1150
+        assert body["date"] == original_date  # data preservada quando omitida
+
+    def test_update_is_isolated(self, client):
+        ha = _auth(client, "alice")
+        hb = _auth(client, "bob")
+        sid = client.post("/api/logbook", headers=ha, json={"caliber": "9mm", "quantity": 10}).json()["id"]
+        r = client.put(f"/api/logbook/{sid}", headers=hb, json={"caliber": "hack", "quantity": 1})
+        assert r.status_code == 404
