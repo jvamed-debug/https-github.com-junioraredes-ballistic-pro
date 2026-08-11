@@ -44,6 +44,10 @@ services:
       dockerfile: Dockerfile.web
     ports:
       - "8080:80"
+    environment:
+      #  Para onde o nginx encaminha /api. Local: o servico se chama "api".
+      #  No EasyPanel, use NOME_PROJETO_api:8000 (ex.: ballistic-pro_api:8000).
+      - API_UPSTREAM=${API_UPSTREAM:-api:8000}
     restart: always
     depends_on:
       - api

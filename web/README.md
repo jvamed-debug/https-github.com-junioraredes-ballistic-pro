@@ -40,9 +40,13 @@ npm run dev        # http://localhost:5173 (proxia /api -> :8000)
 Serviço separado, mesmo repositório:
 
 - **Dockerfile:** `Dockerfile.web` (build Vite → nginx na porta `80`).
-- O nginx serve o estático e faz **proxy de `/api`** para o serviço `api`
-  (uvicorn:8000) — mesma origem, sem CORS. Veja `web/nginx.conf`.
+- O nginx serve o estático e faz **proxy de `/api`** para a API (uvicorn:8000)
+  — mesma origem, sem CORS. O destino é configurável por **`API_UPSTREAM`**
+  (`web/nginx.conf.template`, renderizado por envsubst na inicialização):
+  padrão `api:8000` (docker-compose local); no EasyPanel use
+  `NOME_PROJETO_api:8000` (ex.: `ballistic-pro_api:8000`).
 - No `docker-compose.yml` local, o serviço `web` sobe na porta `8080`.
+- Guia completo de deploy: [`../DEPLOY_EASYPANEL.md`](../DEPLOY_EASYPANEL.md).
 
 ## Próxima fase
 

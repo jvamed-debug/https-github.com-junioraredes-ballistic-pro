@@ -6,8 +6,15 @@ server {
 
     # A API roda em outro serviço (uvicorn:8000). O nginx a expõe sob /api na
     # mesma origem, então o frontend não precisa de CORS nem de URL absoluta.
+    #
+    # O destino é configurável por API_UPSTREAM (host:porta), porque o hostname
+    # interno varia: no docker-compose local é "api"; no EasyPanel é
+    # "NOME_PROJETO_api" (ex.: ballistic-pro_api). A imagem oficial do nginx
+    # renderiza este template com envsubst na inicialização — só as variáveis
+    # de ambiente definidas (API_UPSTREAM) são substituídas; $host, $remote_addr
+    # etc. são do nginx e ficam intactos.
     location /api/ {
-        proxy_pass http://api:8000;
+        proxy_pass http://${API_UPSTREAM};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
