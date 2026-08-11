@@ -167,6 +167,8 @@ export const api = {
   listLogbook: () => request<LogEntry[]>("/api/logbook"),
   createLog: (body: Partial<LogEntry> & { caliber: string; quantity: number }) =>
     request<LogEntry>("/api/logbook", { method: "POST", body: JSON.stringify(body) }),
+  updateLog: (id: number, body: Partial<LogEntry> & { caliber: string; quantity: number }) =>
+    request<LogEntry>(`/api/logbook/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteLog: (id: number) =>
     request<void>(`/api/logbook/${id}`, { method: "DELETE" }),
 

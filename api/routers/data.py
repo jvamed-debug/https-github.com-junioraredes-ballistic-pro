@@ -179,6 +179,23 @@ def create_logbook(body: LogbookIn, current=Depends(get_current_user)):
         return _log_out(session)
 
 
+@router.put("/logbook/{session_id}", response_model=LogbookOut)
+def update_logbook(session_id: int, body: LogbookIn, current=Depends(get_current_user)):
+    data = body.model_dump()
+    with managed_session() as db:
+        session = _owned_or_404(db, ReloadSession, session_id, current["id"])
+        #  Data ausente na edicao mantem a original.
+        if data.get("date") is None:
+            data["date"] = session.date
+        #  firearm_id, se informado, precisa ser do proprio usuario.
+        if data.get("firearm_id") is not None:
+            _owned_or_404(db, Firearm, data["firearm_id"], current["id"])
+        for k, v in data.items():
+            setattr(session, k, v)
+        db.flush()
+        return _log_out(session)
+
+
 @router.delete("/logbook/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_logbook(session_id: int, current=Depends(get_current_user)):
     with managed_session() as db:
