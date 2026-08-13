@@ -4,17 +4,24 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # DNS interno do Docker/EasyPanel. Com o resolver + host numa variável, o
+    # nginx resolve o destino da API EM RUNTIME, não no boot. Assim ele sobe
+    # mesmo que a API ainda não esteja de pé (responde 502 até ela aparecer) e
+    # sobrevive a reinícios da API — em vez de morrer com "host not found in
+    # upstream" e recusar-se a iniciar.
+    resolver 127.0.0.11 ipv6=off valid=10s;
+
     # A API roda em outro serviço (uvicorn:8000). O nginx a expõe sob /api na
     # mesma origem, então o frontend não precisa de CORS nem de URL absoluta.
     #
     # O destino é configurável por API_UPSTREAM (host:porta), porque o hostname
     # interno varia: no docker-compose local é "api"; no EasyPanel é
-    # "NOME_PROJETO_api" (ex.: ballistic-pro_api). A imagem oficial do nginx
-    # renderiza este template com envsubst na inicialização — só as variáveis
-    # de ambiente definidas (API_UPSTREAM) são substituídas; $host, $remote_addr
-    # etc. são do nginx e ficam intactos.
+    # "NOME_PROJETO_api" (ex.: urgent_md_api). O envsubst da imagem oficial do
+    # nginx substitui apenas ${API_UPSTREAM} (variável de ambiente); $host,
+    # $api_upstream etc. não são env e ficam intactos para o nginx.
     location /api/ {
-        proxy_pass http://${API_UPSTREAM};
+        set $api_upstream ${API_UPSTREAM};
+        proxy_pass http://$api_upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
