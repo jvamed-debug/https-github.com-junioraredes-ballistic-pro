@@ -152,3 +152,51 @@ class TestLogbook:
         sid = client.post("/api/logbook", headers=ha, json={"caliber": "9mm", "quantity": 10}).json()["id"]
         r = client.put(f"/api/logbook/{sid}", headers=hb, json={"caliber": "hack", "quantity": 1})
         assert r.status_code == 404
+
+    def test_create_without_deduct_leaves_inventory_untouched(self, client):
+        h = _auth(client)
+        client.post("/api/inventory", headers=h, json={
+            "category": "Pólvora", "name": "CBC 216", "quantity": 100, "unit": "g", "price_unit": 0.5,
+        })
+        r = client.post("/api/logbook", headers=h, json={
+            "caliber": ".38 SPL", "quantity": 50, "powder": "CBC 216", "charge": 3.0,
+        })
+        assert r.status_code == 201
+        assert r.json()["deductions"] == []
+        #  Sem deduct, o estoque nao muda.
+        qty = client.get("/api/inventory", headers=h).json()[0]["quantity"]
+        assert qty == 100
+
+    def test_create_with_deduct_subtracts_and_prices(self, client):
+        h = _auth(client)
+        client.post("/api/inventory", headers=h, json={
+            "category": "Pólvora", "name": "CBC 216", "quantity": 100, "unit": "g", "price_unit": 0.5,
+        })
+        client.post("/api/inventory", headers=h, json={
+            "category": "Espoleta", "name": "Small Pistol", "quantity": 500, "unit": "un", "price_unit": 0.2,
+        })
+        r = client.post("/api/logbook?deduct=true", headers=h, json={
+            "caliber": ".38 SPL", "quantity": 50, "powder": "CBC 216",
+            "charge": 3.0, "primer": "Small Pistol",
+        })
+        assert r.status_code == 201
+        body = r.json()
+        assert len(body["deductions"]) == 2
+        assert body["unit_cost"] and body["unit_cost"] > 0
+        inv = {i["name"]: i["quantity"] for i in client.get("/api/inventory", headers=h).json()}
+        #  3.0 gr x 50 = 150 grains = 150/15.4324 ~= 9.72 g deduzidos.
+        assert inv["CBC 216"] == pytest.approx(100 - 150 / 15.4324, abs=0.01)
+        assert inv["Small Pistol"] == 450
+
+    def test_deduct_reports_insufficient_stock(self, client):
+        h = _auth(client)
+        client.post("/api/inventory", headers=h, json={
+            "category": "Espoleta", "name": "Small Pistol", "quantity": 10, "unit": "un", "price_unit": 0.2,
+        })
+        r = client.post("/api/logbook?deduct=true", headers=h, json={
+            "caliber": ".38 SPL", "quantity": 50, "primer": "Small Pistol",
+        })
+        assert r.status_code == 201
+        assert any("insuficiente" in d.lower() for d in r.json()["deductions"])
+        #  Estoque insuficiente nao e debitado.
+        assert client.get("/api/inventory", headers=h).json()[0]["quantity"] == 10

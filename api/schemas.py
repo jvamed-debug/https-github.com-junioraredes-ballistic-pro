@@ -196,6 +196,14 @@ class LogbookOut(LogbookIn):
     date: date
 
 
+class LogbookCreateOut(LogbookOut):
+    #  Preenchidos so quando o POST pede deducao de estoque (deduct=true).
+    #  deductions = linhas do que saiu (ou faltou) do inventario; unit_cost =
+    #  custo estimado por municao com base no preco de estoque atual.
+    deductions: list[str] = Field(default_factory=list)
+    unit_cost: Optional[float] = None
+
+
 # ---------------------------------------------------------------------------
 # Consultor (IA) — modo offline por regras; usa LLM se houver chave no ambiente
 # ---------------------------------------------------------------------------

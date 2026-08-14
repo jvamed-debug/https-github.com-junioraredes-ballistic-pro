@@ -113,6 +113,13 @@ export type LogEntry = {
   notes?: string | null;
 };
 
+// Resposta do POST /api/logbook: além do registro, o que saiu do estoque e o
+// custo por munição — preenchidos só quando se pede a dedução (deduct=true).
+export type LogCreateResult = LogEntry & {
+  deductions: string[];
+  unit_cost: number | null;
+};
+
 function tokenHeader(): Record<string, string> {
   const t = localStorage.getItem("token");
   return t ? { Authorization: `Bearer ${t}` } : {};
@@ -205,8 +212,14 @@ export const api = {
 
   // Logbook
   listLogbook: () => request<LogEntry[]>("/api/logbook"),
-  createLog: (body: Partial<LogEntry> & { caliber: string; quantity: number }) =>
-    request<LogEntry>("/api/logbook", { method: "POST", body: JSON.stringify(body) }),
+  createLog: (
+    body: Partial<LogEntry> & { caliber: string; quantity: number },
+    deduct = false,
+  ) =>
+    request<LogCreateResult>(`/api/logbook${deduct ? "?deduct=true" : ""}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   updateLog: (id: number, body: Partial<LogEntry> & { caliber: string; quantity: number }) =>
     request<LogEntry>(`/api/logbook/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteLog: (id: number) =>

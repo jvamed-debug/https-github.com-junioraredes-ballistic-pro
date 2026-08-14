@@ -6,6 +6,7 @@ responde 404 (nao vaza a existencia do recurso alheio).
 """
 
 from datetime import date
+from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -14,11 +15,13 @@ from api.schemas import (
     FirearmOut,
     InventoryIn,
     InventoryOut,
+    LogbookCreateOut,
     LogbookIn,
     LogbookOut,
 )
 from api.security import get_current_user
 from core.models import Firearm, InventoryItem, ReloadSession, managed_session
+from services.reloading_service import ReloadingService
 
 router = APIRouter(prefix="/api", tags=["dados"])
 
@@ -165,8 +168,18 @@ def list_logbook(current=Depends(get_current_user)):
         return [_log_out(s) for s in rows]
 
 
-@router.post("/logbook", response_model=LogbookOut, status_code=status.HTTP_201_CREATED)
-def create_logbook(body: LogbookIn, current=Depends(get_current_user)):
+@router.post("/logbook", response_model=LogbookCreateOut, status_code=status.HTTP_201_CREATED)
+def create_logbook(
+    body: LogbookIn, deduct: bool = False, current=Depends(get_current_user)
+):
+    """Registra uma sessao de recarga.
+
+    Com `deduct=true`, depois de gravar debita os insumos correspondentes do
+    estoque (polvora pela carga x quantidade; projetil/espoleta/estojo 1-a-1)
+    e devolve o custo unitario estimado — o mesmo comportamento do app
+    Streamlit. A deducao roda apos o commit da sessao, para nunca baixar
+    estoque de uma gravacao que falhou.
+    """
     data = body.model_dump()
     data["date"] = data.get("date") or date.today()
     with managed_session() as db:
@@ -176,7 +189,24 @@ def create_logbook(body: LogbookIn, current=Depends(get_current_user)):
         session = ReloadSession(user_id=current["id"], **data)
         db.add(session)
         db.flush()
-        return _log_out(session)
+        out = _log_out(session)
+
+    #  Fora do bloco: a sessao ja esta commitada. So agora mexemos no estoque.
+    out["deductions"] = []
+    out["unit_cost"] = None
+    if deduct:
+        sess = SimpleNamespace(
+            powder=data.get("powder"),
+            charge=data.get("charge"),
+            quantity=data.get("quantity"),
+            projectile=data.get("projectile"),
+            primer=data.get("primer"),
+            case=data.get("case"),
+        )
+        _, out["deductions"] = ReloadingService.deduct_inventory(sess, current["id"])
+        if data.get("powder") and data.get("charge"):
+            out["unit_cost"] = ReloadingService.calculate_unit_cost(sess, current["id"])
+    return out
 
 
 @router.put("/logbook/{session_id}", response_model=LogbookOut)
