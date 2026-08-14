@@ -24,6 +24,11 @@ def client(tmp_path, monkeypatch):
     importlib.reload(auth)
     import api.security as security
     importlib.reload(security)
+    #  reloading_service liga core.models no import; sem recarregar, seus
+    #  mappers ficam presos a um registry de outro teste e a deducao quebra
+    #  com "failed to locate 'User'". Recarrega antes do router que o usa.
+    import services.reloading_service as reloading_service
+    importlib.reload(reloading_service)
     for mod in ("api.routers.auth", "api.routers.ballistics", "api.routers.data", "api.main"):
         importlib.reload(importlib.import_module(mod))
     import api.main as main
