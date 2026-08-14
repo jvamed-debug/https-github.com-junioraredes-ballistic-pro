@@ -225,3 +225,36 @@ class AdviceOut(BaseModel):
     content: str
     provider: str
     confidence: str
+
+
+# ---------------------------------------------------------------------------
+# Dados de recarga: avisos de seguranca e estimador de carga
+# ---------------------------------------------------------------------------
+
+
+class ReloadWarning(BaseModel):
+    #  "erro" = bloqueante (troca de serie, procedencia sem confirmar); "aviso"
+    #  = cautela. Mesmo vocabulario do app Streamlit (components/logbook_inventory).
+    severity: Literal["erro", "aviso"]
+    message: str
+
+
+class ReloadWarningsOut(BaseModel):
+    caliber: Optional[str] = None
+    powder: Optional[str] = None
+    warnings: list[ReloadWarning] = Field(default_factory=list)
+
+
+class ChargeEstimateIn(BaseModel):
+    projectile_grains: float = Field(..., gt=0, le=1000)
+    velocity_fps: float = Field(..., gt=0, le=5000)
+    #  Poder calorifico da polvora, em J/g. Faixa tipica 3800–4200 J/g.
+    calorific_j_per_g: float = Field(4000.0, gt=0, le=10000)
+    #  Fracao da energia quimica que vira energia cinetica do projetil.
+    efficiency_percent: float = Field(30.0, gt=0, le=100)
+
+
+class ChargeEstimateOut(BaseModel):
+    energy_j: float
+    energy_ftlbs: float
+    estimated_charge_grains: float

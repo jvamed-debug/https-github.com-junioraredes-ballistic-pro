@@ -34,11 +34,34 @@ export type TrajectoryResponse = {
   dope_card: DopeEntry[] | null;
 };
 
+export type LoadData = {
+  min?: number;
+  max?: number;
+  unit?: string;
+  velocity?: number;
+  note?: string;
+};
 export type Caliber = {
-  projectiles: Record<string, { powders: Record<string, unknown> }>;
+  projectiles: Record<string, { powders: Record<string, LoadData> }>;
+  max_oal?: string;
+  max_case?: string;
+  proj_dia?: string;
+  base_dia?: string;
   [k: string]: unknown;
 };
 export type Catalog = { calibers: Record<string, Caliber> };
+
+export type ReloadWarning = { severity: "erro" | "aviso"; message: string };
+export type ReloadWarningsResponse = {
+  caliber?: string | null;
+  powder?: string | null;
+  warnings: ReloadWarning[];
+};
+export type ChargeEstimate = {
+  energy_j: number;
+  energy_ftlbs: number;
+  estimated_charge_grains: number;
+};
 
 export type User = {
   id: number;
@@ -127,6 +150,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  // Dados de recarga (catálogo + segurança)
+  reloadWarnings: (q: { caliber?: string; powder?: string; primer?: string; oal_mm?: number }) => {
+    const p = new URLSearchParams();
+    if (q.caliber) p.set("caliber", q.caliber);
+    if (q.powder) p.set("powder", q.powder);
+    if (q.primer) p.set("primer", q.primer);
+    if (q.oal_mm != null) p.set("oal_mm", String(q.oal_mm));
+    return request<ReloadWarningsResponse>(`/api/reloading/warnings?${p.toString()}`);
+  },
+  estimateCharge: (body: {
+    projectile_grains: number; velocity_fps: number;
+    calorific_j_per_g: number; efficiency_percent: number;
+  }) => request<ChargeEstimate>("/api/reloading/estimate", {
+    method: "POST",
+    body: JSON.stringify(body),
+  }),
 
   login: async (username: string, password: string) => {
     const r = await request<{ access_token: string }>("/api/auth/login", {
