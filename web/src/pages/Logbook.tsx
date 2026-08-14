@@ -255,6 +255,12 @@ export function Logbook() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => api.downloadLabel(s.id).catch((e) => setError(e instanceof Error ? e.message : "Falha ao gerar etiqueta."))}
+                    className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]"
+                  >
+                    Etiqueta
+                  </button>
                   <button onClick={() => startEdit(s)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]">
                     Editar
                   </button>
