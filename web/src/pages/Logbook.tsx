@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type Firearm, type LogEntry } from "../api.ts";
+import { api, type Firearm, type LogEntry, type ReloadWarning } from "../api.ts";
 import { downloadCsv, toCsv } from "../csv.ts";
 
 export function Logbook() {
@@ -12,16 +12,22 @@ export function Logbook() {
   const [quantity, setQuantity] = useState("");
   const [powder, setPowder] = useState("");
   const [charge, setCharge] = useState("");
+  const [primer, setPrimer] = useState("");
   const [vel, setVel] = useState("");
   const [group, setGroup] = useState("");
   const [firearmId, setFirearmId] = useState("");
+  const [deduct, setDeduct] = useState(true);
+
+  const [warnings, setWarnings] = useState<ReloadWarning[]>([]);
+  const [saveInfo, setSaveInfo] = useState<{ deductions: string[]; unit_cost: number | null } | null>(null);
 
   const [gunModel, setGunModel] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
   function resetForm() {
-    setCaliber(""); setQuantity(""); setPowder(""); setCharge(""); setVel(""); setGroup(""); setFirearmId("");
+    setCaliber(""); setQuantity(""); setPowder(""); setCharge(""); setPrimer(""); setVel(""); setGroup(""); setFirearmId("");
     setEditingId(null);
+    setWarnings([]);
   }
 
   function startEdit(s: LogEntry) {
@@ -30,11 +36,32 @@ export function Logbook() {
     setQuantity(String(s.quantity));
     setPowder(s.powder ?? "");
     setCharge(s.charge != null ? String(s.charge) : "");
+    setPrimer(s.primer ?? "");
     setVel(s.velocity_avg != null ? String(s.velocity_avg) : "");
     setGroup(s.grouping_mm != null ? String(s.grouping_mm) : "");
     setFirearmId(s.firearm_id != null ? String(s.firearm_id) : "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  // Avisos de segurança em tempo real, cruzando calibre/pólvora/espoleta — os
+  // mesmos alertas que o app Streamlit mostrava ao salvar a sessão.
+  useEffect(() => {
+    if (!caliber) {
+      setWarnings([]);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(() => {
+      api
+        .reloadWarnings({ caliber, powder, primer })
+        .then((r) => alive && setWarnings(r.warnings))
+        .catch(() => alive && setWarnings([]));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [caliber, powder, primer]);
 
   async function load() {
     try {
@@ -50,12 +77,14 @@ export function Logbook() {
   async function submitSession(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSaveInfo(null);
     setBusy(true);
     const payload = {
       caliber,
       quantity: parseInt(quantity) || 1,
       powder: powder || null,
       charge: charge ? parseFloat(charge) : null,
+      primer: primer || null,
       velocity_avg: vel ? parseFloat(vel) : null,
       grouping_mm: group ? parseFloat(group) : null,
       firearm_id: firearmId ? parseInt(firearmId) : null,
@@ -64,7 +93,8 @@ export function Logbook() {
       if (editingId != null) {
         await api.updateLog(editingId, payload);
       } else {
-        await api.createLog(payload);
+        const r = await api.createLog(payload, deduct);
+        if (deduct) setSaveInfo({ deductions: r.deductions, unit_cost: r.unit_cost });
       }
       resetForm();
       await load();
@@ -108,12 +138,40 @@ export function Logbook() {
           <input className="field" inputMode="numeric" placeholder="Quantidade" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
           <input className="field" placeholder="Pólvora" value={powder} onChange={(e) => setPowder(e.target.value)} />
           <input className="field" inputMode="decimal" placeholder="Carga (gr)" value={charge} onChange={(e) => setCharge(e.target.value)} />
+          <input className="field" placeholder="Espoleta (ex.: Small Pistol)" value={primer} onChange={(e) => setPrimer(e.target.value)} />
           <input className="field" inputMode="decimal" placeholder="Vel. média (fps)" value={vel} onChange={(e) => setVel(e.target.value)} />
           <input className="field" inputMode="decimal" placeholder="Grupamento (mm)" value={group} onChange={(e) => setGroup(e.target.value)} />
-          <select className="field col-span-2" value={firearmId} onChange={(e) => setFirearmId(e.target.value)}>
+          <select className="field" value={firearmId} onChange={(e) => setFirearmId(e.target.value)}>
             <option value="">Sem arma associada</option>
             {guns.map((g) => <option key={g.id} value={g.id}>{g.model}</option>)}
           </select>
+
+          {warnings.length > 0 && (
+            <div className="col-span-2 flex flex-col gap-2">
+              {warnings.map((w, i) => (
+                <div
+                  key={i}
+                  className={
+                    "rounded-lg border px-3 py-2 text-sm " +
+                    (w.severity === "erro"
+                      ? "border-red-500/50 bg-red-500/10 text-red-200"
+                      : "border-amber-500/50 bg-amber-500/10 text-amber-200")
+                  }
+                >
+                  <b className="mr-1">{w.severity === "erro" ? "⛔" : "⚠️"}</b>
+                  {w.message}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {editingId == null && (
+            <label className="col-span-2 flex items-center gap-2 text-sm text-[var(--muted)]">
+              <input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} />
+              Deduzir insumos do estoque ao salvar
+            </label>
+          )}
+
           {editingId != null ? (
             <div className="col-span-2 flex gap-2">
               <button className="btn" disabled={busy}>{busy ? "…" : "SALVAR"}</button>
@@ -124,6 +182,26 @@ export function Logbook() {
           )}
         </form>
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+        {saveInfo && (
+          <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-3 text-sm">
+            <div className="mb-1 font-semibold text-emerald-300">Sessão salva.</div>
+            {saveInfo.unit_cost != null && (
+              <div className="text-[var(--muted)]">
+                Custo estimado:{" "}
+                <b className="text-white">R$ {saveInfo.unit_cost.toFixed(2)}/un</b>
+              </div>
+            )}
+            {saveInfo.deductions.length > 0 ? (
+              <ul className="mt-1 list-inside list-disc text-xs text-[var(--muted)]">
+                {saveInfo.deductions.map((d, i) => <li key={i}>{d}</li>)}
+              </ul>
+            ) : (
+              <div className="mt-1 text-xs text-[var(--muted)]">
+                Nenhum insumo correspondente no estoque para deduzir.
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="card p-4">
