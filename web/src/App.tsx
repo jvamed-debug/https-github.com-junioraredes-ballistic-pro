@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type User } from "./api.ts";
 import { Login } from "./pages/Login.tsx";
 import { Dope } from "./pages/Dope.tsx";
+import { Reloading } from "./pages/Reloading.tsx";
 import { Inventory } from "./pages/Inventory.tsx";
 import { Logbook } from "./pages/Logbook.tsx";
 import { Costs } from "./pages/Costs.tsx";
@@ -11,6 +12,7 @@ import { Profile } from "./pages/Profile.tsx";
 
 const TABS = [
   { id: "dope", label: "🎯 DOPE" },
+  { id: "reload", label: "📋 Recarga" },
   { id: "inv", label: "📦 Inventário" },
   { id: "log", label: "📔 Logbook" },
   { id: "perf", label: "📈 Performance" },
@@ -96,6 +98,7 @@ export function App() {
 
       <main className="flex-1 p-4">
         {tab === "dope" && <Dope />}
+        {tab === "reload" && <Reloading />}
         {tab === "inv" && <Inventory />}
         {tab === "log" && <Logbook />}
         {tab === "perf" && <Performance />}
