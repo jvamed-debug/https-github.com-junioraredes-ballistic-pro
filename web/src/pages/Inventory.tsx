@@ -5,6 +5,25 @@ import { downloadCsv, toCsv } from "../csv.ts";
 const CATEGORIES = ["Pólvora", "Projétil", "Espoleta", "Estojo", "Munição", "Outro"];
 const UNITS = ["g", "grains", "un"];
 
+// Limite abaixo do qual o insumo entra em "estoque baixo" — mesmos valores do
+// app Streamlit. Categorias fora da tabela usam o padrão.
+const LOW_STOCK: Record<string, number> = {
+  "Pólvora": 100, "Projétil": 50, "Espoleta": 100, "Estojo": 50,
+};
+const LOW_STOCK_DEFAULT = 20;
+const lowThreshold = (cat: string) => LOW_STOCK[cat] ?? LOW_STOCK_DEFAULT;
+
+// Dias até a validade (negativo = vencido). null quando não há data.
+function daysToExpiry(iso?: string | null): number | null {
+  if (!iso) return null;
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((d.getTime() - today.getTime()) / 86_400_000);
+}
+const EXPIRY_SOON_DAYS = 30;
+
 export function Inventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +34,8 @@ export function Inventory() {
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState(UNITS[0]);
   const [price, setPrice] = useState("");
+  const [batch, setBatch] = useState("");
+  const [expiry, setExpiry] = useState("");
 
   async function load() {
     try {
@@ -36,10 +57,10 @@ export function Inventory() {
         quantity: parseFloat(quantity) || 0,
         unit,
         price_unit: parseFloat(price) || 0,
-        batch_number: null,
-        expiration_date: null,
+        batch_number: batch || null,
+        expiration_date: expiry || null,
       });
-      setName(""); setQuantity(""); setPrice("");
+      setName(""); setQuantity(""); setPrice(""); setBatch(""); setExpiry("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao adicionar.");
@@ -89,6 +110,26 @@ export function Inventory() {
     );
   }, [items, search, filterCat]);
 
+  // Alertas de estoque e validade — como o app Streamlit destacava no topo.
+  const alerts = useMemo(() => {
+    const out: { severity: "erro" | "aviso"; text: string }[] = [];
+    for (const i of items) {
+      if (i.quantity <= 0) {
+        out.push({ severity: "erro", text: `Sem estoque: ${i.name} (${i.category})` });
+      } else if (i.quantity <= lowThreshold(i.category)) {
+        out.push({ severity: "aviso", text: `Estoque baixo: ${i.name} — ${i.quantity} ${i.unit} restantes` });
+      }
+      const d = daysToExpiry(i.expiration_date);
+      if (d != null && d < 0) {
+        out.push({ severity: "erro", text: `Vencido: ${i.name} (validade ${i.expiration_date})` });
+      } else if (d != null && d <= EXPIRY_SOON_DAYS) {
+        out.push({ severity: "aviso", text: `Vence em ${d} dia(s): ${i.name} (${i.expiration_date})` });
+      }
+    }
+    //  Erros primeiro, para o que é mais grave aparecer no topo.
+    return out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "erro" ? -1 : 1));
+  }, [items]);
+
   function exportCsv() {
     const csv = toCsv(
       ["Categoria", "Nome", "Quantidade", "Unidade", "Preço/un", "Lote", "Validade"],
@@ -116,10 +157,34 @@ export function Inventory() {
             {UNITS.map((u) => <option key={u}>{u}</option>)}
           </select>
           <input className="field col-span-2" inputMode="decimal" placeholder="Preço por unidade (R$)" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <input className="field" placeholder="Lote (opcional)" value={batch} onChange={(e) => setBatch(e.target.value)} />
+          <label className="flex flex-col gap-1">
+            <span className="text-[0.62rem] uppercase tracking-wide text-[var(--muted)]">Validade (opcional)</span>
+            <input className="field" type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
+          </label>
           <button className="btn col-span-2" disabled={busy}>{busy ? "…" : "ADICIONAR"}</button>
         </form>
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
       </section>
+
+      {alerts.length > 0 && (
+        <section className="flex flex-col gap-2">
+          {alerts.map((a, i) => (
+            <div
+              key={i}
+              className={
+                "rounded-lg border px-3 py-2 text-sm " +
+                (a.severity === "erro"
+                  ? "border-red-500/50 bg-red-500/10 text-red-200"
+                  : "border-amber-500/50 bg-amber-500/10 text-amber-200")
+              }
+            >
+              <b className="mr-1">{a.severity === "erro" ? "⛔" : "⚠️"}</b>
+              {a.text}
+            </div>
+          ))}
+        </section>
+      )}
 
       <section className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
@@ -166,8 +231,22 @@ export function Inventory() {
                     <div>
                       <div className="font-semibold">{i.name}</div>
                       <div className="text-xs text-[var(--muted)]">
-                        {i.category} · {i.quantity} {i.unit}
+                        {i.category} ·{" "}
+                        <span className={
+                          i.quantity <= 0 ? "text-red-400"
+                            : i.quantity <= lowThreshold(i.category) ? "text-amber-400"
+                            : "text-emerald-400"
+                        }>
+                          {i.quantity} {i.unit}
+                        </span>
                         {i.price_unit > 0 && ` · R$ ${i.price_unit.toFixed(2)}/${i.unit}`}
+                        {i.expiration_date && (() => {
+                          const d = daysToExpiry(i.expiration_date);
+                          const cls = d != null && d < 0 ? "text-red-400"
+                            : d != null && d <= EXPIRY_SOON_DAYS ? "text-amber-400"
+                            : "text-[var(--muted)]";
+                          return <span className={cls}> · val. {i.expiration_date}</span>;
+                        })()}
                       </div>
                     </div>
                     <div className="flex gap-2">
