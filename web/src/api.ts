@@ -149,6 +149,35 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Baixa um arquivo protegido por token (o header Authorization não cabe num
+// <a href>, então buscamos como blob e disparamos o download). O nome vem do
+// Content-Disposition quando presente.
+async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  const res = await fetch(BASE + path, { headers: { ...tokenHeader() } });
+  if (!res.ok) {
+    let detail = `Erro ${res.status}`;
+    try {
+      const b = await res.json();
+      if (b?.detail) detail = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+    } catch {
+      /* corpo não-JSON */
+    }
+    throw new Error(detail);
+  }
+  const cd = res.headers.get("Content-Disposition") ?? "";
+  const m = cd.match(/filename="?([^";]+)"?/);
+  const name = m ? m[1] : fallbackName;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   health: () => request<{ status: string }>("/api/health"),
   catalog: () => request<Catalog>("/api/catalog"),
@@ -224,6 +253,12 @@ export const api = {
     request<LogEntry>(`/api/logbook/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteLog: (id: number) =>
     request<void>(`/api/logbook/${id}`, { method: "DELETE" }),
+
+  // PDFs (etiqueta da sessão, relatório de acervo)
+  downloadLabel: (sessionId: number) =>
+    downloadFile(`/api/logbook/${sessionId}/label`, `etiqueta_${sessionId}.pdf`),
+  downloadInspectionReport: () =>
+    downloadFile("/api/reports/inspection", "relatorio_acervo.pdf"),
 
   // Consultor (IA)
   adviseLoad: (body: {

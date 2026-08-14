@@ -9,6 +9,19 @@ export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) 
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
+
+  async function downloadReport() {
+    setError(null);
+    setReportBusy(true);
+    try {
+      await api.downloadInspectionReport();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao gerar o relatório.");
+    } finally {
+      setReportBusy(false);
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -65,6 +78,18 @@ export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) 
 
           <button className="btn" disabled={busy}>{busy ? "…" : "SALVAR"}</button>
         </form>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+          Relatório de acervo
+        </h2>
+        <p className="mb-3 text-xs text-[var(--muted)]">
+          PDF com seus dados de CAC, o acervo de armas e as últimas sessões de recarga.
+        </p>
+        <button className="btn btn-ghost" onClick={downloadReport} disabled={reportBusy}>
+          {reportBusy ? "Gerando…" : "📄 Baixar relatório (PDF)"}
+        </button>
       </section>
     </div>
   );
