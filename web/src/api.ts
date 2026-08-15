@@ -218,6 +218,30 @@ export const api = {
       body: JSON.stringify(body),
     }),
   me: () => request<User>("/api/auth/me"),
+
+  // WebAuthn / passkeys (login por biometria)
+  webauthnAvailable: () =>
+    request<{ available: boolean }>("/api/auth/webauthn/available"),
+  webauthnRegisterBegin: () =>
+    request<unknown>("/api/auth/webauthn/register/begin", { method: "POST" }),
+  webauthnRegisterComplete: (credential: unknown, label?: string) =>
+    request<{ detail: string }>("/api/auth/webauthn/register/complete", {
+      method: "POST",
+      body: JSON.stringify({ credential, label: label ?? null }),
+    }),
+  webauthnLoginBegin: (username: string) =>
+    request<unknown>("/api/auth/webauthn/login/begin", {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    }),
+  webauthnLoginComplete: async (username: string, credential: unknown) => {
+    const r = await request<{ access_token: string }>("/api/auth/webauthn/login/complete", {
+      method: "POST",
+      body: JSON.stringify({ username, credential }),
+    });
+    localStorage.setItem("token", r.access_token);
+    return r;
+  },
   updateProfile: (body: Partial<Pick<User, "name" | "email" | "phone" | "cpf">>) =>
     request<User>("/api/auth/me", { method: "PUT", body: JSON.stringify(body) }),
   logout: () => localStorage.removeItem("token"),

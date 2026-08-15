@@ -156,6 +156,7 @@ class User(Base):
     sessions = relationship("ReloadSession", back_populates="user", cascade="all, delete-orphan")
     inventory = relationship("InventoryItem", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    passkeys = relationship("WebAuthnCredential", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -258,6 +259,45 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="audit_logs")
+
+
+class WebAuthnCredential(Base):
+    """Passkey (WebAuthn) registrada por um usuario para login biometrico.
+
+    Guardamos a chave PUBLICA da credencial — a privada nunca sai do
+    autenticador do dispositivo (Face ID/Touch ID/chave de seguranca). O
+    `sign_count` sobe a cada uso e serve para detectar clonagem do
+    autenticador.
+    """
+    __tablename__ = 'webauthn_credentials'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    #  Identificador da credencial (base64url) — unico por passkey.
+    credential_id = Column(String, unique=True, index=True, nullable=False)
+    #  Chave publica COSE, em base64url.
+    public_key = Column(String, nullable=False)
+    sign_count = Column(Integer, default=0, nullable=False)
+    transports = Column(String)  # JSON: ["internal","hybrid",...] (opcional)
+    label = Column(String)       # nome amigavel do dispositivo (opcional)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="passkeys")
+
+
+class WebAuthnChallenge(Base):
+    """Desafio efemero de uma cerimonia WebAuthn (registro ou login).
+
+    O desafio precisa sobreviver entre o passo 'begin' e o 'complete', que
+    sao requests distintos. Guardado no banco (e nao em memoria) para
+    funcionar mesmo com mais de um worker. Consumido e apagado no complete.
+    """
+    __tablename__ = 'webauthn_challenges'
+    id = Column(Integer, primary_key=True)
+    #  Chave de busca: "reg:{user_id}" no registro, "login:{username}" no login.
+    key = Column(String, index=True, nullable=False)
+    challenge = Column(String, nullable=False)  # base64url
+    purpose = Column(String, nullable=False)    # 'register' | 'login'
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # Database setup
