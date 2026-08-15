@@ -21,6 +21,9 @@ uvicorn[standard]>=0.29.0,<1.0.0
 httpx>=0.27.0,<1.0.0
 PyJWT>=2.8.0,<3.0.0
 python-multipart>=0.0.9,<1.0.0
+# Login por biometria (WebAuthn/passkeys) — opcional em runtime: a API
+# funciona sem, respondendo 503 nos endpoints de passkey.
+webauthn>=2.5.0,<3.0.0
 
 # AI Advisor (opcional - funciona sem estas dependencias em modo offline)
 # anthropic>=0.40.0

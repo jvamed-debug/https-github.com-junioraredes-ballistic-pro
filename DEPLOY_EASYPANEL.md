@@ -83,6 +83,23 @@ Opcionais: `BLIND_INDEX_KEY` (deriva o índice cego; por padrão usa a
 `FERNET_KEY`), e `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `S3_BUCKET`
 para upload de imagens.
 
+#### Login por biometria (WebAuthn / passkeys) — opcional
+
+Para habilitar o "Entrar com biometria" (Face ID / Touch ID / digital),
+defina no serviço `api` — usando o **domínio público do serviço `web`**:
+
+| Variável | Valor | Exemplo |
+|----------|-------|---------|
+| `WEBAUTHN_RP_ID` | o domínio (sem `https://`) | `app.seudominio.com.br` |
+| `WEBAUTHN_RP_ORIGIN` | a origem completa | `https://app.seudominio.com.br` |
+| `WEBAUTHN_RP_NAME` | nome exibido (opcional) | `Ballistic Pro` |
+
+> O `RP_ID` precisa ser exatamente o domínio em que o app abre (a passkey fica
+> atrelada a ele). Sem essas variáveis o recurso fica **desligado** e o app não
+> mostra a opção — o login por senha continua igual. Exige **HTTPS** (já ligado
+> no serviço `web`). Depois de ativar, cada usuário registra o dispositivo em
+> **Perfil → Ativar biometria**.
+
 Healthcheck já vem no Dockerfile: `GET /api/health`.
 
 ## 4. Serviço `web` (React/PWA + nginx)

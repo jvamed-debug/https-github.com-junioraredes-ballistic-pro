@@ -111,6 +111,29 @@ class RecoverRequest(BaseModel):
     identifier: str = Field(..., description="E-mail ou telefone cadastrado.")
 
 
+# WebAuthn / passkeys (login por biometria) ---------------------------------
+
+
+class WebAuthnAvailable(BaseModel):
+    available: bool
+
+
+class WebAuthnLoginBegin(BaseModel):
+    username: str = Field(..., min_length=1)
+
+
+class WebAuthnLoginComplete(BaseModel):
+    username: str = Field(..., min_length=1)
+    #  Resposta crua de navigator.credentials.get() serializada pelo browser.
+    credential: dict
+
+
+class WebAuthnRegisterComplete(BaseModel):
+    #  Resposta crua de navigator.credentials.create().
+    credential: dict
+    label: Optional[str] = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

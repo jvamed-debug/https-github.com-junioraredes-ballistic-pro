@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type User } from "../api.ts";
+import { startAuthentication, supportsWebAuthn } from "../webauthn.ts";
 
 type Mode = "login" | "register";
 
@@ -12,6 +13,33 @@ export function Login({ onAuthed }: { onAuthed: (u: User) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [passkeyOn, setPasskeyOn] = useState(false);
+
+  // Só oferece biometria se o navegador suporta e o servidor está configurado.
+  useEffect(() => {
+    if (!supportsWebAuthn()) return;
+    api.webauthnAvailable().then((r) => setPasskeyOn(r.available)).catch(() => {});
+  }, []);
+
+  async function loginPasskey() {
+    if (!username) {
+      setError("Informe o usuário para entrar com biometria.");
+      return;
+    }
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const options = await api.webauthnLoginBegin(username);
+      const assertion = await startAuthentication(options);
+      await api.webauthnLoginComplete(username, assertion);
+      onAuthed(await api.me());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha no login por biometria.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -108,6 +136,19 @@ export function Login({ onAuthed }: { onAuthed: (u: User) => void }) {
             {busy ? "…" : mode === "login" ? "ENTRAR" : "CRIAR CONTA"}
           </button>
         </form>
+
+        {mode === "login" && passkeyOn && (
+          <>
+            <div className="my-4 flex items-center gap-3 text-[0.7rem] uppercase tracking-wide text-[var(--muted)]">
+              <span className="h-px flex-1 bg-[var(--border)]" />
+              ou
+              <span className="h-px flex-1 bg-[var(--border)]" />
+            </div>
+            <button type="button" className="btn btn-ghost" onClick={loginPasskey} disabled={busy}>
+              🔓 Entrar com biometria
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

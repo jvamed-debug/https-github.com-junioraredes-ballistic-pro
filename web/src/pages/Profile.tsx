@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type User } from "../api.ts";
+import { startRegistration, supportsWebAuthn } from "../webauthn.ts";
 
 export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) => void }) {
   const [name, setName] = useState(user.name ?? "");
@@ -10,6 +11,30 @@ export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) 
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [passkeyOn, setPasskeyOn] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyMsg, setPasskeyMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supportsWebAuthn()) return;
+    api.webauthnAvailable().then((r) => setPasskeyOn(r.available)).catch(() => {});
+  }, []);
+
+  async function enablePasskey() {
+    setError(null);
+    setPasskeyMsg(null);
+    setPasskeyBusy(true);
+    try {
+      const options = await api.webauthnRegisterBegin();
+      const attestation = await startRegistration(options);
+      await api.webauthnRegisterComplete(attestation, navigator.userAgent.slice(0, 60));
+      setPasskeyMsg("Biometria ativada neste dispositivo. No próximo login, use “Entrar com biometria”.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao ativar biometria.");
+    } finally {
+      setPasskeyBusy(false);
+    }
+  }
 
   async function downloadReport() {
     setError(null);
@@ -91,6 +116,21 @@ export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) 
           {reportBusy ? "Gerando…" : "📄 Baixar relatório (PDF)"}
         </button>
       </section>
+
+      {passkeyOn && (
+        <section className="card p-4">
+          <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+            Login por biometria
+          </h2>
+          <p className="mb-3 text-xs text-[var(--muted)]">
+            Cadastre este dispositivo (Face ID / Touch ID / digital) para entrar sem senha.
+          </p>
+          <button className="btn btn-ghost" onClick={enablePasskey} disabled={passkeyBusy}>
+            {passkeyBusy ? "Ativando…" : "🔐 Ativar biometria neste dispositivo"}
+          </button>
+          {passkeyMsg && <p className="mt-2 text-sm text-emerald-400">{passkeyMsg}</p>}
+        </section>
+      )}
     </div>
   );
 }
