@@ -1,27 +1,32 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, type Insights } from "../api.ts";
+import { EmptyState, ErrorState, Loading } from "../ui.tsx";
 
 export function Dashboard() {
   const [data, setData] = useState<Insights | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setError(null);
+    setData(null);
     api
       .insights()
       .then(setData)
       .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar."));
   }, []);
+  useEffect(() => { load(); }, [load]);
 
-  if (error) return <p className="text-sm text-red-400">{error}</p>;
-  if (!data) return <p className="text-sm text-[var(--muted)]">Carregando…</p>;
+  if (error) return <ErrorState message={error} onRetry={load} />;
+  if (!data) return <Loading rows={4} label="Carregando painel" />;
 
   const t = data.totals;
   if (t.sessions === 0) {
     return (
-      <div className="card p-6 text-center text-sm text-[var(--muted)]">
-        Sem dados ainda. Registre sessões no Logbook e insumos no Inventário para o painel
-        ganhar vida.
-      </div>
+      <EmptyState
+        icon="📊"
+        title="Sem dados ainda"
+        hint="Registre sessões no Logbook e insumos no Inventário para o painel ganhar vida."
+      />
     );
   }
 

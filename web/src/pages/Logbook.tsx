@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { api, type Firearm, type LogEntry, type ReloadWarning } from "../api.ts";
 import { downloadCsv, toCsv } from "../csv.ts";
+import { ErrorState, Loading } from "../ui.tsx";
 
 export function Logbook() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [guns, setGuns] = useState<Firearm[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
 
   const [caliber, setCaliber] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -64,12 +67,16 @@ export function Logbook() {
   }, [caliber, powder, primer]);
 
   async function load() {
+    setLoadErr(null);
+    setLoading(true);
     try {
       const [l, g] = await Promise.all([api.listLogbook(), api.listFirearms()]);
       setLogs(l);
       setGuns(g);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao carregar.");
+      setLoadErr(e instanceof Error ? e.message : "Falha ao carregar.");
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => { load(); }, []);
@@ -126,6 +133,9 @@ export function Logbook() {
     );
     downloadCsv("logbook.csv", csv);
   }
+
+  if (loading) return <Loading rows={4} label="Carregando logbook" />;
+  if (loadErr) return <ErrorState message={loadErr} onRetry={load} />;
 
   return (
     <div className="flex flex-col gap-4">
