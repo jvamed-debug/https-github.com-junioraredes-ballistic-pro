@@ -100,6 +100,14 @@ defina no serviço `api` — usando o **domínio público do serviço `web`**:
 > no serviço `web`). Depois de ativar, cada usuário registra o dispositivo em
 > **Perfil → Ativar biometria**.
 
+#### Clima automático no DOPE (Open-Meteo) — opcional
+
+O botão "📍 Puxar clima" na aba DOPE preenche a atmosfera (temperatura, pressão,
+umidade, altitude) a partir da localização, via **Open-Meteo** (sem cadastro,
+sem chave). Só exige que a **política de rede** do ambiente permita saída HTTPS
+para `api.open-meteo.com`. Se a saída estiver bloqueada, o botão apenas retorna
+erro e o preenchimento manual continua funcionando — nada quebra.
+
 Healthcheck já vem no Dockerfile: `GET /api/health`.
 
 ## 4. Serviço `web` (React/PWA + nginx)
