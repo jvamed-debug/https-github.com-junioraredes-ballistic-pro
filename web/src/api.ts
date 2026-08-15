@@ -96,6 +96,25 @@ export type Firearm = {
 
 export type Advice = { content: string; provider: string; confidence: string };
 
+export type TargetGroup = {
+  id: number;
+  shots: [number, number][];
+  group_size_mm: number;
+  poi_mm: [number, number];
+};
+export type TargetAnalysis = {
+  shot_count: number;
+  pixel_per_mm: number;
+  groups: TargetGroup[];
+  annotated_image: string; // data URL (PNG)
+};
+export type TargetParams = {
+  targetWidthMm: number;
+  sensitivity: number;
+  centerX?: number | null;
+  centerY?: number | null;
+};
+
 export type LogEntry = {
   id: number;
   caliber: string;
@@ -283,6 +302,64 @@ export const api = {
     downloadFile(`/api/logbook/${sessionId}/label`, `etiqueta_${sessionId}.pdf`),
   downloadInspectionReport: () =>
     downloadFile("/api/reports/inspection", "relatorio_acervo.pdf"),
+
+  // Análise de alvo por foto (visão computacional)
+  analyzeTarget: async (file: File, p: TargetParams): Promise<TargetAnalysis> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("target_width_mm", String(p.targetWidthMm));
+    fd.append("sensitivity", String(p.sensitivity));
+    if (p.centerX != null) fd.append("center_x", String(p.centerX));
+    if (p.centerY != null) fd.append("center_y", String(p.centerY));
+    const res = await fetch(BASE + "/api/targets/analyze", {
+      method: "POST",
+      headers: { ...tokenHeader() }, // sem Content-Type: o browser põe o boundary
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = `Erro ${res.status}`;
+      try {
+        const b = await res.json();
+        if (b?.detail) detail = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+      } catch {
+        /* corpo não-JSON */
+      }
+      throw new Error(detail);
+    }
+    return res.json() as Promise<TargetAnalysis>;
+  },
+  downloadTargetReport: async (file: File, p: TargetParams): Promise<void> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("target_width_mm", String(p.targetWidthMm));
+    fd.append("sensitivity", String(p.sensitivity));
+    if (p.centerX != null) fd.append("center_x", String(p.centerX));
+    if (p.centerY != null) fd.append("center_y", String(p.centerY));
+    const res = await fetch(BASE + "/api/targets/report", {
+      method: "POST",
+      headers: { ...tokenHeader() },
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = `Erro ${res.status}`;
+      try {
+        const b = await res.json();
+        if (b?.detail) detail = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+      } catch {
+        /* corpo não-JSON */
+      }
+      throw new Error(detail);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio_performance.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 
   // Consultor (IA)
   adviseLoad: (body: {
