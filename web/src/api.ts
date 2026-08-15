@@ -98,6 +98,22 @@ export type Firearm = {
 
 export type Advice = { content: string; provider: string; confidence: string };
 
+export type Insights = {
+  totals: {
+    sessions: number;
+    rounds: number;
+    best_group_mm: number | null;
+    avg_sd: number | null;
+    inventory_value: number;
+    low_stock_count: number;
+    zero_stock_count: number;
+  };
+  velocity_trend: { date: string | null; velocity_avg: number | null; velocity_sd: number | null }[];
+  cost_trend: { date: string | null; caliber: string | null; unit_cost: number }[];
+  best_by_group: { date: string | null; caliber: string | null; powder: string | null; charge: number | null; value: number; velocity_avg: number | null }[];
+  best_by_sd: { date: string | null; caliber: string | null; powder: string | null; charge: number | null; value: number; velocity_avg: number | null }[];
+};
+
 export type Weather = {
   temperature_c: number;
   humidity_pct: number;
@@ -389,6 +405,9 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
+
+  // Painel de insights
+  insights: () => request<Insights>("/api/insights"),
 
   // Clima (Open-Meteo) para preencher a atmosfera
   weather: (lat: number, lon: number) =>
