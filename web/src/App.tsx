@@ -8,6 +8,7 @@ import { Logbook } from "./pages/Logbook.tsx";
 import { Costs } from "./pages/Costs.tsx";
 import { Advisor } from "./pages/Advisor.tsx";
 import { Performance } from "./pages/Performance.tsx";
+import { Target } from "./pages/Target.tsx";
 import { Profile } from "./pages/Profile.tsx";
 
 const TABS = [
@@ -16,6 +17,7 @@ const TABS = [
   { id: "inv", label: "📦 Inventário" },
   { id: "log", label: "📔 Logbook" },
   { id: "perf", label: "📈 Performance" },
+  { id: "alvo", label: "🎯 Alvo" },
   { id: "cost", label: "💰 Custos" },
   { id: "ia", label: "🤖 IA" },
   { id: "profile", label: "👤 Perfil" },
@@ -102,6 +104,7 @@ export function App() {
         {tab === "inv" && <Inventory />}
         {tab === "log" && <Logbook />}
         {tab === "perf" && <Performance />}
+        {tab === "alvo" && <Target />}
         {tab === "cost" && <Costs />}
         {tab === "ia" && <Advisor />}
         {tab === "profile" && <Profile user={user} onUpdated={setUser} />}
