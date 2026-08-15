@@ -78,6 +78,38 @@ def speed_of_sound_ms(temperature_c: float) -> float:
     return 331.3 * math.sqrt(1 + temperature_c / 273.15)
 
 
+#  Velocidade angular da Terra (rad/s), para a aceleracao de Coriolis.
+EARTH_OMEGA = 7.2921159e-5
+
+
+def miller_stability(
+    weight_grains: float,
+    diameter_in: float,
+    length_in: float,
+    twist_in: float,
+    velocity_fps: float,
+    temperature_f: float = 59.0,
+    pressure_inhg: float = 29.92,
+) -> float:
+    """Fator de estabilidade giroscopica (SG) pela formula de Miller.
+
+    Precisa do comprimento do projetil (calibres), do passo do raiamento e da
+    velocidade. Devolve 0 quando falta dado — sem SG nao ha como estimar a
+    deriva giroscopica. SG > 1.4 e considerado bem estabilizado.
+    """
+    if diameter_in <= 0 or length_in <= 0 or twist_in <= 0 or weight_grains <= 0:
+        return 0.0
+    t = twist_in / diameter_in           # passo em calibres por volta
+    l = length_in / diameter_in          # comprimento em calibres
+    sg = (30 * weight_grains) / (t ** 2 * diameter_in ** 3 * l * (1 + l ** 2))
+    if velocity_fps > 0:
+        sg *= (velocity_fps / 2800) ** (1 / 3)
+    #  Correcao de ar: SG sobe com ar menos denso (quente/baixa pressao).
+    if pressure_inhg > 0:
+        sg *= ((temperature_f + 460) / 519) * (29.92 / pressure_inhg)
+    return sg
+
+
 @dataclass
 class AtmosphericConditions:
     """Condicoes do ar no local do disparo.
@@ -165,6 +197,8 @@ class TrajectoryPoint:
     time_of_flight_s: float
     wind_drift_cm: float = 0.0
     wind_drift_moa: float = 0.0
+    #  Deriva giroscopica (spin drift), lateral, positiva = para a direita.
+    spin_drift_cm: float = 0.0
 
 
 @dataclass
@@ -211,6 +245,7 @@ class DopeEntry:
     windage_clicks: int
     drop_cm: float
     wind_drift_cm: float
+    spin_drift_cm: float
     velocity_fps: float
     energy_ftlbs: float
     time_of_flight_s: float
@@ -248,8 +283,9 @@ def build_dope_card(
         elevation_clicks = round(elevation / click_value)
 
         #  Deriva positiva = tiro foi para a direita => corrigir para a
-        #  esquerda ('E'). A magnitude e o quanto dialar.
-        drift_cm = p.wind_drift_cm
+        #  esquerda ('E'). A magnitude e o quanto dialar. A correcao lateral
+        #  soma vento (+ Coriolis, ja integrado) e deriva giroscopica.
+        drift_cm = p.wind_drift_cm + p.spin_drift_cm
         windage = abs(_cm_to_angle(drift_cm, p.range_m, unit))
         windage_clicks = round(windage / click_value)
         if drift_cm > 0:
@@ -269,6 +305,7 @@ def build_dope_card(
             windage_clicks=windage_clicks,
             drop_cm=p.drop_cm,
             wind_drift_cm=p.wind_drift_cm,
+            spin_drift_cm=round(p.spin_drift_cm, 1),
             velocity_fps=p.velocity_fps,
             energy_ftlbs=p.energy_ftlbs,
             time_of_flight_s=p.time_of_flight_s,
@@ -285,6 +322,12 @@ def calculate_trajectory(
     wind_speed_ms: float = 0.0,
     wind_angle_deg: float = 90.0,
     atmosphere: AtmosphericConditions | None = None,
+    latitude_deg: float | None = None,
+    azimuth_deg: float = 0.0,
+    twist_rate_in: float = 0.0,
+    twist_dir: str = "right",
+    bullet_length_in: float = 0.0,
+    stability: float = 0.0,
 ) -> TrajectoryResult:
     if atmosphere is None:
         atmosphere = AtmosphericConditions()
@@ -300,6 +343,42 @@ def calculate_trajectory(
     g = 9.80665
     dt = 0.0001
     sight_height_m = sight_height_cm / 100
+
+    #  --- Coriolis: rotacao da Terra decomposta no referencial do atirador
+    #  (x=alvo, y=cima, z=direita), a partir da latitude e do azimute do tiro.
+    #  So entra quando ha latitude; o efeito e minusculo abaixo de ~600 m.
+    if latitude_deg is not None:
+        lat = math.radians(latitude_deg)
+        az = math.radians(azimuth_deg)
+        omega_x = EARTH_OMEGA * math.cos(lat) * math.cos(az)
+        omega_y = EARTH_OMEGA * math.sin(lat)
+        omega_z = -EARTH_OMEGA * math.cos(lat) * math.sin(az)
+    else:
+        omega_x = omega_y = omega_z = 0.0
+
+    #  --- Deriva giroscopica (spin drift): estimada por Litz a partir do fator
+    #  de estabilidade (SG). Usa o SG informado ou o calcula por Miller quando
+    #  ha passo do raiamento e comprimento do projetil.
+    sg = stability
+    if sg <= 0 and twist_rate_in > 0:
+        temp_f = atmosphere.temperature_c * 9 / 5 + 32
+        station_hpa = atmosphere.pressure_hpa * math.exp(-atmosphere.altitude_m / 8500)
+        sg = miller_stability(
+            projectile.weight_grains,
+            projectile.diameter_mm / 25.4,
+            bullet_length_in,
+            twist_rate_in,
+            projectile.muzzle_velocity_fps,
+            temperature_f=temp_f,
+            pressure_inhg=station_hpa / 33.8639,
+        )
+    spin_sign = -1.0 if str(twist_dir).lower().startswith("l") else 1.0
+
+    def spin_drift_cm(tof: float) -> float:
+        #  Litz: deriva (pol) = 1.25*(SG+1.2)*t^1.83. Precisa de SG estavel.
+        if sg <= 0 or tof <= 0:
+            return 0.0
+        return spin_sign * 1.25 * (sg + 1.2) * (tof ** 1.83) * 2.54
 
     #  O vento entra decomposto: a parcela lateral desloca o projetil, a
     #  frontal soma ou subtrai da velocidade relativa ao ar e altera a queda.
@@ -349,6 +428,14 @@ def calculate_trajectory(
             vy += (-g - retard * vy * v_rel) * dt
             vz += -retard * rel_z * v_rel * dt
 
+            #  Coriolis: a = -2 (omega x v), sobre a velocidade em relacao ao
+            #  solo. Minusculo, mas desvia lateral e verticalmente em tiro
+            #  longo. Sem latitude, omega = 0 e o termo some.
+            if omega_x or omega_y or omega_z:
+                vx += -2 * (omega_y * vz - omega_z * vy) * dt
+                vy += -2 * (omega_z * vx - omega_x * vz) * dt
+                vz += -2 * (omega_x * vy - omega_y * vx) * dt
+
             x += vx * dt
             y += vy * dt
             z += vz * dt
@@ -374,6 +461,7 @@ def calculate_trajectory(
 
                 drift_cm = z * 100
                 drift_moa = (drift_cm / range_m) * 34.377 if range_m > 0 else 0
+                spin_cm = spin_drift_cm(t)
 
                 points.append(TrajectoryPoint(
                     range_m=range_m,
@@ -387,6 +475,7 @@ def calculate_trajectory(
                     time_of_flight_s=round(t, 3),
                     wind_drift_cm=round(drift_cm, 1),
                     wind_drift_moa=round(drift_moa, 2),
+                    spin_drift_cm=round(spin_cm, 1),
                 ))
                 next_range += step_m
 

@@ -47,6 +47,14 @@ class TrajectoryRequest(BaseModel):
     wind_speed_ms: float = Field(0.0, ge=0, le=60)
     wind_angle_deg: float = Field(90.0, ge=0, le=360)
     atmosphere: AtmosphereIn = Field(default_factory=AtmosphereIn)
+    #  Correcoes de tiro longo (opcionais). Sem latitude nao ha Coriolis; sem
+    #  passo/SG nao ha deriva giroscopica.
+    latitude_deg: Optional[float] = Field(None, ge=-90, le=90)
+    azimuth_deg: float = Field(0.0, ge=0, le=360)
+    twist_rate_in: float = Field(0.0, ge=0, le=30)
+    twist_dir: Literal["right", "left"] = "right"
+    bullet_length_in: float = Field(0.0, ge=0, le=3)
+    stability: float = Field(0.0, ge=0, le=5)
     #  Quando presente, a resposta ja traz o cartao de DOPE calculado.
     dope: Optional[DopeIn] = None
 
@@ -63,6 +71,7 @@ class TrajectoryPointOut(BaseModel):
     time_of_flight_s: float
     wind_drift_cm: float
     wind_drift_moa: float
+    spin_drift_cm: float = 0.0
 
 
 class DopeEntryOut(BaseModel):
@@ -75,6 +84,7 @@ class DopeEntryOut(BaseModel):
     windage_clicks: int
     drop_cm: float
     wind_drift_cm: float
+    spin_drift_cm: float = 0.0
     velocity_fps: float
     energy_ftlbs: float
     time_of_flight_s: float

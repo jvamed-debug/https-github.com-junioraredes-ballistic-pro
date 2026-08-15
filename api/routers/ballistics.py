@@ -79,6 +79,12 @@ def trajectory(req: TrajectoryRequest) -> TrajectoryResponse:
         wind_speed_ms=req.wind_speed_ms,
         wind_angle_deg=req.wind_angle_deg,
         atmosphere=atmosphere,
+        latitude_deg=req.latitude_deg,
+        azimuth_deg=req.azimuth_deg,
+        twist_rate_in=req.twist_rate_in,
+        twist_dir=req.twist_dir,
+        bullet_length_in=req.bullet_length_in,
+        stability=req.stability,
     )
     if not result.points:
         raise HTTPException(

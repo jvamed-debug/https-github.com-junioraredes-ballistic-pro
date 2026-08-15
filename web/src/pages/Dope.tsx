@@ -33,6 +33,15 @@ export function Dope() {
   const [click, setClick] = useState(0.1);
   const [incline, setIncline] = useState(0);
 
+  // Correções de tiro longo (opcionais).
+  const [advOpen, setAdvOpen] = useState(false);
+  const [lat, setLat] = useState("");
+  const [azimuth, setAzimuth] = useState("0");
+  const [twist, setTwist] = useState("");
+  const [twistDir, setTwistDir] = useState<"right" | "left">("right");
+  const [bulletLen, setBulletLen] = useState("");
+  const [diamMm, setDiamMm] = useState("");
+
   const [res, setRes] = useState<TrajectoryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -46,12 +55,18 @@ export function Dope() {
           weight_grains: num(weight, 150),
           bc_g1: num(bc, 0.4),
           muzzle_velocity_fps: num(mv, 2600),
+          diameter_mm: num(diamMm),
         },
         zero_range_m: num(zero, 100),
         max_range_m: num(max, 500),
         step_m: num(step, 100),
         wind_speed_ms: num(windKmh) / 3.6,
         wind_angle_deg: 90,
+        latitude_deg: lat.trim() !== "" ? num(lat) : null,
+        azimuth_deg: num(azimuth),
+        twist_rate_in: num(twist),
+        twist_dir: twistDir,
+        bullet_length_in: num(bulletLen),
         dope: { unit, click_value: click, incline_deg: incline },
       };
       setRes(await api.trajectory(body));
@@ -117,6 +132,49 @@ export function Dope() {
             <input className="field" inputMode="decimal" value={windKmh} onChange={(e) => setWindKmh(e.target.value)} />
           </Labeled>
         </div>
+      </section>
+
+      <section className="card p-4">
+        <button
+          type="button"
+          onClick={() => setAdvOpen((v) => !v)}
+          className="flex w-full items-center justify-between text-sm font-bold uppercase tracking-wide text-[var(--muted)]"
+        >
+          <span>Tiro longo (spin drift · Coriolis)</span>
+          <span>{advOpen ? "−" : "+"}</span>
+        </button>
+        {advOpen && (
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="grid grid-cols-3 gap-2">
+              <Labeled label="Passo raiam. (1:n pol)">
+                <input className="field" inputMode="decimal" placeholder="ex.: 11" value={twist} onChange={(e) => setTwist(e.target.value)} />
+              </Labeled>
+              <Labeled label="Sentido">
+                <select className="field" value={twistDir} onChange={(e) => setTwistDir(e.target.value as "right" | "left")}>
+                  <option value="right">Direita</option>
+                  <option value="left">Esquerda</option>
+                </select>
+              </Labeled>
+              <Labeled label="Comp. projétil (pol)">
+                <input className="field" inputMode="decimal" placeholder="ex.: 1.24" value={bulletLen} onChange={(e) => setBulletLen(e.target.value)} />
+              </Labeled>
+              <Labeled label="Diâmetro (mm)">
+                <input className="field" inputMode="decimal" placeholder="ex.: 7.82" value={diamMm} onChange={(e) => setDiamMm(e.target.value)} />
+              </Labeled>
+              <Labeled label="Latitude (°)">
+                <input className="field" inputMode="decimal" placeholder="ex.: -23" value={lat} onChange={(e) => setLat(e.target.value)} />
+              </Labeled>
+              <Labeled label="Azimute (°)">
+                <input className="field" inputMode="decimal" placeholder="0 = Norte" value={azimuth} onChange={(e) => setAzimuth(e.target.value)} />
+              </Labeled>
+            </div>
+            <p className="text-[0.7rem] leading-relaxed text-[var(--muted)]">
+              Spin drift precisa do passo do raiamento + comprimento do projétil (ou o diâmetro,
+              já preenchido). Coriolis precisa da latitude do local (negativa no Hemisfério Sul) e
+              do azimute do tiro. Efeitos relevantes só além de ~500&nbsp;m.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="card p-4">
@@ -204,6 +262,13 @@ export function Dope() {
           <p className="px-4 py-3 text-xs text-[var(--muted)]">
             Vento: <b>E</b> = dial p/ esquerda (tiro foi à direita), <b>D</b> = p/ direita.
             Elevação = subida (come-up). {incline !== 0 && `Compensado para ${incline}°.`}
+            {card.some((e) => e.spin_drift_cm !== 0) && (
+              <>
+                {" "}A correção lateral já inclui a deriva giroscópica
+                {" "}(máx {Math.max(...card.map((e) => Math.abs(e.spin_drift_cm))).toFixed(1)}&nbsp;cm)
+                {lat.trim() !== "" ? " e Coriolis." : "."}
+              </>
+            )}
           </p>
         </section>
       )}
