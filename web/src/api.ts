@@ -11,6 +11,7 @@ export type TrajectoryPoint = {
   energy_ftlbs: number;
   time_of_flight_s: number;
   wind_drift_cm: number;
+  spin_drift_cm: number;
 };
 
 export type DopeEntry = {
@@ -21,6 +22,7 @@ export type DopeEntry = {
   windage: number;
   windage_dir: string;
   windage_clicks: number;
+  spin_drift_cm: number;
   velocity_fps: number;
   energy_ftlbs: number;
   time_of_flight_s: number;

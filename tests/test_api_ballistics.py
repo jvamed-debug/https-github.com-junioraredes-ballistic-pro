@@ -86,6 +86,23 @@ def test_incline_reduces_come_up():
     assert flat > 0 and steep < flat
 
 
+def test_trajectory_passes_longrange_corrections():
+    body = _traj_body(
+        projectile={"weight_grains": 175, "bc_g7": 0.243, "diameter_mm": 7.82, "muzzle_velocity_fps": 2600},
+        max_range_m=800, step_m=200,
+        twist_rate_in=11, bullet_length_in=1.24, twist_dir="right",
+        latitude_deg=-23, azimuth_deg=90,
+        dope={"unit": "MIL", "click_value": 0.1, "incline_deg": 0},
+    )
+    r = client.post("/api/trajectory", json=body)
+    assert r.status_code == 200
+    data = r.json()
+    #  Spin drift aparece e cresce; o cartao de DOPE carrega o campo.
+    spins = [p["spin_drift_cm"] for p in data["points"]]
+    assert spins[-1] > 0
+    assert all("spin_drift_cm" in e for e in data["dope_card"])
+
+
 def test_trajectory_rejects_max_below_zero():
     r = client.post("/api/trajectory", json=_traj_body(zero_range_m=300, max_range_m=100))
     assert r.status_code == 422
