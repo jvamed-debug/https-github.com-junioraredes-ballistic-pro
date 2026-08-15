@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type User } from "./api.ts";
+import { InstallPrompt } from "./InstallPrompt.tsx";
 import { Login } from "./pages/Login.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
@@ -64,6 +65,7 @@ export function App() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-3xl flex-col">
+      <InstallPrompt />
       <header className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" />
@@ -83,13 +85,13 @@ export function App() {
           </button>
         </div>
       </header>
-      <nav className="flex gap-1 overflow-x-auto border-b border-[var(--border)] px-2 py-2">
+      <nav className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--bg)] px-2 py-2">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={
-              "whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold " +
+              "flex min-h-[44px] items-center whitespace-nowrap rounded-md px-3 text-sm font-semibold " +
               (tab === t.id
                 ? "bg-[var(--panel-2)] text-white"
                 : "text-[var(--muted)]")

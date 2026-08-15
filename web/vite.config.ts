@@ -10,11 +10,13 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Ballistic Pro",
         short_name: "Ballistic",
         description: "Recarga e balística — catálogo, trajetória e cartão de DOPE.",
+        lang: "pt-BR",
+        categories: ["sports", "utilities"],
         theme_color: "#0a0e14",
         background_color: "#0a0e14",
         display: "standalone",
