@@ -98,6 +98,25 @@ export type Firearm = {
 
 export type Advice = { content: string; provider: string; confidence: string };
 
+export type DopeCard = {
+  id: number;
+  name: string;
+  firearm_id?: number | null;
+  weight_grains?: number | null;
+  bc_g1?: number | null;
+  muzzle_velocity_fps?: number | null;
+  diameter_mm?: number | null;
+  bullet_length_in?: number | null;
+  zero_range_m?: number | null;
+  max_range_m?: number | null;
+  step_m?: number | null;
+  sight_height_cm?: number | null;
+  twist_rate_in?: number | null;
+  twist_dir?: string | null;
+  unit?: string | null;
+  click_value?: number | null;
+};
+
 export type TargetGroup = {
   id: number;
   shots: [number, number][];
@@ -362,6 +381,13 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
+
+  // Cartões de DOPE salvos
+  listDopeCards: () => request<DopeCard[]>("/api/dope-cards"),
+  createDopeCard: (body: Omit<DopeCard, "id">) =>
+    request<DopeCard>("/api/dope-cards", { method: "POST", body: JSON.stringify(body) }),
+  deleteDopeCard: (id: number) =>
+    request<void>(`/api/dope-cards/${id}`, { method: "DELETE" }),
 
   // Consultor (IA)
   adviseLoad: (body: {
