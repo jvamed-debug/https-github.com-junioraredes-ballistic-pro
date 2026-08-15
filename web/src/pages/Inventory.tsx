@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type InventoryItem } from "../api.ts";
 import { downloadCsv, toCsv } from "../csv.ts";
+import { ErrorState, Loading } from "../ui.tsx";
 
 const CATEGORIES = ["Pólvora", "Projétil", "Espoleta", "Estojo", "Munição", "Outro"];
 const UNITS = ["g", "grains", "un"];
@@ -28,6 +29,8 @@ export function Inventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
 
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [name, setName] = useState("");
@@ -38,10 +41,14 @@ export function Inventory() {
   const [expiry, setExpiry] = useState("");
 
   async function load() {
+    setLoadErr(null);
+    setLoading(true);
     try {
       setItems(await api.listInventory());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao carregar.");
+      setLoadErr(e instanceof Error ? e.message : "Falha ao carregar.");
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => { load(); }, []);
@@ -140,6 +147,9 @@ export function Inventory() {
     );
     downloadCsv("inventario.csv", csv);
   }
+
+  if (loading) return <Loading rows={4} label="Carregando inventário" />;
+  if (loadErr) return <ErrorState message={loadErr} onRetry={load} />;
 
   return (
     <div className="flex flex-col gap-4">
