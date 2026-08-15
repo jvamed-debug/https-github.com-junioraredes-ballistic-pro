@@ -16,6 +16,7 @@ from api.routers import (
     ballistics,
     data,
     dope,
+    insights,
     reloading,
     reports,
     targets,
@@ -56,6 +57,7 @@ app.include_router(webauthn_auth.router)
 app.include_router(targets.router)
 app.include_router(dope.router)
 app.include_router(weather.router)
+app.include_router(insights.router)
 
 
 @app.get("/api/health", tags=["meta"])

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type User } from "./api.ts";
 import { Login } from "./pages/Login.tsx";
+import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
 import { Reloading } from "./pages/Reloading.tsx";
 import { Inventory } from "./pages/Inventory.tsx";
@@ -12,6 +13,7 @@ import { Target } from "./pages/Target.tsx";
 import { Profile } from "./pages/Profile.tsx";
 
 const TABS = [
+  { id: "painel", label: "📊 Painel" },
   { id: "dope", label: "🎯 DOPE" },
   { id: "reload", label: "📋 Recarga" },
   { id: "inv", label: "📦 Inventário" },
@@ -27,7 +29,7 @@ type TabId = (typeof TABS)[number]["id"];
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState<TabId>("dope");
+  const [tab, setTab] = useState<TabId>("painel");
 
   // Ao abrir, se há token salvo, tenta recuperar o usuário. Token expirado
   // (401) simplesmente cai para a tela de login.
@@ -99,6 +101,7 @@ export function App() {
       </nav>
 
       <main className="flex-1 p-4">
+        {tab === "painel" && <Dashboard />}
         {tab === "dope" && <Dope />}
         {tab === "reload" && <Reloading />}
         {tab === "inv" && <Inventory />}
