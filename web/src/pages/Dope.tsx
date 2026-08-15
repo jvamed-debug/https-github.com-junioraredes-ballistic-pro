@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, type DopeEntry, type TrajectoryResponse } from "../api.ts";
+import { api, type DopeEntry, type TrajectoryPoint, type TrajectoryResponse } from "../api.ts";
 
 type Unit = "MIL" | "MOA";
 
@@ -272,6 +272,223 @@ export function Dope() {
           </p>
         </section>
       )}
+
+      <LoadCompare
+        shared={{
+          zero: num(zero, 100),
+          max: num(max, 500),
+          step: num(step, 100),
+          windMs: num(windKmh) / 3.6,
+        }}
+      />
+    </div>
+  );
+}
+
+const COMPARE_COLORS = ["var(--accent)", "var(--up)", "var(--wind)", "#34d399"];
+
+type LoadRow = { name: string; weight: string; bc: string; mv: string };
+type LoadResult = { name: string; color: string; points: TrajectoryPoint[] };
+
+function LoadCompare({
+  shared,
+}: {
+  shared: { zero: number; max: number; step: number; windMs: number };
+}) {
+  const [open, setOpen] = useState(false);
+  const [loads, setLoads] = useState<LoadRow[]>([
+    { name: "Carga A", weight: "168", bc: "0.462", mv: "2650" },
+    { name: "Carga B", weight: "175", bc: "0.505", mv: "2600" },
+  ]);
+  const [res, setRes] = useState<LoadResult[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function setRow(i: number, patch: Partial<LoadRow>) {
+    setLoads((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  }
+  function addRow() {
+    if (loads.length >= 4) return;
+    setLoads((rows) => [...rows, { name: `Carga ${String.fromCharCode(65 + rows.length)}`, weight: "150", bc: "0.4", mv: "2700" }]);
+  }
+  function removeRow(i: number) {
+    setLoads((rows) => (rows.length > 1 ? rows.filter((_, j) => j !== i) : rows));
+  }
+
+  async function compare() {
+    setBusy(true);
+    setError(null);
+    try {
+      const out: LoadResult[] = [];
+      for (let i = 0; i < loads.length; i++) {
+        const l = loads[i];
+        const r = await api.trajectory({
+          projectile: {
+            weight_grains: num(l.weight, 150),
+            bc_g1: num(l.bc, 0.4),
+            muzzle_velocity_fps: num(l.mv, 2600),
+          },
+          zero_range_m: shared.zero,
+          max_range_m: shared.max,
+          step_m: shared.step,
+          wind_speed_ms: shared.windMs,
+          wind_angle_deg: 90,
+        });
+        out.push({ name: l.name || `Carga ${i + 1}`, color: COMPARE_COLORS[i % 4], points: r.points });
+      }
+      setRes(out);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao comparar.");
+      setRes(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ranges = res?.[0]?.points.map((p) => p.range_m) ?? [];
+
+  return (
+    <section className="card p-4">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-sm font-bold uppercase tracking-wide text-[var(--muted)]"
+      >
+        <span>Comparar cargas</span>
+        <span>{open ? "−" : "+"}</span>
+      </button>
+
+      {open && (
+        <div className="mt-3 flex flex-col gap-3">
+          <p className="text-[0.7rem] text-[var(--muted)]">
+            Usa o zero, alcance, passo e vento definidos acima. Cada linha é uma carga (peso, BC G1, V0).
+          </p>
+          {loads.map((l, i) => (
+            <div key={i} className="grid grid-cols-[1fr_auto] items-end gap-2">
+              <div className="grid grid-cols-4 gap-2">
+                <Labeled label="Nome">
+                  <input className="field" value={l.name} onChange={(e) => setRow(i, { name: e.target.value })} />
+                </Labeled>
+                <Labeled label="Peso (gr)">
+                  <input className="field" inputMode="decimal" value={l.weight} onChange={(e) => setRow(i, { weight: e.target.value })} />
+                </Labeled>
+                <Labeled label="BC (G1)">
+                  <input className="field" inputMode="decimal" value={l.bc} onChange={(e) => setRow(i, { bc: e.target.value })} />
+                </Labeled>
+                <Labeled label="V0 (fps)">
+                  <input className="field" inputMode="decimal" value={l.mv} onChange={(e) => setRow(i, { mv: e.target.value })} />
+                </Labeled>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                disabled={loads.length <= 1}
+                className="mb-1 rounded-md border border-[var(--border)] px-2 py-2 text-xs text-red-400 disabled:opacity-40"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-ghost" onClick={addRow} disabled={loads.length >= 4}>
+              + Adicionar carga
+            </button>
+            <button type="button" className="btn" onClick={compare} disabled={busy}>
+              {busy ? "Comparando…" : "COMPARAR"}
+            </button>
+          </div>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          {res && res.length > 0 && (
+            <>
+              <DropChart results={res} />
+              <div className="overflow-x-auto">
+                <table className="w-full tabnum text-center text-xs">
+                  <thead>
+                    <tr className="text-[0.6rem] uppercase tracking-wide text-[var(--muted)]">
+                      <th className="px-2 py-1">Dist (m)</th>
+                      {res.map((r) => (
+                        <th key={r.name} className="px-2 py-1" style={{ color: r.color }}>{r.name}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranges.map((rng, ri) => (
+                      <tr key={rng} className="border-t border-[var(--border)]">
+                        <td className="px-2 py-1 font-bold text-white">{Math.round(rng)}</td>
+                        {res.map((r) => {
+                          const p = r.points[ri];
+                          return (
+                            <td key={r.name} className="px-2 py-1">
+                              {p ? (
+                                <>
+                                  <span className="font-semibold" style={{ color: r.color }}>{p.drop_cm.toFixed(0)}</span>
+                                  <span className="block text-[0.6rem] text-[var(--muted)]">{Math.round(p.velocity_fps)} fps</span>
+                                </>
+                              ) : "—"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[0.65rem] text-[var(--muted)]">
+                Números = queda (cm) na linha de visada; abaixo, velocidade remanescente. Zero em {shared.zero} m.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Sobreposição das curvas de queda (cm) por distância — SVG, sem dependência.
+function DropChart({ results }: { results: LoadResult[] }) {
+  const W = 320;
+  const H = 150;
+  const pad = { l: 34, r: 8, t: 8, b: 18 };
+  const all = results.flatMap((r) => r.points);
+  if (all.length === 0) return null;
+  const maxRange = Math.max(...all.map((p) => p.range_m));
+  const drops = all.map((p) => p.drop_cm);
+  const minDrop = Math.min(...drops, 0);
+  const maxDrop = Math.max(...drops, 0);
+  const span = maxDrop - minDrop || 1;
+
+  const x = (r: number) => pad.l + (r / maxRange) * (W - pad.l - pad.r);
+  const y = (d: number) => pad.t + ((maxDrop - d) / span) * (H - pad.t - pad.b);
+
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 280 }}>
+        {/* linha de visada (drop = 0) */}
+        <line x1={pad.l} y1={y(0)} x2={W - pad.r} y2={y(0)} stroke="var(--border)" strokeDasharray="3 3" />
+        <text x={2} y={y(0) + 3} fontSize="8" fill="var(--muted)">0</text>
+        <text x={2} y={y(minDrop) + 3} fontSize="8" fill="var(--muted)">{minDrop.toFixed(0)}</text>
+        {results.map((r) => (
+          <polyline
+            key={r.name}
+            fill="none"
+            stroke={r.color}
+            strokeWidth="2"
+            points={r.points.map((p) => `${x(p.range_m)},${y(p.drop_cm)}`).join(" ")}
+          />
+        ))}
+        <text x={pad.l} y={H - 4} fontSize="8" fill="var(--muted)">0 m</text>
+        <text x={W - pad.r} y={H - 4} fontSize="8" fill="var(--muted)" textAnchor="end">{Math.round(maxRange)} m</text>
+      </svg>
+      <div className="mt-1 flex flex-wrap gap-3">
+        {results.map((r) => (
+          <span key={r.name} className="flex items-center gap-1 text-[0.65rem] text-[var(--muted)]">
+            <span className="inline-block h-2 w-3 rounded-sm" style={{ background: r.color }} />
+            {r.name}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
