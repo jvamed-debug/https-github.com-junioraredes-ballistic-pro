@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type User } from "./api.ts";
 import { InstallPrompt } from "./InstallPrompt.tsx";
+import { OfflineBanner } from "./OfflineBanner.tsx";
 import { Login } from "./pages/Login.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
@@ -65,6 +66,7 @@ export function App() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-3xl flex-col">
+      <OfflineBanner />
       <InstallPrompt />
       <header className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center gap-2">
@@ -79,17 +81,19 @@ export function App() {
           </span>
           <button
             onClick={onLogout}
+            aria-label="Sair da conta"
             className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]"
           >
             Sair
           </button>
         </div>
       </header>
-      <nav className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--bg)] px-2 py-2">
+      <nav aria-label="Seções" className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--bg)] px-2 py-2">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
+            aria-current={tab === t.id ? "page" : undefined}
             className={
               "flex min-h-[44px] items-center whitespace-nowrap rounded-md px-3 text-sm font-semibold " +
               (tab === t.id

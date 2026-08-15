@@ -210,14 +210,14 @@ export function Logbook() {
         </h2>
         <form onSubmit={addGun} className="flex gap-2">
           <input className="field" placeholder="Modelo (ex.: Glock G17)" value={gunModel} onChange={(e) => setGunModel(e.target.value)} />
-          <button className="btn" style={{ width: "auto", paddingInline: 16 }}>+</button>
+          <button className="btn" style={{ width: "auto", paddingInline: 16 }} aria-label="Adicionar arma">+</button>
         </form>
         {guns.length > 0 && (
           <ul className="mt-3 flex flex-wrap gap-2">
             {guns.map((g) => (
               <li key={g.id} className="flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1 text-sm">
                 {g.model}
-                <button onClick={() => api.deleteFirearm(g.id).then(load)} className="text-red-400">×</button>
+                <button onClick={() => api.deleteFirearm(g.id).then(load)} aria-label={`Remover ${g.model}`} className="text-red-400">×</button>
               </li>
             ))}
           </ul>
