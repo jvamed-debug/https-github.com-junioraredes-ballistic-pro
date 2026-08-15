@@ -157,6 +157,7 @@ class User(Base):
     inventory = relationship("InventoryItem", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
     passkeys = relationship("WebAuthnCredential", back_populates="user", cascade="all, delete-orphan")
+    dope_cards = relationship("DopeCard", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -259,6 +260,43 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="audit_logs")
+
+
+class DopeCard(Base):
+    """Cartao de DOPE salvo: a receita de tiro (projetil + arma + zero) que o
+    atirador reusa. Vinculado opcionalmente a uma arma cadastrada. O vento e o
+    angulo ficam de fora por serem situacionais — o que se guarda e o que nao
+    muda de um dia para o outro.
+    """
+    __tablename__ = 'dope_cards'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    firearm_id = Column(Integer, ForeignKey('firearms.id'))
+    name = Column(String, nullable=False)
+
+    #  Projetil / carga.
+    weight_grains = Column(Float)
+    bc_g1 = Column(Float)
+    muzzle_velocity_fps = Column(Float)
+    diameter_mm = Column(Float)
+    bullet_length_in = Column(Float)
+
+    #  Arma / zero.
+    zero_range_m = Column(Float)
+    max_range_m = Column(Float)
+    step_m = Column(Float)
+    sight_height_cm = Column(Float)
+    twist_rate_in = Column(Float)
+    twist_dir = Column(String)
+
+    #  Torre.
+    unit = Column(String)
+    click_value = Column(Float)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="dope_cards")
+    firearm = relationship("Firearm")
 
 
 class WebAuthnCredential(Base):

@@ -229,6 +229,28 @@ class LogbookOut(LogbookIn):
     date: date
 
 
+class DopeCardIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=80)
+    firearm_id: Optional[int] = None
+    weight_grains: Optional[float] = Field(None, ge=0)
+    bc_g1: Optional[float] = Field(None, ge=0)
+    muzzle_velocity_fps: Optional[float] = Field(None, ge=0)
+    diameter_mm: Optional[float] = Field(None, ge=0)
+    bullet_length_in: Optional[float] = Field(None, ge=0)
+    zero_range_m: Optional[float] = Field(None, ge=0)
+    max_range_m: Optional[float] = Field(None, ge=0)
+    step_m: Optional[float] = Field(None, ge=0)
+    sight_height_cm: Optional[float] = Field(None, ge=0)
+    twist_rate_in: Optional[float] = Field(None, ge=0)
+    twist_dir: Optional[str] = None
+    unit: Optional[str] = None
+    click_value: Optional[float] = Field(None, ge=0)
+
+
+class DopeCardOut(DopeCardIn):
+    id: int
+
+
 class LogbookCreateOut(LogbookOut):
     #  Preenchidos so quando o POST pede deducao de estoque (deduct=true).
     #  deductions = linhas do que saiu (ou faltou) do inventario; unit_cost =

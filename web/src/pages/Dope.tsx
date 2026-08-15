@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { api, type DopeEntry, type TrajectoryPoint, type TrajectoryResponse } from "../api.ts";
+import { useEffect, useState } from "react";
+import {
+  api,
+  type DopeCard,
+  type DopeEntry,
+  type Firearm,
+  type TrajectoryPoint,
+  type TrajectoryResponse,
+} from "../api.ts";
 
 type Unit = "MIL" | "MOA";
 
@@ -45,6 +52,83 @@ export function Dope() {
   const [res, setRes] = useState<TrajectoryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Cartões salvos + armas, para salvar/reabrir a receita por arma.
+  const [cards, setCards] = useState<DopeCard[]>([]);
+  const [guns, setGuns] = useState<Firearm[]>([]);
+  const [cardName, setCardName] = useState("");
+  const [saveGun, setSaveGun] = useState("");
+  const [cardMsg, setCardMsg] = useState<string | null>(null);
+
+  async function loadCards() {
+    try {
+      const [cs, gs] = await Promise.all([api.listDopeCards(), api.listFirearms()]);
+      setCards(cs);
+      setGuns(gs);
+    } catch {
+      /* silencioso: tela funciona sem cartões */
+    }
+  }
+  useEffect(() => { loadCards(); }, []);
+
+  const str = (v: number | null | undefined) => (v != null ? String(v) : "");
+
+  async function saveCard() {
+    if (!cardName.trim()) {
+      setCardMsg("Dê um nome ao cartão.");
+      return;
+    }
+    setCardMsg(null);
+    try {
+      await api.createDopeCard({
+        name: cardName.trim(),
+        firearm_id: saveGun ? parseInt(saveGun) : null,
+        weight_grains: num(weight) || null,
+        bc_g1: num(bc) || null,
+        muzzle_velocity_fps: num(mv) || null,
+        diameter_mm: num(diamMm) || null,
+        bullet_length_in: num(bulletLen) || null,
+        zero_range_m: num(zero) || null,
+        max_range_m: num(max) || null,
+        step_m: num(step) || null,
+        twist_rate_in: num(twist) || null,
+        twist_dir: twistDir,
+        unit,
+        click_value: click,
+      });
+      setCardName("");
+      setSaveGun("");
+      setCardMsg("Cartão salvo.");
+      await loadCards();
+    } catch (e) {
+      setCardMsg(e instanceof Error ? e.message : "Falha ao salvar.");
+    }
+  }
+
+  function openCard(c: DopeCard) {
+    if (c.weight_grains != null) setWeight(str(c.weight_grains));
+    if (c.bc_g1 != null) setBc(str(c.bc_g1));
+    if (c.muzzle_velocity_fps != null) setMv(str(c.muzzle_velocity_fps));
+    if (c.zero_range_m != null) setZero(str(c.zero_range_m));
+    if (c.max_range_m != null) setMax(str(c.max_range_m));
+    if (c.step_m != null) setStep(str(c.step_m));
+    if (c.unit === "MIL" || c.unit === "MOA") setUnit(c.unit);
+    if (c.click_value != null) setClick(c.click_value);
+    setTwist(str(c.twist_rate_in));
+    if (c.twist_dir === "left" || c.twist_dir === "right") setTwistDir(c.twist_dir);
+    setBulletLen(str(c.bullet_length_in));
+    setDiamMm(str(c.diameter_mm));
+    if (c.twist_rate_in || c.diameter_mm) setAdvOpen(true);
+    setCardMsg(`Cartão "${c.name}" carregado.`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function delCard(id: number) {
+    await api.deleteDopeCard(id);
+    await loadCards();
+  }
+
+  const gunName = (id?: number | null) => guns.find((g) => g.id === id)?.model;
 
   async function calc() {
     setError(null);
@@ -105,6 +189,43 @@ export function Dope() {
 
   return (
     <div className="flex flex-col gap-4">
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+          Cartões de DOPE
+        </h2>
+        {cards.length > 0 ? (
+          <ul className="mb-3 flex flex-col gap-2">
+            {cards.map((c) => (
+              <li key={c.id} className="flex items-center justify-between rounded-lg bg-[var(--panel-2)] px-3 py-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{c.name}</div>
+                  <div className="text-[0.65rem] text-[var(--muted)]">
+                    {gunName(c.firearm_id) ? `${gunName(c.firearm_id)} · ` : ""}
+                    {c.weight_grains ? `${c.weight_grains}gr ` : ""}
+                    {c.muzzle_velocity_fps ? `· ${c.muzzle_velocity_fps}fps` : ""}
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button onClick={() => openCard(c)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]">Abrir</button>
+                  <button onClick={() => delCard(c.id)} className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-red-400">×</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mb-3 text-xs text-[var(--muted)]">Nenhum cartão salvo ainda. Preencha os dados abaixo e salve.</p>
+        )}
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <input className="field" placeholder="Nome do cartão" value={cardName} onChange={(e) => setCardName(e.target.value)} />
+          <select className="field" value={saveGun} onChange={(e) => setSaveGun(e.target.value)}>
+            <option value="">Sem arma</option>
+            {guns.map((g) => <option key={g.id} value={g.id}>{g.model}</option>)}
+          </select>
+          <button className="btn" style={{ width: "auto", paddingInline: 16 }} onClick={saveCard}>Salvar</button>
+        </div>
+        {cardMsg && <p className="mt-2 text-xs text-[var(--muted)]">{cardMsg}</p>}
+      </section>
+
       <section className="card p-4">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
           Projétil
