@@ -13,6 +13,14 @@ from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
+class WeatherOut(BaseModel):
+    temperature_c: float
+    humidity_pct: float
+    pressure_hpa: float
+    altitude_m: float
+    source: str
+
+
 class AtmosphereIn(BaseModel):
     temperature_c: float = Field(15.0, ge=-40, le=60)
     pressure_hpa: float = Field(1013.25, ge=800, le=1100)

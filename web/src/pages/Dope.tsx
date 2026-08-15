@@ -49,6 +49,47 @@ export function Dope() {
   const [bulletLen, setBulletLen] = useState("");
   const [diamMm, setDiamMm] = useState("");
 
+  // Atmosfera (opcional): pode ser puxada do clima por localização.
+  const [atmOpen, setAtmOpen] = useState(false);
+  const [temp, setTemp] = useState("15");
+  const [pressure, setPressure] = useState("1013");
+  const [humidity, setHumidity] = useState("50");
+  const [altitude, setAltitude] = useState("0");
+  const [weatherBusy, setWeatherBusy] = useState(false);
+  const [weatherMsg, setWeatherMsg] = useState<string | null>(null);
+
+  function pullWeather() {
+    if (!navigator.geolocation) {
+      setWeatherMsg("Geolocalização indisponível neste dispositivo.");
+      return;
+    }
+    setWeatherBusy(true);
+    setWeatherMsg(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const w = await api.weather(pos.coords.latitude, pos.coords.longitude);
+          setTemp(String(w.temperature_c));
+          setPressure(String(w.pressure_hpa));
+          setHumidity(String(w.humidity_pct));
+          setAltitude(String(w.altitude_m));
+          if (!lat.trim()) setLat(pos.coords.latitude.toFixed(2)); // aproveita p/ Coriolis
+          setAtmOpen(true);
+          setWeatherMsg("Atmosfera atualizada pelo clima local.");
+        } catch (e) {
+          setWeatherMsg(e instanceof Error ? e.message : "Falha ao obter o clima.");
+        } finally {
+          setWeatherBusy(false);
+        }
+      },
+      (err) => {
+        setWeatherBusy(false);
+        setWeatherMsg(err.code === err.PERMISSION_DENIED ? "Permissão de localização negada." : "Não foi possível obter a localização.");
+      },
+      { timeout: 10000 },
+    );
+  }
+
   const [res, setRes] = useState<TrajectoryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -146,6 +187,12 @@ export function Dope() {
         step_m: num(step, 100),
         wind_speed_ms: num(windKmh) / 3.6,
         wind_angle_deg: 90,
+        atmosphere: {
+          temperature_c: num(temp, 15),
+          pressure_hpa: num(pressure, 1013.25),
+          humidity_pct: num(humidity, 50),
+          altitude_m: num(altitude, 0),
+        },
         latitude_deg: lat.trim() !== "" ? num(lat) : null,
         azimuth_deg: num(azimuth),
         twist_rate_in: num(twist),
@@ -253,6 +300,48 @@ export function Dope() {
             <input className="field" inputMode="decimal" value={windKmh} onChange={(e) => setWindKmh(e.target.value)} />
           </Labeled>
         </div>
+      </section>
+
+      <section className="card p-4">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setAtmOpen((v) => !v)}
+            className="flex flex-1 items-center justify-between text-sm font-bold uppercase tracking-wide text-[var(--muted)]"
+          >
+            <span>Atmosfera</span>
+            <span>{atmOpen ? "−" : "+"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={pullWeather}
+            disabled={weatherBusy}
+            className="ml-3 rounded-md border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted)]"
+          >
+            {weatherBusy ? "…" : "📍 Puxar clima"}
+          </button>
+        </div>
+        {atmOpen && (
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            <Labeled label="Temp (°C)">
+              <input className="field" inputMode="decimal" value={temp} onChange={(e) => setTemp(e.target.value)} />
+            </Labeled>
+            <Labeled label="Pressão (hPa)">
+              <input className="field" inputMode="decimal" value={pressure} onChange={(e) => setPressure(e.target.value)} />
+            </Labeled>
+            <Labeled label="Umidade (%)">
+              <input className="field" inputMode="decimal" value={humidity} onChange={(e) => setHumidity(e.target.value)} />
+            </Labeled>
+            <Labeled label="Altitude (m)">
+              <input className="field" inputMode="decimal" value={altitude} onChange={(e) => setAltitude(e.target.value)} />
+            </Labeled>
+          </div>
+        )}
+        {weatherMsg && <p className="mt-2 text-xs text-[var(--muted)]">{weatherMsg}</p>}
+        <p className="mt-2 text-[0.65rem] text-[var(--muted)]">
+          Pressão = QNH (nível do mar); a altitude corrige a densidade. "Puxar clima" usa
+          sua localização e o Open-Meteo (sem cadastro).
+        </p>
       </section>
 
       <section className="card p-4">

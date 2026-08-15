@@ -98,6 +98,14 @@ export type Firearm = {
 
 export type Advice = { content: string; provider: string; confidence: string };
 
+export type Weather = {
+  temperature_c: number;
+  humidity_pct: number;
+  pressure_hpa: number;
+  altitude_m: number;
+  source: string;
+};
+
 export type DopeCard = {
   id: number;
   name: string;
@@ -381,6 +389,10 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
+
+  // Clima (Open-Meteo) para preencher a atmosfera
+  weather: (lat: number, lon: number) =>
+    request<Weather>(`/api/weather?lat=${lat}&lon=${lon}`),
 
   // Cartões de DOPE salvos
   listDopeCards: () => request<DopeCard[]>("/api/dope-cards"),
