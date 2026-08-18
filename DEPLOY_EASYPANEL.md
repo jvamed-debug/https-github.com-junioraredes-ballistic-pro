@@ -100,6 +100,21 @@ defina no serviço `api` — usando o **domínio público do serviço `web`**:
 > no serviço `web`). Depois de ativar, cada usuário registra o dispositivo em
 > **Perfil → Ativar biometria**.
 
+#### Consultor com IA (Claude) — opcional
+
+O Consultor (aba 🤖 IA) roda por padrão em **modo offline** (análise por regras,
+determinística, sem rede). Para ligar a análise com IA, defina no serviço `api`:
+
+| Variável | Valor |
+|----------|-------|
+| `ANTHROPIC_API_KEY` | sua chave da Anthropic (Claude) |
+
+O SDK `anthropic` já vem instalado. Ao subir, a API faz um *health check* da
+chave; se ela falhar (inválida, sem rede), o consultor **continua em offline** —
+nunca devolve erro de SDK. Exige que a **política de rede** libere saída para
+`api.anthropic.com`, e o uso da API da Anthropic é **cobrado à parte** por elas.
+(Alternativa: `OPENAI_API_KEY` — descomente `openai` no `requirements.txt`.)
+
 #### Clima automático no DOPE (Open-Meteo) — opcional
 
 O botão "📍 Puxar clima" na aba DOPE preenche a atmosfera (temperatura, pressão,
