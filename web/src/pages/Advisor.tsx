@@ -111,10 +111,15 @@ export function Advisor() {
 
       {advice && (
         <section className="card p-4">
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-[var(--panel-2)] px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-[var(--muted)]">
               {advice.provider === "offline" ? "Análise por regras" : `IA · ${advice.provider}`}
             </span>
+            {advice.provider === "offline" && (
+              <span className="text-[0.65rem] text-[var(--muted)]">
+                modo offline — o administrador pode ligar a IA no servidor
+              </span>
+            )}
           </div>
           <Rendered text={advice.content} />
           <p className="mt-3 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">

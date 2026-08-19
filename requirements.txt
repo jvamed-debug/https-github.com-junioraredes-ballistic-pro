@@ -25,6 +25,8 @@ python-multipart>=0.0.9,<1.0.0
 # funciona sem, respondendo 503 nos endpoints de passkey.
 webauthn>=2.5.0,<3.0.0
 
-# AI Advisor (opcional - funciona sem estas dependencias em modo offline)
-# anthropic>=0.40.0
-# openai>=1.50.0
+# Consultor com IA (opcional). Com o SDK instalado, definir ANTHROPIC_API_KEY
+# no servico da API liga o modo IA (Claude); sem a chave, o consultor segue
+# em modo offline por regras. O SDK e leve e so e usado quando ha chave.
+anthropic>=0.40.0,<1.0.0
+# openai>=1.50.0  # descomente se preferir OpenAI (OPENAI_API_KEY)
