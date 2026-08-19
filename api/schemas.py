@@ -8,6 +8,11 @@ frontend consome com tipos.
 from __future__ import annotations
 
 from datetime import date
+#  Alias para usar em campos cujo NOME e `date`: sob `from __future__ import
+#  annotations`, um campo `date: Optional[date]` faz o proprio nome sombrear o
+#  tipo, e o Pydantic resolve a anotacao para NoneType (o campo so aceitaria
+#  None). Anotar com DateType evita o sombreamento.
+from datetime import date as DateType
 from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
@@ -218,7 +223,7 @@ class FirearmOut(FirearmIn):
 
 class LogbookIn(BaseModel):
     caliber: str = Field(..., min_length=2)
-    date: Optional[date] = None  # default: hoje, resolvido no endpoint
+    date: Optional[DateType] = None  # default: hoje, resolvido no endpoint
     quantity: int = Field(1, ge=1)
     projectile: Optional[str] = None
     powder: Optional[str] = None
@@ -234,7 +239,33 @@ class LogbookIn(BaseModel):
 
 class LogbookOut(LogbookIn):
     id: int
-    date: date
+    date: DateType
+
+
+class ActivityIn(BaseModel):
+    date: Optional[DateType] = None  # default: hoje
+    kind: str = Field("treino", pattern="^(treino|competicao)$")
+    category: str = Field(..., min_length=1, max_length=40)
+    caliber: Optional[str] = None
+    firearm_id: Optional[int] = None
+    shots: int = Field(0, ge=0)
+    location: Optional[str] = None
+    value: Optional[float] = Field(None, ge=0)
+    notes: Optional[str] = None
+
+
+class ActivityOut(ActivityIn):
+    id: int
+    date: DateType
+    image_url: Optional[str] = None
+
+
+class ActivitySummaryRow(BaseModel):
+    category: str
+    caliber: Optional[str] = None
+    count: int
+    shots: int
+    last_date: Optional[date] = None
 
 
 class DopeCardIn(BaseModel):

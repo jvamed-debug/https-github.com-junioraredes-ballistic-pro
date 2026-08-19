@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routers import (
+    activities,
     advisor,
     auth,
     ballistics,
@@ -58,6 +59,7 @@ app.include_router(targets.router)
 app.include_router(dope.router)
 app.include_router(weather.router)
 app.include_router(insights.router)
+app.include_router(activities.router)
 
 
 @app.get("/api/health", tags=["meta"])

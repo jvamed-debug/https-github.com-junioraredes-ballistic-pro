@@ -158,6 +158,7 @@ class User(Base):
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
     passkeys = relationship("WebAuthnCredential", back_populates="user", cascade="all, delete-orphan")
     dope_cards = relationship("DopeCard", back_populates="user", cascade="all, delete-orphan")
+    activities = relationship("Activity", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -296,6 +297,34 @@ class DopeCard(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="dope_cards")
+    firearm = relationship("Firearm")
+
+
+class Activity(Base):
+    """Habitualidade / competicao — a atividade de tiro que o CAC precisa
+    comprovar. Diferente do ReloadSession (que registra a RECARGA): aqui o que
+    importa e a pratica na raia, contabilizada por grupo de equipamento +
+    calibre para atender a exigencia legal de frequencia.
+    """
+    __tablename__ = 'activities'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    date = Column(Date, nullable=False, default=lambda: datetime.now(timezone.utc).date())
+    #  'treino' (habitualidade) ou 'competicao'.
+    kind = Column(String, default="treino")
+    #  Grupo de equipamento (Pistola, Revolver, Carabina, Espingarda, ...) e
+    #  calibre — o par pelo qual as habitualidades sao contadas.
+    category = Column(String, nullable=False)
+    caliber = Column(String)
+    firearm_id = Column(Integer, ForeignKey('firearms.id'))
+    shots = Column(Integer, default=0)       # tiros disparados
+    location = Column(String)                # clube / local
+    value = Column(Float)                     # custo/valor da atividade (opcional)
+    image_url = Column(String)               # comprovante/foto (opcional)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="activities")
     firearm = relationship("Firearm")
 
 
