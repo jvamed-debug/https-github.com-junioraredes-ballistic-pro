@@ -114,6 +114,27 @@ export type Insights = {
   best_by_sd: { date: string | null; caliber: string | null; powder: string | null; charge: number | null; value: number; velocity_avg: number | null }[];
 };
 
+export type Activity = {
+  id: number;
+  date: string;
+  kind: "treino" | "competicao";
+  category: string;
+  caliber?: string | null;
+  firearm_id?: number | null;
+  shots: number;
+  location?: string | null;
+  value?: number | null;
+  image_url?: string | null;
+  notes?: string | null;
+};
+export type ActivitySummaryRow = {
+  category: string;
+  caliber?: string | null;
+  count: number;
+  shots: number;
+  last_date?: string | null;
+};
+
 export type Weather = {
   temperature_c: number;
   humidity_pct: number;
@@ -405,6 +426,15 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
+
+  // Habitualidades e competições
+  listActivities: () => request<Activity[]>("/api/activities"),
+  activitySummary: (since?: string) =>
+    request<ActivitySummaryRow[]>(`/api/activities/summary${since ? `?since=${since}` : ""}`),
+  createActivity: (body: Partial<Activity> & { category: string }) =>
+    request<Activity>("/api/activities", { method: "POST", body: JSON.stringify(body) }),
+  deleteActivity: (id: number) =>
+    request<void>(`/api/activities/${id}`, { method: "DELETE" }),
 
   // Painel de insights
   insights: () => request<Insights>("/api/insights"),
