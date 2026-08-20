@@ -115,6 +115,13 @@ nunca devolve erro de SDK. Exige que a **política de rede** libere saída para
 `api.anthropic.com`, e o uso da API da Anthropic é **cobrado à parte** por elas.
 (Alternativa: `OPENAI_API_KEY` — descomente `openai` no `requirements.txt`.)
 
+A **mesma chave** também melhora a leitura automática dos PDFs enviados na aba
+📄 Documentos: com `ANTHROPIC_API_KEY`, o Claude lê o PDF (inclusive
+escaneado) e identifica número, validade e tipo. **Sem a chave**, a leitura
+continua funcionando por heurística (texto do PDF + regras), então o upload e a
+etiqueta nunca dependem da IA — a chave só deixa a extração mais precisa. O
+arquivo é guardado no próprio banco (sem S3); PDFs vão até **8 MB**.
+
 #### Clima automático no DOPE (Open-Meteo) — opcional
 
 O botão "📍 Puxar clima" na aba DOPE preenche a atmosfera (temperatura, pressão,

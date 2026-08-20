@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text, DateTime, event
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Date, Float, Text, DateTime, LargeBinary, event
 from datetime import datetime, timezone
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from contextlib import contextmanager
@@ -358,6 +358,11 @@ class Document(Base):
     #  Antecedencia, em dias, para lembrar da renovacao (default 30).
     remind_days = Column(Integer, default=30)
     file_url = Column(String)                 # link do digitalizado (opcional)
+    #  Arquivo (PDF) enviado pelo usuario, guardado no proprio banco. Simples e
+    #  portatil no EasyPanel; da para trocar por S3 depois sem mexer na API.
+    file_name = Column(String)
+    file_mime = Column(String)
+    file_data = Column(LargeBinary)
     notes = Column(Text)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -552,6 +557,21 @@ def ensure_schema_compliance(engine_to_check):
                         print(f"[SCHEMA] Coluna image_url adicionada a {table}.")
                     except Exception as e:
                         print(f"[SCHEMA] Falha ao adicionar image_url a {table}: {e}")
+
+        # 3a2. Colunas de arquivo em documents (PDF enviado + metadados).
+        if 'documents' in existing_tables:
+            d_cols = [c['name'] for c in inspector.get_columns('documents')]
+            for col_name, col_type in [
+                ('file_name', 'VARCHAR'),
+                ('file_mime', 'VARCHAR'),
+                ('file_data', 'BYTEA' if engine_to_check.dialect.name == 'postgresql' else 'BLOB'),
+            ]:
+                if col_name not in d_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE documents ADD COLUMN {col_name} {col_type}"))
+                        print(f"[SCHEMA] Coluna {col_name} adicionada a documents.")
+                    except Exception as e:
+                        print(f"[SCHEMA] Falha ao adicionar {col_name} a documents: {e}")
 
         # 3b. Colunas do acervo em firearms (pessoal/clube, GTS e documentos).
         if 'firearms' in existing_tables:
