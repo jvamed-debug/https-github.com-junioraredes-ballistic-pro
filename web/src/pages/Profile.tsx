@@ -5,6 +5,10 @@ import {
   applyLayout, applyTheme, getTheme, LAYOUTS, THEMES,
   type Layout, type Theme,
 } from "../theme.ts";
+import {
+  disableNotifications, enableNotifications, getNotifyPref,
+  notifyEnabled, notifySupported,
+} from "../notify.ts";
 
 export function Profile({ user, onUpdated, layout, onLayoutChange }: {
   user: User;
@@ -13,6 +17,26 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
   onLayoutChange: (l: Layout) => void;
 }) {
   const [theme, setTheme] = useState<Theme>(getTheme());
+  const [notify, setNotify] = useState<boolean>(() => notifyEnabled());
+  const [notifyMsg, setNotifyMsg] = useState<string | null>(null);
+
+  async function toggleNotify() {
+    setNotifyMsg(null);
+    if (notify || getNotifyPref()) {
+      disableNotifications();
+      setNotify(false);
+      return;
+    }
+    const ok = await enableNotifications();
+    setNotify(ok);
+    if (!ok) {
+      setNotifyMsg(
+        notifySupported()
+          ? "Permissão de notificações negada. Habilite nas configurações do navegador."
+          : "Este navegador não suporta notificações.",
+      );
+    }
+  }
   const [name, setName] = useState(user.name ?? "");
   const [email, setEmail] = useState(user.email ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
@@ -152,6 +176,20 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+          Alertas de vencimento
+        </h2>
+        <p className="mb-3 text-xs text-[var(--muted)]">
+          Receba notificações do dispositivo quando um documento, CRAF ou GTS
+          estiver perto de vencer — o app avisa ao abrir.
+        </p>
+        <button className="btn btn-ghost" onClick={toggleNotify}>
+          {notify ? "🔔 Notificações ativadas — desativar" : "🔕 Ativar notificações"}
+        </button>
+        {notifyMsg && <p className="mt-2 text-sm text-[var(--wind)]">{notifyMsg}</p>}
       </section>
 
       <section className="card p-4">
