@@ -9,6 +9,7 @@ import { Documents } from "./pages/Documents.tsx";
 import { Legislacao } from "./pages/Legislacao.tsx";
 import { Events } from "./pages/Events.tsx";
 import { Places } from "./pages/Places.tsx";
+import { ResetPassword } from "./pages/ResetPassword.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
 import { Reloading } from "./pages/Reloading.tsx";
@@ -48,6 +49,11 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<TabId>("painel");
   const [layout, setLayout] = useState<Layout>(getLayout());
+  //  Link de recuperação de senha: ?reset=<token> na URL abre a tela de nova
+  //  senha, mesmo sem estar logado.
+  const [resetToken, setResetToken] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get("reset"),
+  );
 
   //  No layout Essencial, escondemos as abas técnicas. Se a aba atual for uma
   //  delas, volta ao Painel para não ficar numa tela invisível.
@@ -74,6 +80,19 @@ export function App() {
   function onLogout() {
     api.logout();
     setUser(null);
+  }
+
+  if (resetToken) {
+    return (
+      <ResetPassword
+        token={resetToken}
+        onDone={() => {
+          //  Limpa o ?reset= da URL e volta ao fluxo normal (login).
+          window.history.replaceState({}, "", window.location.pathname);
+          setResetToken(null);
+        }}
+      />
+    );
   }
 
   if (!ready) {

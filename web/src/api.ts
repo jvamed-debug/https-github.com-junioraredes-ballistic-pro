@@ -389,6 +389,18 @@ export const api = {
     }),
   me: () => request<User>("/api/auth/me"),
 
+  // Recuperação de senha
+  forgotPassword: (identifier: string) =>
+    request<{ detail: string; reset_token?: string | null }>("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ identifier }),
+    }),
+  resetPassword: (token: string, newPassword: string) =>
+    request<{ detail: string }>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, new_password: newPassword }),
+    }),
+
   // WebAuthn / passkeys (login por biometria)
   webauthnAvailable: () =>
     request<{ available: boolean }>("/api/auth/webauthn/available"),

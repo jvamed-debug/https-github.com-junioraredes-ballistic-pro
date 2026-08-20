@@ -5,16 +5,20 @@ bloqueio de forca-bruta, recuperacao anti-enumeracao) ja vive em core.auth e e
 reaproveitada aqui — a API so acrescenta a emissao/validacao do token JWT.
 """
 
+import os
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.schemas import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
     MessageResponse,
     ProfileUpdateRequest,
     RecoverRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserOut,
 )
@@ -22,15 +26,24 @@ from api.security import create_access_token, get_current_user, serialize_user
 from core.auth import (
     authenticate,
     clear_login_attempts,
+    create_reset_token,
     login_lock_remaining,
     record_failed_login,
     recover_password,
     register_user,
+    reset_password_with_token,
 )
 from core.models import User, managed_session
 from schemas import ProfileUpdate
+from services.mailer import app_base_url, send_password_reset
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+#  Mensagem generica (anti-enumeracao): mesma resposta havendo conta ou nao.
+_FORGOT_MSG = (
+    "Se os dados informados corresponderem a uma conta, enviaremos um link de "
+    "redefinição de senha. Verifique seu e-mail."
+)
 
 
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
@@ -71,6 +84,34 @@ def recover(req: RecoverRequest) -> MessageResponse:
     #  Resposta sempre generica (anti-enumeracao) — a decisao de logar ou nao
     #  fica dentro de recover_password.
     _, message = recover_password(req.identifier)
+    return MessageResponse(detail=message)
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+def forgot_password(req: ForgotPasswordRequest) -> ForgotPasswordResponse:
+    """Gera o link de recuperação e o envia por e-mail (se SMTP configurado).
+
+    Resposta sempre genérica — nunca revela se a conta existe. Se não houver
+    SMTP e AUTH_RESET_EXPOSE_TOKEN estiver ligado, o token volta na resposta
+    (apenas para uso em dev/teste).
+    """
+    token, email = create_reset_token(req.identifier)
+    reset_token = None
+    if token:
+        reset_url = f"{app_base_url()}/?reset={token}"
+        sent = send_password_reset(email or "", reset_url)
+        #  Sem e-mail configurado/entregue: expoe o token so se explicitamente
+        #  autorizado (dev/teste). Em producao com SMTP, nunca vaza.
+        if not sent and os.getenv("AUTH_RESET_EXPOSE_TOKEN", "").lower() in ("1", "true", "yes"):
+            reset_token = token
+    return ForgotPasswordResponse(detail=_FORGOT_MSG, reset_token=reset_token)
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(req: ResetPasswordRequest) -> MessageResponse:
+    ok, message = reset_password_with_token(req.token, req.new_password)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
     return MessageResponse(detail=message)
 
 

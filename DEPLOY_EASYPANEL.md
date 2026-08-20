@@ -122,6 +122,28 @@ continua funcionando por heurística (texto do PDF + regras), então o upload e 
 etiqueta nunca dependem da IA — a chave só deixa a extração mais precisa. O
 arquivo é guardado no próprio banco (sem S3); PDFs vão até **8 MB**.
 
+#### Recuperação de senha por e-mail (SMTP) — opcional
+
+O link "Esqueci minha senha" (tela de login) gera um token de redefinição com
+validade de 1 hora, uso único. Para **enviar o link por e-mail**, configure no
+serviço `api`:
+
+| Variável | Valor |
+|----------|-------|
+| `SMTP_HOST` | host do servidor SMTP (ex.: `smtp.gmail.com`) |
+| `SMTP_PORT` | porta (587 STARTTLS, 465 SSL) — padrão 587 |
+| `SMTP_USER` | usuário/login SMTP (opcional se o relay não exige) |
+| `SMTP_PASSWORD` | senha/app-password SMTP |
+| `SMTP_FROM` | e-mail remetente (ex.: `no-reply@seudominio.com`) |
+| `SMTP_SSL` | `1` para conexão SSL direta (porta 465); senão usa STARTTLS |
+| `APP_BASE_URL` | URL pública do app (ex.: `https://app.seudominio.com`) para montar o link |
+
+Precisa que a **política de rede** libere saída para o host SMTP. A resposta ao
+pedido é **sempre genérica** (não revela se a conta existe). **Sem SMTP**
+configurado, nada é enviado; para testar o fluxo em desenvolvimento, defina
+`AUTH_RESET_EXPOSE_TOKEN=1` — aí o token volta na resposta e a própria tela
+oferece o botão "Redefinir senha agora". **Nunca** ligue essa flag em produção.
+
 #### Clima automático no DOPE (Open-Meteo) — opcional
 
 O botão "📍 Puxar clima" na aba DOPE preenche a atmosfera (temperatura, pressão,

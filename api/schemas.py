@@ -134,6 +134,22 @@ class RecoverRequest(BaseModel):
     identifier: str = Field(..., description="E-mail ou telefone cadastrado.")
 
 
+class ForgotPasswordRequest(BaseModel):
+    identifier: str = Field(..., description="Usuário, e-mail ou telefone cadastrado.")
+
+
+class ForgotPasswordResponse(BaseModel):
+    detail: str
+    #  Preenchido só quando não há SMTP e AUTH_RESET_EXPOSE_TOKEN está ligado
+    #  (uso em dev/teste). Em produção com e-mail configurado, fica None.
+    reset_token: Optional[str] = None
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=8)
+
+
 # WebAuthn / passkeys (login por biometria) ---------------------------------
 
 
