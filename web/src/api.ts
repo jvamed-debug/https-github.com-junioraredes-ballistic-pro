@@ -110,6 +110,26 @@ export type FirearmAlert = {
   collection: string;
 };
 
+export type Document = {
+  id: number;
+  folder: string;
+  title: string;
+  number?: string | null;
+  issue_date?: string | null;
+  expiration?: string | null;
+  remind_days: number;
+  file_url?: string | null;
+  notes?: string | null;
+};
+
+export type DocumentAlert = {
+  document_id: number;
+  title: string;
+  folder: string;
+  expiration: string;
+  days_left: number;
+};
+
 export type Advice = { content: string; provider: string; confidence: string };
 
 export type Insights = {
@@ -378,6 +398,16 @@ export const api = {
     request<void>(`/api/firearms/${id}`, { method: "DELETE" }),
   firearmAlerts: (days?: number) =>
     request<FirearmAlert[]>(`/api/firearms/alerts${days != null ? `?days=${days}` : ""}`),
+
+  // Documentos
+  listDocuments: () => request<Document[]>("/api/documents"),
+  documentAlerts: () => request<DocumentAlert[]>("/api/documents/alerts"),
+  createDocument: (body: Omit<Document, "id">) =>
+    request<Document>("/api/documents", { method: "POST", body: JSON.stringify(body) }),
+  updateDocument: (id: number, body: Omit<Document, "id">) =>
+    request<Document>(`/api/documents/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteDocument: (id: number) =>
+    request<void>(`/api/documents/${id}`, { method: "DELETE" }),
 
   // Logbook
   listLogbook: () => request<LogEntry[]>("/api/logbook"),

@@ -159,6 +159,7 @@ class User(Base):
     passkeys = relationship("WebAuthnCredential", back_populates="user", cascade="all, delete-orphan")
     dope_cards = relationship("DopeCard", back_populates="user", cascade="all, delete-orphan")
     activities = relationship("Activity", back_populates="user", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -334,6 +335,31 @@ class Activity(Base):
 
     user = relationship("User", back_populates="activities")
     firearm = relationship("Firearm")
+
+
+class Document(Base):
+    """Documento do CAC guardado em pasta/categoria, com validade e lembrete.
+
+    Cobre o que nao pertence a uma arma especifica (CR, filiacao a clube,
+    apostilamentos, comprovantes, laudos) — o acervo cuida de CRAF/GTS por
+    arma; aqui ficam os papeis pessoais e do clube, organizados por pasta.
+    """
+    __tablename__ = 'documents'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    #  Pasta/categoria livre (CR, Clube, Apostilamento, Pessoal, ...).
+    folder = Column(String, nullable=False, default="Geral")
+    title = Column(String, nullable=False)
+    number = Column(EncryptedString)         # numero do documento (sensivel)
+    issue_date = Column(Date)                 # emissao
+    expiration = Column(Date)                 # validade (dispara lembrete)
+    #  Antecedencia, em dias, para lembrar da renovacao (default 30).
+    remind_days = Column(Integer, default=30)
+    file_url = Column(String)                 # link do digitalizado (opcional)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="documents")
 
 
 class WebAuthnCredential(Base):
