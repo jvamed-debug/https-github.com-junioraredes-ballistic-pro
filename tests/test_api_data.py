@@ -109,6 +109,71 @@ class TestFirearms:
         assert client.get("/api/firearms", headers=hb).json() == []
         assert client.delete(f"/api/firearms/{gid}", headers=hb).status_code == 404
 
+    def test_collection_defaults_to_pessoal(self, client):
+        h = _auth(client)
+        r = client.post("/api/firearms", headers=h, json={"model": "Glock G17"})
+        assert r.json()["collection"] == "pessoal"
+
+    def test_collection_clube_and_gts_roundtrip(self, client):
+        h = _auth(client)
+        r = client.post("/api/firearms", headers=h, json={
+            "model": "CBC 8265", "collection": "Clube", "gts": "GTS-42",
+            "gts_expiration": "2027-01-01", "craf_doc_url": "s3://craf.pdf",
+        })
+        assert r.status_code == 201
+        body = r.json()
+        assert body["collection"] == "clube"  # normalizado p/ minusculo
+        assert body["gts"] == "GTS-42"  # cifrado no banco, claro na resposta
+        assert body["craf_doc_url"] == "s3://craf.pdf"
+
+    def test_invalid_collection_rejected(self, client):
+        h = _auth(client)
+        r = client.post("/api/firearms", headers=h, json={"model": "X22", "collection": "casa"})
+        assert r.status_code == 422
+
+
+class TestFirearmAlerts:
+    def test_requires_auth(self, client):
+        assert client.get("/api/firearms/alerts").status_code == 401
+
+    def test_lists_expired_and_expiring_sorted(self, client):
+        from datetime import date, timedelta
+
+        h = _auth(client)
+        today = date.today()
+        # CRAF vencido ha 10 dias.
+        client.post("/api/firearms", headers=h, json={
+            "model": "Vencida", "expiration": str(today - timedelta(days=10)),
+        })
+        # GTS vencendo em 5 dias.
+        client.post("/api/firearms", headers=h, json={
+            "model": "Perto", "gts_expiration": str(today + timedelta(days=5)),
+        })
+        # Documento longe (fora da janela de 60 dias) — nao deve aparecer.
+        client.post("/api/firearms", headers=h, json={
+            "model": "Longe", "expiration": str(today + timedelta(days=400)),
+        })
+        alerts = client.get("/api/firearms/alerts", headers=h).json()
+        assert len(alerts) == 2
+        assert alerts[0]["model"] == "Vencida" and alerts[0]["days_left"] == -10
+        assert alerts[0]["doc"] == "CRAF"
+        assert alerts[1]["model"] == "Perto" and alerts[1]["doc"] == "GTS"
+
+    def test_days_window_and_isolation(self, client):
+        from datetime import date, timedelta
+
+        ha = _auth(client, "alice")
+        hb = _auth(client, "bob")
+        today = date.today()
+        client.post("/api/firearms", headers=ha, json={
+            "model": "Em90", "expiration": str(today + timedelta(days=90)),
+        })
+        # Janela padrao (60) nao pega 90 dias; janela ampla (120) pega.
+        assert client.get("/api/firearms/alerts", headers=ha).json() == []
+        assert len(client.get("/api/firearms/alerts?days=120", headers=ha).json()) == 1
+        # bob nao ve nada de alice.
+        assert client.get("/api/firearms/alerts?days=120", headers=hb).json() == []
+
 
 class TestLogbook:
     def test_create_defaults_date_today(self, client):

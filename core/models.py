@@ -203,10 +203,18 @@ class Firearm(Base):
     sigma = Column(EncryptedString)
     craf = Column(EncryptedString)
     serial = Column(EncryptedString)
-    expiration = Column(Date)
+    expiration = Column(Date)  # validade do CRAF
     image_url = Column(String) # URL para imagem no S3
 
-    
+    #  Acervo: separa o que e do proprio atirador do que pertence ao clube.
+    collection = Column(String, default="pessoal")  # pessoal | clube
+    #  GTS (Guia de Trafego): numero cifrado + validade + documento anexado.
+    gts = Column(EncryptedString)
+    gts_expiration = Column(Date)
+    #  Documentos anexados (referencia/URL): CRAF e GTS digitalizados.
+    craf_doc_url = Column(String)
+    gts_doc_url = Column(String)
+
     owner = relationship("User", back_populates="firearms")
     sessions = relationship("ReloadSession", back_populates="firearm")
 
@@ -469,6 +477,23 @@ def ensure_schema_compliance(engine_to_check):
                         print(f"[SCHEMA] Coluna image_url adicionada a {table}.")
                     except Exception as e:
                         print(f"[SCHEMA] Falha ao adicionar image_url a {table}: {e}")
+
+        # 3b. Colunas do acervo em firearms (pessoal/clube, GTS e documentos).
+        if 'firearms' in existing_tables:
+            f_cols = [c['name'] for c in inspector.get_columns('firearms')]
+            for col_name, col_type in [
+                ('collection', "VARCHAR DEFAULT 'pessoal'"),
+                ('gts', 'VARCHAR'),
+                ('gts_expiration', 'DATE'),
+                ('craf_doc_url', 'VARCHAR'),
+                ('gts_doc_url', 'VARCHAR'),
+            ]:
+                if col_name not in f_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE firearms ADD COLUMN {col_name} {col_type}"))
+                        print(f"[SCHEMA] Coluna {col_name} adicionada a firearms.")
+                    except Exception as e:
+                        print(f"[SCHEMA] Falha ao adicionar {col_name} a firearms: {e}")
 
         # 4. Verificar colunas de sessão de recarga (primer, case, velocity_sd)
         if 'reload_sessions' in existing_tables:

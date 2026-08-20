@@ -15,7 +15,7 @@ from datetime import date
 from datetime import date as DateType
 from typing import Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class WeatherOut(BaseModel):
@@ -213,12 +213,35 @@ class FirearmIn(BaseModel):
     serial: Optional[str] = None
     sigma: Optional[str] = None
     craf: Optional[str] = None
-    expiration: Optional[date] = None
+    expiration: Optional[DateType] = None  # validade do CRAF
+    collection: str = "pessoal"  # pessoal | clube
+    gts: Optional[str] = None
+    gts_expiration: Optional[DateType] = None
+    craf_doc_url: Optional[str] = None
+    gts_doc_url: Optional[str] = None
+
+    @field_validator("collection")
+    @classmethod
+    def _collection_valida(cls, v: str) -> str:
+        v = (v or "pessoal").strip().lower()
+        if v not in ("pessoal", "clube"):
+            raise ValueError("collection deve ser 'pessoal' ou 'clube'.")
+        return v
 
 
 class FirearmOut(FirearmIn):
     id: int
     image_url: Optional[str] = None
+
+
+class FirearmAlert(BaseModel):
+    """Um documento de arma vencido ou perto de vencer."""
+    firearm_id: int
+    model: str
+    doc: str  # "CRAF" | "GTS"
+    expiration: DateType
+    days_left: int  # negativo = vencido
+    collection: str
 
 
 class LogbookIn(BaseModel):

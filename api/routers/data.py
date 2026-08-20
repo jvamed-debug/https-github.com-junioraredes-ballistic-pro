@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.schemas import (
+    FirearmAlert,
     FirearmIn,
     FirearmOut,
     InventoryIn,
@@ -52,6 +53,11 @@ def _gun_out(f: Firearm) -> dict:
         "craf": f.craf,
         "expiration": f.expiration,
         "image_url": f.image_url,
+        "collection": f.collection or "pessoal",
+        "gts": f.gts,
+        "gts_expiration": f.gts_expiration,
+        "craf_doc_url": f.craf_doc_url,
+        "gts_doc_url": f.gts_doc_url,
     }
 
 
@@ -151,6 +157,35 @@ def delete_firearm(gun_id: int, current=Depends(get_current_user)):
     with managed_session() as db:
         gun = _owned_or_404(db, Firearm, gun_id, current["id"])
         db.delete(gun)
+
+
+@router.get("/firearms/alerts", response_model=list[FirearmAlert])
+def firearm_alerts(days: int = 60, current=Depends(get_current_user)):
+    """Documentos (CRAF/GTS) do acervo vencidos ou vencendo em ate `days` dias.
+
+    Ordenados do mais urgente (mais vencido) ao menos. `days_left` negativo
+    indica documento ja vencido.
+    """
+    today = date.today()
+    with managed_session() as db:
+        rows = db.query(Firearm).filter_by(user_id=current["id"]).all()
+        alerts: list[FirearmAlert] = []
+        for f in rows:
+            for doc, exp in (("CRAF", f.expiration), ("GTS", f.gts_expiration)):
+                if exp is None:
+                    continue
+                days_left = (exp - today).days
+                if days_left <= days:
+                    alerts.append(FirearmAlert(
+                        firearm_id=f.id,
+                        model=f.model,
+                        doc=doc,
+                        expiration=exp,
+                        days_left=days_left,
+                        collection=f.collection or "pessoal",
+                    ))
+    alerts.sort(key=lambda a: a.days_left)
+    return alerts
 
 
 # ------------------------------- logbook ----------------------------------
