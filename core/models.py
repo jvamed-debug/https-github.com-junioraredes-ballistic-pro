@@ -161,6 +161,7 @@ class User(Base):
     activities = relationship("Activity", back_populates="user", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
+    places = relationship("Place", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -383,6 +384,31 @@ class Event(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="events")
+
+
+class Place(Base):
+    """Clube, loja ou estande na lista de locais do atirador.
+
+    Uma agenda de lugares uteis (onde treinar, onde comprar) com endereco e,
+    opcionalmente, coordenadas — o app monta os links de navegacao (Google
+    Maps/Waze) a partir daqui. Sem mapa proprio: e lista + navegacao.
+    """
+    __tablename__ = 'places'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    name = Column(String, nullable=False)
+    #  clube | loja | estande | outro
+    kind = Column(String, default="clube")
+    address = Column(String)
+    city = Column(String)
+    lat = Column(Float)
+    lng = Column(Float)
+    phone = Column(String)
+    url = Column(String)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="places")
 
 
 class WebAuthnCredential(Base):
