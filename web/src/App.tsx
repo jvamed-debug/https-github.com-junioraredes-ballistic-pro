@@ -21,6 +21,7 @@ import { Performance } from "./pages/Performance.tsx";
 import { Target } from "./pages/Target.tsx";
 import { Profile } from "./pages/Profile.tsx";
 import { getLayout, type Layout } from "./theme.ts";
+import { runAlertCheck } from "./notify.ts";
 
 //  `tech: true` marca as abas de balística/recarga que o layout "Essencial"
 //  esconde — o dia a dia do CAC fica sempre visível.
@@ -76,6 +77,16 @@ export function App() {
       .catch(() => api.logout())
       .finally(() => setReady(true));
   }, []);
+
+  //  Com o usuário logado, checa os vencimentos e dispara as notificações do
+  //  navegador (se ativadas) — ao abrir e sempre que o app volta ao foco.
+  useEffect(() => {
+    if (!user) return;
+    runAlertCheck();
+    const onFocus = () => runAlertCheck();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user]);
 
   function onLogout() {
     api.logout();
