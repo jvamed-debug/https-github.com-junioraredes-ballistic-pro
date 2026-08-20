@@ -8,6 +8,7 @@ import { Acervo } from "./pages/Acervo.tsx";
 import { Documents } from "./pages/Documents.tsx";
 import { Legislacao } from "./pages/Legislacao.tsx";
 import { Events } from "./pages/Events.tsx";
+import { Places } from "./pages/Places.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
 import { Reloading } from "./pages/Reloading.tsx";
@@ -28,6 +29,7 @@ const TABS = [
   { id: "eventos", label: "🏆 Eventos" },
   { id: "acervo", label: "🔫 Acervo" },
   { id: "docs", label: "📄 Documentos" },
+  { id: "locais", label: "🗺️ Locais" },
   { id: "dope", label: "🎯 DOPE", tech: true },
   { id: "reload", label: "📋 Recarga", tech: true },
   { id: "inv", label: "📦 Inventário", tech: true },
@@ -134,6 +136,7 @@ export function App() {
         {tab === "eventos" && <Events />}
         {tab === "acervo" && <Acervo />}
         {tab === "docs" && <Documents />}
+        {tab === "locais" && <Places />}
         {tab === "dope" && <Dope />}
         {tab === "reload" && <Reloading />}
         {tab === "inv" && <Inventory />}

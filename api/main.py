@@ -21,6 +21,7 @@ from api.routers import (
     events,
     insights,
     level,
+    places,
     reloading,
     reports,
     targets,
@@ -66,6 +67,7 @@ app.include_router(activities.router)
 app.include_router(level.router)
 app.include_router(documents.router)
 app.include_router(events.router)
+app.include_router(places.router)
 
 
 @app.get("/api/health", tags=["meta"])

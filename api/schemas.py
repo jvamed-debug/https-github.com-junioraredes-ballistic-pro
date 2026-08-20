@@ -370,6 +370,33 @@ class EventOut(EventIn):
     id: int
 
 
+_PLACE_KINDS = {"clube", "loja", "estande", "outro"}
+
+
+class PlaceIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    kind: str = "clube"
+    address: Optional[str] = None
+    city: Optional[str] = None
+    lat: Optional[float] = Field(None, ge=-90, le=90)
+    lng: Optional[float] = Field(None, ge=-180, le=180)
+    phone: Optional[str] = None
+    url: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator("kind")
+    @classmethod
+    def _kind_valido(cls, v: str) -> str:
+        v = (v or "clube").strip().lower()
+        if v not in _PLACE_KINDS:
+            raise ValueError(f"kind deve ser um de {sorted(_PLACE_KINDS)}.")
+        return v
+
+
+class PlaceOut(PlaceIn):
+    id: int
+
+
 class DopeCardIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=80)
     firearm_id: Optional[int] = None

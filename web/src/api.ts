@@ -149,6 +149,21 @@ export type Event = {
   notes?: string | null;
 };
 
+export type PlaceKind = "clube" | "loja" | "estande" | "outro";
+
+export type Place = {
+  id: number;
+  name: string;
+  kind: PlaceKind;
+  address?: string | null;
+  city?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  phone?: string | null;
+  url?: string | null;
+  notes?: string | null;
+};
+
 export type Advice = { content: string; provider: string; confidence: string };
 
 export type Insights = {
@@ -427,6 +442,15 @@ export const api = {
     request<Event>(`/api/events/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteEvent: (id: number) =>
     request<void>(`/api/events/${id}`, { method: "DELETE" }),
+
+  // Locais (clubes, lojas, estandes)
+  listPlaces: () => request<Place[]>("/api/places"),
+  createPlace: (body: Omit<Place, "id">) =>
+    request<Place>("/api/places", { method: "POST", body: JSON.stringify(body) }),
+  updatePlace: (id: number, body: Omit<Place, "id">) =>
+    request<Place>(`/api/places/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deletePlace: (id: number) =>
+    request<void>(`/api/places/${id}`, { method: "DELETE" }),
 
   // Documentos
   listDocuments: () => request<Document[]>("/api/documents"),
