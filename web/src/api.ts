@@ -94,6 +94,20 @@ export type Firearm = {
   craf?: string | null;
   expiration?: string | null;
   image_url?: string | null;
+  collection?: "pessoal" | "clube";
+  gts?: string | null;
+  gts_expiration?: string | null;
+  craf_doc_url?: string | null;
+  gts_doc_url?: string | null;
+};
+
+export type FirearmAlert = {
+  firearm_id: number;
+  model: string;
+  doc: "CRAF" | "GTS";
+  expiration: string;
+  days_left: number;
+  collection: string;
 };
 
 export type Advice = { content: string; provider: string; confidence: string };
@@ -354,12 +368,16 @@ export const api = {
   deleteInventory: (id: number) =>
     request<void>(`/api/inventory/${id}`, { method: "DELETE" }),
 
-  // Armas
+  // Armas / acervo
   listFirearms: () => request<Firearm[]>("/api/firearms"),
   createFirearm: (body: Omit<Firearm, "id" | "image_url">) =>
     request<Firearm>("/api/firearms", { method: "POST", body: JSON.stringify(body) }),
+  updateFirearm: (id: number, body: Omit<Firearm, "id" | "image_url">) =>
+    request<Firearm>(`/api/firearms/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteFirearm: (id: number) =>
     request<void>(`/api/firearms/${id}`, { method: "DELETE" }),
+  firearmAlerts: (days?: number) =>
+    request<FirearmAlert[]>(`/api/firearms/alerts${days != null ? `?days=${days}` : ""}`),
 
   // Logbook
   listLogbook: () => request<LogEntry[]>("/api/logbook"),
