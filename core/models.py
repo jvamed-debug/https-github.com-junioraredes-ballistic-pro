@@ -162,6 +162,7 @@ class User(Base):
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
     places = relationship("Place", back_populates="user", cascade="all, delete-orphan")
+    password_resets = relationship("PasswordReset", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -414,6 +415,24 @@ class Place(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="places")
+
+
+class PasswordReset(Base):
+    """Token de recuperacao de senha (link "esqueci minha senha").
+
+    Guardamos apenas o HASH do token (sha256), nunca o token em claro — quem
+    ler o banco nao consegue redefinir a senha de ninguem. O token vive pouco
+    (expires_at) e so pode ser usado uma vez (used_at).
+    """
+    __tablename__ = 'password_resets'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="password_resets")
 
 
 class WebAuthnCredential(Base):

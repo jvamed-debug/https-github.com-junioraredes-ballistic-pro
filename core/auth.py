@@ -1,7 +1,23 @@
-from datetime import datetime, timedelta
+import hashlib
+import secrets
+from datetime import datetime, timedelta, timezone
 
-from core.models import managed_session, User, LoginAttempt, blind_index, log_action
+from core.models import (
+    LoginAttempt,
+    PasswordReset,
+    User,
+    blind_index,
+    log_action,
+    managed_session,
+)
 from schemas import UserCreate
+
+#  Validade do link de recuperacao de senha.
+RESET_TOKEN_TTL = timedelta(hours=1)
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
 
 #  Limite de forca-bruta no servidor. Antes vivia em st.session_state (por
 #  sessao), entao reconectar zerava a contagem. Agora e persistido.
@@ -130,3 +146,73 @@ def recover_password(identifier):
             
     # Retornamos sempre a mesma mensagem (Segurança contra Enumeração)
     return True, "Se os dados informados estiverem corretos, você receberá instruções de recuperação em instantes."
+
+
+def create_reset_token(identifier):
+    """Gera um token de redefinicao para o usuario dono do identificador.
+
+    `identifier` pode ser username, e-mail ou telefone. Se achar o usuario,
+    guarda o HASH de um token novo (com validade) e devolve
+    (token_em_claro, email_do_usuario) para o chamador entregar o link. Se nao
+    achar, devolve (None, None) — o endpoint responde generico de qualquer
+    forma, sem revelar se a conta existe.
+    """
+    ident = (identifier or "").strip()
+    if not ident:
+        return None, None
+    id_hash = blind_index(ident)
+    with managed_session() as session:
+        user = session.query(User).filter(
+            (User.username == ident)
+            | (User.email_hash == id_hash)
+            | (User.phone_hash == id_hash)
+        ).first()
+        if not user:
+            return None, None
+
+        token = secrets.token_urlsafe(32)
+        session.add(PasswordReset(
+            user_id=user.id,
+            token_hash=_hash_token(token),
+            expires_at=datetime.now(timezone.utc) + RESET_TOKEN_TTL,
+        ))
+        uid = user.id
+        email = user.email  # descriptografado dentro da sessao
+        session.commit()
+    #  Auditoria fora da sessao (log_action abre a sua propria — evita lock).
+    log_action(uid, "auth_reset_requested", "users", uid)
+    return token, email
+
+
+def reset_password_with_token(token, new_password):
+    """Consome um token valido e troca a senha. (ok, mensagem)."""
+    if not token:
+        return False, "Link inválido."
+    try:
+        UserCreate(username="placeholder", password=new_password)
+    except Exception:
+        return False, "A nova senha deve ter ao menos 8 caracteres."
+
+    with managed_session() as session:
+        pr = session.query(PasswordReset).filter_by(token_hash=_hash_token(token)).first()
+        now = datetime.now(timezone.utc)
+        if pr is None or pr.used_at is not None:
+            return False, "Link inválido ou já utilizado."
+        #  expires_at pode vir "naive" do SQLite; compara em UTC.
+        exp = pr.expires_at if pr.expires_at.tzinfo else pr.expires_at.replace(tzinfo=timezone.utc)
+        if exp < now:
+            return False, "Link expirado. Solicite um novo."
+
+        user = session.get(User, pr.user_id)
+        if user is None:
+            return False, "Link inválido."
+        user.set_password(new_password)
+        pr.used_at = now
+        #  Invalida quaisquer outros tokens pendentes do mesmo usuario.
+        for other in session.query(PasswordReset).filter_by(user_id=user.id, used_at=None):
+            other.used_at = now
+        uid = user.id
+        session.commit()
+    #  Auditoria fora da sessao (log_action abre a sua propria — evita lock).
+    log_action(uid, "auth_reset_completed", "users", uid)
+    return True, "Senha redefinida com sucesso. Faça login com a nova senha."

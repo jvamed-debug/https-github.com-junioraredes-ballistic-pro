@@ -14,6 +14,27 @@ export function Login({ onAuthed }: { onAuthed: (u: User) => void }) {
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [passkeyOn, setPasskeyOn] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const [forgotId, setForgotId] = useState("");
+  const [forgotMsg, setForgotMsg] = useState<string | null>(null);
+  const [devToken, setDevToken] = useState<string | null>(null);
+
+  async function submitForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setForgotMsg(null);
+    setDevToken(null);
+    setBusy(true);
+    try {
+      const r = await api.forgotPassword(forgotId);
+      setForgotMsg(r.detail);
+      if (r.reset_token) setDevToken(r.reset_token); // só em dev (sem SMTP)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao solicitar recuperação.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // Só oferece biometria se o navegador suporta e o servidor está configurado.
   useEffect(() => {
@@ -77,6 +98,34 @@ export function Login({ onAuthed }: { onAuthed: (u: User) => void }) {
           <p className="text-xs text-[var(--muted)]">Recarga · Balística · DOPE</p>
         </div>
 
+        {forgot ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-[var(--muted)]">
+              Informe seu usuário, e-mail ou telefone. Enviaremos um link para
+              redefinir a senha.
+            </p>
+            <form onSubmit={submitForgot} className="flex flex-col gap-3">
+              <input className="field" placeholder="Usuário, e-mail ou telefone"
+                autoCapitalize="none" value={forgotId}
+                onChange={(e) => setForgotId(e.target.value)} required />
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              {forgotMsg && <p className="text-sm text-emerald-400">{forgotMsg}</p>}
+              {devToken && (
+                <a href={`/?reset=${devToken}`}
+                  className="rounded-md bg-[var(--panel-2)] px-3 py-2 text-center text-sm font-semibold text-[var(--accent)]">
+                  Redefinir senha agora →
+                </a>
+              )}
+              <button className="btn" disabled={busy}>{busy ? "…" : "ENVIAR LINK"}</button>
+            </form>
+            <button type="button"
+              onClick={() => { setForgot(false); setError(null); setForgotMsg(null); setDevToken(null); }}
+              className="text-xs text-[var(--muted)] underline">
+              ← Voltar ao login
+            </button>
+          </div>
+        ) : (
+        <>
         <div className="mb-4 grid grid-cols-2 gap-2">
           {(["login", "register"] as Mode[]).map((m) => (
             <button
@@ -137,6 +186,14 @@ export function Login({ onAuthed }: { onAuthed: (u: User) => void }) {
           </button>
         </form>
 
+        {mode === "login" && (
+          <button type="button"
+            onClick={() => { setForgot(true); setError(null); setInfo(null); setForgotId(username); }}
+            className="mt-3 w-full text-center text-xs text-[var(--muted)] underline">
+            Esqueci minha senha
+          </button>
+        )}
+
         {mode === "login" && passkeyOn && (
           <>
             <div className="my-4 flex items-center gap-3 text-[0.7rem] uppercase tracking-wide text-[var(--muted)]">
@@ -148,6 +205,8 @@ export function Login({ onAuthed }: { onAuthed: (u: User) => void }) {
               🔓 Entrar com biometria
             </button>
           </>
+        )}
+        </>
         )}
       </div>
     </div>
