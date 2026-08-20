@@ -328,6 +328,24 @@ class ActivitySummaryRow(BaseModel):
     last_date: Optional[date] = None
 
 
+class ExpenseMonth(BaseModel):
+    month: str  # "AAAA-MM"
+    total: float
+
+
+class ExpenseCategory(BaseModel):
+    category: str
+    total: float
+
+
+class ExpenseReport(BaseModel):
+    """Gastos das habitualidades no periodo: total, por mes e por categoria."""
+    total: float
+    count: int  # atividades com valor lancado
+    by_month: list[ExpenseMonth]
+    by_category: list[ExpenseCategory]
+
+
 class DopeCardIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=80)
     firearm_id: Optional[int] = None

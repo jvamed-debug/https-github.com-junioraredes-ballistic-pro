@@ -94,3 +94,56 @@ class TestActivities:
         _seed(client, ha)
         assert client.get("/api/activities", headers=hb).json() == []
         assert client.get("/api/activities/summary", headers=hb).json() == []
+
+
+class TestExpenses:
+    def test_requires_auth(self, client):
+        assert client.get("/api/activities/expenses").status_code == 401
+
+    def test_aggregates_by_month_and_category(self, client):
+        h = _auth(client)
+        for cat, d, val in [
+            ("Pistola", "2026-01-10", 100.0),
+            ("Pistola", "2026-01-20", 50.0),
+            ("Carabina", "2026-02-05", 200.0),
+            ("Revólver", "2026-02-15", None),  # sem valor -> ignorado
+        ]:
+            body = {"category": cat, "date": d}
+            if val is not None:
+                body["value"] = val
+            client.post("/api/activities", headers=h, json=body)
+        rep = client.get("/api/activities/expenses", headers=h).json()
+        assert rep["total"] == 350.0
+        assert rep["count"] == 3
+        assert rep["by_month"] == [
+            {"month": "2026-01", "total": 150.0},
+            {"month": "2026-02", "total": 200.0},
+        ]
+        # Categorias ordenadas por gasto (maior primeiro).
+        assert rep["by_category"][0] == {"category": "Carabina", "total": 200.0}
+        assert {"category": "Pistola", "total": 150.0} in rep["by_category"]
+
+    def test_period_filter(self, client):
+        h = _auth(client)
+        client.post("/api/activities", headers=h, json={
+            "category": "Pistola", "date": "2026-01-10", "value": 100.0,
+        })
+        client.post("/api/activities", headers=h, json={
+            "category": "Pistola", "date": "2026-03-10", "value": 80.0,
+        })
+        rep = client.get("/api/activities/expenses?since=2026-02-01", headers=h).json()
+        assert rep["total"] == 80.0 and rep["count"] == 1
+        rep2 = client.get(
+            "/api/activities/expenses?since=2026-01-01&until=2026-02-01", headers=h,
+        ).json()
+        assert rep2["total"] == 100.0
+
+    def test_empty_and_isolation(self, client):
+        ha = _auth(client, "alice")
+        hb = _auth(client, "bob")
+        client.post("/api/activities", headers=ha, json={
+            "category": "Pistola", "value": 100.0,
+        })
+        assert client.get("/api/activities/expenses", headers=hb).json() == {
+            "total": 0.0, "count": 0, "by_month": [], "by_category": [],
+        }

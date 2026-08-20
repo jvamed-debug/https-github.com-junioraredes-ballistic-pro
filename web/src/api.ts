@@ -130,6 +130,13 @@ export type DocumentAlert = {
   days_left: number;
 };
 
+export type ExpenseReport = {
+  total: number;
+  count: number;
+  by_month: Array<{ month: string; total: number }>;
+  by_category: Array<{ category: string; total: number }>;
+};
+
 export type Advice = { content: string; provider: string; confidence: string };
 
 export type Insights = {
@@ -496,6 +503,13 @@ export const api = {
     request<Activity>("/api/activities", { method: "POST", body: JSON.stringify(body) }),
   deleteActivity: (id: number) =>
     request<void>(`/api/activities/${id}`, { method: "DELETE" }),
+  activityExpenses: (since?: string, until?: string) => {
+    const qs = new URLSearchParams();
+    if (since) qs.set("since", since);
+    if (until) qs.set("until", until);
+    const s = qs.toString();
+    return request<ExpenseReport>(`/api/activities/expenses${s ? `?${s}` : ""}`);
+  },
   level: () => request<Level>("/api/level"),
 
   // Painel de insights

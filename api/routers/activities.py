@@ -9,7 +9,12 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from api.schemas import ActivityIn, ActivityOut, ActivitySummaryRow
+from api.schemas import (
+    ActivityIn,
+    ActivityOut,
+    ActivitySummaryRow,
+    ExpenseReport,
+)
 from api.security import get_current_user
 from core.models import Activity, Firearm, managed_session
 
@@ -71,6 +76,47 @@ def summary(
                 row["last_date"] = a.date
     #  Mais frequentes primeiro.
     return sorted(agg.values(), key=lambda r: r["count"], reverse=True)
+
+
+@router.get("/expenses", response_model=ExpenseReport)
+def expenses(
+    since: date | None = Query(None, description="Gastos a partir desta data (inclusive)."),
+    until: date | None = Query(None, description="Gastos ate esta data (inclusive)."),
+    current=Depends(get_current_user),
+):
+    """Gastos lancados nas habitualidades, agregados por mes e por categoria.
+
+    So conta atividades com `value` preenchido. `since`/`until` recortam o
+    periodo — util para o filtro (mes, semestre, ano) do controle de gastos.
+    """
+    with managed_session() as db:
+        q = db.query(Activity).filter_by(user_id=current["id"])
+        if since is not None:
+            q = q.filter(Activity.date >= since)
+        if until is not None:
+            q = q.filter(Activity.date <= until)
+        months: dict[str, float] = {}
+        cats: dict[str, float] = {}
+        total = 0.0
+        count = 0
+        for a in q.all():
+            if not a.value:
+                continue
+            v = float(a.value)
+            total += v
+            count += 1
+            m = a.date.strftime("%Y-%m") if a.date else "—"
+            months[m] = months.get(m, 0.0) + v
+            cats[a.category] = cats.get(a.category, 0.0) + v
+    return ExpenseReport(
+        total=round(total, 2),
+        count=count,
+        by_month=[{"month": m, "total": round(t, 2)} for m, t in sorted(months.items())],
+        by_category=[
+            {"category": c, "total": round(t, 2)}
+            for c, t in sorted(cats.items(), key=lambda kv: kv[1], reverse=True)
+        ],
+    )
 
 
 @router.post("", response_model=ActivityOut, status_code=status.HTTP_201_CREATED)
