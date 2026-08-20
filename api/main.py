@@ -16,6 +16,7 @@ from api.routers import (
     auth,
     ballistics,
     data,
+    documents,
     dope,
     insights,
     level,
@@ -62,6 +63,7 @@ app.include_router(weather.router)
 app.include_router(insights.router)
 app.include_router(activities.router)
 app.include_router(level.router)
+app.include_router(documents.router)
 
 
 @app.get("/api/health", tags=["meta"])

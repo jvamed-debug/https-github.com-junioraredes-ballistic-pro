@@ -244,6 +244,30 @@ class FirearmAlert(BaseModel):
     collection: str
 
 
+class DocumentIn(BaseModel):
+    folder: str = Field("Geral", min_length=1, max_length=60)
+    title: str = Field(..., min_length=1, max_length=120)
+    number: Optional[str] = None
+    issue_date: Optional[DateType] = None
+    expiration: Optional[DateType] = None
+    remind_days: int = Field(30, ge=0, le=365)
+    file_url: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class DocumentOut(DocumentIn):
+    id: int
+
+
+class DocumentAlert(BaseModel):
+    """Documento vencido ou dentro da antecedencia de lembrete."""
+    document_id: int
+    title: str
+    folder: str
+    expiration: DateType
+    days_left: int  # negativo = vencido
+
+
 class LogbookIn(BaseModel):
     caliber: str = Field(..., min_length=2)
     date: Optional[DateType] = None  # default: hoje, resolvido no endpoint

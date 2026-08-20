@@ -5,6 +5,7 @@ import { OfflineBanner } from "./OfflineBanner.tsx";
 import { Login } from "./pages/Login.tsx";
 import { Activities } from "./pages/Activities.tsx";
 import { Acervo } from "./pages/Acervo.tsx";
+import { Documents } from "./pages/Documents.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
 import { Reloading } from "./pages/Reloading.tsx";
@@ -20,6 +21,7 @@ const TABS = [
   { id: "painel", label: "📊 Painel" },
   { id: "hab", label: "📅 Habitualidades" },
   { id: "acervo", label: "🔫 Acervo" },
+  { id: "docs", label: "📄 Documentos" },
   { id: "dope", label: "🎯 DOPE" },
   { id: "reload", label: "📋 Recarga" },
   { id: "inv", label: "📦 Inventário" },
@@ -114,6 +116,7 @@ export function App() {
         {tab === "painel" && <Dashboard />}
         {tab === "hab" && <Activities />}
         {tab === "acervo" && <Acervo />}
+        {tab === "docs" && <Documents />}
         {tab === "dope" && <Dope />}
         {tab === "reload" && <Reloading />}
         {tab === "inv" && <Inventory />}
