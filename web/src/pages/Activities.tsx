@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type Activity, type ActivitySummaryRow } from "../api.ts";
+import { api, type Activity, type ActivitySummaryRow, type Level } from "../api.ts";
 import { ErrorState, Loading } from "../ui.tsx";
 
 const GROUPS = ["Pistola", "Revólver", "Carabina", "Espingarda", "Garrucha", "Outro"];
@@ -15,6 +15,7 @@ function semesterStartISO(): string {
 export function Activities() {
   const [list, setList] = useState<Activity[]>([]);
   const [summary, setSummary] = useState<ActivitySummaryRow[]>([]);
+  const [lvl, setLvl] = useState<Level | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [scope, setScope] = useState<"semester" | "all">("semester");
@@ -35,9 +36,14 @@ export function Activities() {
     setLoading(true);
     try {
       const since = scope === "semester" ? semesterStartISO() : undefined;
-      const [l, s] = await Promise.all([api.listActivities(), api.activitySummary(since)]);
+      const [l, s, lv] = await Promise.all([
+        api.listActivities(),
+        api.activitySummary(since),
+        api.level(),
+      ]);
       setList(l);
       setSummary(s);
+      setLvl(lv);
     } catch (e) {
       setLoadErr(e instanceof Error ? e.message : "Falha ao carregar.");
     } finally {
@@ -76,6 +82,46 @@ export function Activities() {
 
   return (
     <div className="flex flex-col gap-4">
+      {lvl && (
+        <section className="card p-4">
+          <div className="mb-2 flex items-end justify-between">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-[var(--muted)]">Seu nível</div>
+              <div className="text-lg font-bold">
+                <span className="text-[var(--accent)]">Nível {lvl.level}</span> · {lvl.title}
+              </div>
+            </div>
+            {lvl.next_title && (
+              <div className="text-right text-xs text-[var(--muted)]">
+                Próximo: <span className="font-semibold text-[var(--fg)]">{lvl.next_title}</span>
+                {lvl.next_min != null && (
+                  <div>faltam {Math.max(lvl.next_min - lvl.total_activities, 0)} habitualidade(s)</div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--panel-2)]">
+            <div
+              className="h-full rounded-full bg-[var(--accent)] transition-all"
+              style={{ width: `${Math.round(lvl.progress * 100)}%` }}
+            />
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+            {[
+              ["Habitualidades", lvl.total_activities],
+              ["Tiros", lvl.total_shots],
+              ["Competições", lvl.competitions],
+              ["Categorias", lvl.categories],
+            ].map(([label, val]) => (
+              <div key={label as string} className="rounded-lg bg-[var(--panel-2)] p-2">
+                <div className="tabnum text-base font-bold">{val as number}</div>
+                <div className="text-[0.6rem] uppercase tracking-wide text-[var(--muted)]">{label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--muted)]">

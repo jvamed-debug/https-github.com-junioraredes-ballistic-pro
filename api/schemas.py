@@ -260,6 +260,19 @@ class ActivityOut(ActivityIn):
     image_url: Optional[str] = None
 
 
+class LevelOut(BaseModel):
+    level: int
+    title: str
+    total_activities: int
+    total_shots: int
+    competitions: int
+    categories: int          # combinacoes grupo+calibre distintas praticadas
+    current_min: int         # limiar do nivel atual
+    next_min: Optional[int]  # limiar do proximo nivel (None no ultimo)
+    next_title: Optional[str]
+    progress: float          # 0..1 rumo ao proximo nivel
+
+
 class ActivitySummaryRow(BaseModel):
     category: str
     caliber: Optional[str] = None

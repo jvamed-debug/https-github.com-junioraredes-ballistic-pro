@@ -135,6 +135,19 @@ export type ActivitySummaryRow = {
   last_date?: string | null;
 };
 
+export type Level = {
+  level: number;
+  title: string;
+  total_activities: number;
+  total_shots: number;
+  competitions: number;
+  categories: number;
+  current_min: number;
+  next_min: number | null;
+  next_title: string | null;
+  progress: number;
+};
+
 export type Weather = {
   temperature_c: number;
   humidity_pct: number;
@@ -435,6 +448,7 @@ export const api = {
     request<Activity>("/api/activities", { method: "POST", body: JSON.stringify(body) }),
   deleteActivity: (id: number) =>
     request<void>(`/api/activities/${id}`, { method: "DELETE" }),
+  level: () => request<Level>("/api/level"),
 
   // Painel de insights
   insights: () => request<Insights>("/api/insights"),

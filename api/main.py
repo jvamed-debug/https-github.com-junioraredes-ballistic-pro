@@ -18,6 +18,7 @@ from api.routers import (
     data,
     dope,
     insights,
+    level,
     reloading,
     reports,
     targets,
@@ -60,6 +61,7 @@ app.include_router(dope.router)
 app.include_router(weather.router)
 app.include_router(insights.router)
 app.include_router(activities.router)
+app.include_router(level.router)
 
 
 @app.get("/api/health", tags=["meta"])
