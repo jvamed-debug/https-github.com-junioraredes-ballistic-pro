@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-/* Tema tático escuro, alinhado ao app Streamlit atual. */
+/* Tema tático escuro (padrão), alinhado ao app Streamlit atual. Os temas
+   Coyote e Urbano abaixo apenas trocam os tokens — todos os componentes
+   consomem as variáveis, então mudam de cor sem tocar em nada. */
 :root {
   --bg: #0a0e14;
   --panel: #131a24;
@@ -11,6 +13,32 @@
   --accent: #3b82f6;
   --up: #fca5a5;
   --wind: #fcd34d;
+}
+
+/* Coyote — paleta desértica/tan, quente. */
+:root[data-theme="coyote"] {
+  --bg: #17120c;
+  --panel: #241d13;
+  --panel-2: #2f2618;
+  --border: #3f3320;
+  --text: #ede3d3;
+  --muted: #b3a184;
+  --accent: #c08a4f;
+  --up: #e0a482;
+  --wind: #e3b74e;
+}
+
+/* Urbano — cinza urbano, frio e sóbrio. */
+:root[data-theme="urbano"] {
+  --bg: #101216;
+  --panel: #1a1d23;
+  --panel-2: #23272f;
+  --border: #333842;
+  --text: #e6e8ec;
+  --muted: #9aa3b0;
+  --accent: #7c8ea6;
+  --up: #f3a9a9;
+  --wind: #cfd6e0;
 }
 
 html, body, #root { height: 100%; }

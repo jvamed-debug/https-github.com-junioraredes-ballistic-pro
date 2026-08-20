@@ -18,22 +18,25 @@ import { Advisor } from "./pages/Advisor.tsx";
 import { Performance } from "./pages/Performance.tsx";
 import { Target } from "./pages/Target.tsx";
 import { Profile } from "./pages/Profile.tsx";
+import { getLayout, type Layout } from "./theme.ts";
 
+//  `tech: true` marca as abas de balística/recarga que o layout "Essencial"
+//  esconde — o dia a dia do CAC fica sempre visível.
 const TABS = [
   { id: "painel", label: "📊 Painel" },
   { id: "hab", label: "📅 Habitualidades" },
   { id: "eventos", label: "🏆 Eventos" },
   { id: "acervo", label: "🔫 Acervo" },
   { id: "docs", label: "📄 Documentos" },
-  { id: "dope", label: "🎯 DOPE" },
-  { id: "reload", label: "📋 Recarga" },
-  { id: "inv", label: "📦 Inventário" },
-  { id: "log", label: "📔 Logbook" },
-  { id: "perf", label: "📈 Performance" },
-  { id: "alvo", label: "🎯 Alvo" },
+  { id: "dope", label: "🎯 DOPE", tech: true },
+  { id: "reload", label: "📋 Recarga", tech: true },
+  { id: "inv", label: "📦 Inventário", tech: true },
+  { id: "log", label: "📔 Logbook", tech: true },
+  { id: "perf", label: "📈 Performance", tech: true },
+  { id: "alvo", label: "🎯 Alvo", tech: true },
   { id: "cost", label: "💰 Custos" },
   { id: "lei", label: "⚖️ Legislação" },
-  { id: "ia", label: "🤖 IA" },
+  { id: "ia", label: "🤖 IA", tech: true },
   { id: "profile", label: "👤 Perfil" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -42,6 +45,15 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<TabId>("painel");
+  const [layout, setLayout] = useState<Layout>(getLayout());
+
+  //  No layout Essencial, escondemos as abas técnicas. Se a aba atual for uma
+  //  delas, volta ao Painel para não ficar numa tela invisível.
+  const visibleTabs = TABS.filter((t) => layout === "full" || !("tech" in t && t.tech));
+  useEffect(() => {
+    if (!visibleTabs.some((t) => t.id === tab)) setTab("painel");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout]);
 
   // Ao abrir, se há token salvo, tenta recuperar o usuário. Token expirado
   // (401) simplesmente cai para a tela de login.
@@ -99,7 +111,7 @@ export function App() {
         </div>
       </header>
       <nav aria-label="Seções" className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--bg)] px-2 py-2">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -131,7 +143,9 @@ export function App() {
         {tab === "cost" && <Costs />}
         {tab === "lei" && <Legislacao />}
         {tab === "ia" && <Advisor />}
-        {tab === "profile" && <Profile user={user} onUpdated={setUser} />}
+        {tab === "profile" && (
+          <Profile user={user} onUpdated={setUser} layout={layout} onLayoutChange={setLayout} />
+        )}
       </main>
     </div>
   );

@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import { api, type User } from "../api.ts";
 import { startRegistration, supportsWebAuthn } from "../webauthn.ts";
+import {
+  applyLayout, applyTheme, getTheme, LAYOUTS, THEMES,
+  type Layout, type Theme,
+} from "../theme.ts";
 
-export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) => void }) {
+export function Profile({ user, onUpdated, layout, onLayoutChange }: {
+  user: User;
+  onUpdated: (u: User) => void;
+  layout: Layout;
+  onLayoutChange: (l: Layout) => void;
+}) {
+  const [theme, setTheme] = useState<Theme>(getTheme());
   const [name, setName] = useState(user.name ?? "");
   const [email, setEmail] = useState(user.email ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
@@ -34,6 +44,15 @@ export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) 
     } finally {
       setPasskeyBusy(false);
     }
+  }
+
+  function chooseTheme(t: Theme) {
+    setTheme(t);
+    applyTheme(t);
+  }
+  function chooseLayout(l: Layout) {
+    applyLayout(l);
+    onLayoutChange(l);
   }
 
   async function downloadReport() {
@@ -103,6 +122,36 @@ export function Profile({ user, onUpdated }: { user: User; onUpdated: (u: User) 
 
           <button className="btn" disabled={busy}>{busy ? "…" : "SALVAR"}</button>
         </form>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+          Aparência
+        </h2>
+        <div className="mb-2 text-[0.7rem] uppercase tracking-wide text-[var(--muted)]">Tema</div>
+        <div className="mb-4 flex gap-2">
+          {THEMES.map((t) => (
+            <button key={t.id} onClick={() => chooseTheme(t.id)}
+              aria-pressed={theme === t.id}
+              className={"flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-sm " +
+                (theme === t.id ? "border-[var(--accent)]" : "border-[var(--border)] text-[var(--muted)]")}>
+              <span className="inline-block h-4 w-4 rounded-full" style={{ background: t.swatch }} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="mb-2 text-[0.7rem] uppercase tracking-wide text-[var(--muted)]">Layout</div>
+        <div className="flex flex-col gap-2">
+          {LAYOUTS.map((l) => (
+            <button key={l.id} onClick={() => chooseLayout(l.id)}
+              aria-pressed={layout === l.id}
+              className={"rounded-lg border px-3 py-2 text-left text-sm " +
+                (layout === l.id ? "border-[var(--accent)]" : "border-[var(--border)]")}>
+              <span className="font-semibold">{l.label}</span>
+              <span className="block text-xs text-[var(--muted)]">{l.hint}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="card p-4">
