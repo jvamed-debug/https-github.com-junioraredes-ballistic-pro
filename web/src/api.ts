@@ -120,7 +120,11 @@ export type Document = {
   remind_days: number;
   file_url?: string | null;
   notes?: string | null;
+  has_file?: boolean;
+  file_name?: string | null;
 };
+
+export type DocumentUpload = Document & { extraction_source: "ia" | "heuristica" | "vazio" };
 
 export type DocumentAlert = {
   document_id: number;
@@ -461,6 +465,26 @@ export const api = {
     request<Document>(`/api/documents/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteDocument: (id: number) =>
     request<void>(`/api/documents/${id}`, { method: "DELETE" }),
+  uploadDocument: async (file: File): Promise<DocumentUpload> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(BASE + "/api/documents/upload", {
+      method: "POST",
+      headers: { ...tokenHeader() }, // sem Content-Type: o browser põe o boundary
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = `Erro ${res.status}`;
+      try {
+        const b = await res.json();
+        if (b?.detail) detail = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+      } catch { /* corpo não-JSON */ }
+      throw new Error(detail);
+    }
+    return res.json() as Promise<DocumentUpload>;
+  },
+  downloadDocumentFile: (id: number, name?: string | null) =>
+    downloadFile(`/api/documents/${id}/file`, name || `documento_${id}.pdf`),
 
   // Logbook
   listLogbook: () => request<LogEntry[]>("/api/logbook"),

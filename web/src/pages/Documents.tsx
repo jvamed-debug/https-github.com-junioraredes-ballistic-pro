@@ -31,6 +31,30 @@ export function Documents() {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+
+  async function onUpload(file: File | null) {
+    if (!file) return;
+    setUploadMsg(null);
+    setError(null);
+    setUploading(true);
+    try {
+      const doc = await api.uploadDocument(file);
+      const src = doc.extraction_source === "ia"
+        ? "lido com IA"
+        : doc.extraction_source === "heuristica"
+          ? "lido automaticamente"
+          : "sem texto identificável — preencha manualmente";
+      const val = doc.expiration ? `, validade ${br(doc.expiration)}` : "";
+      setUploadMsg(`“${doc.title}” (${src})${val}. Revise a etiqueta abaixo e ajuste se precisar.`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao enviar o PDF.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function load() {
     setLoadErr(null);
@@ -128,8 +152,29 @@ export function Documents() {
         </section>
       )}
 
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+          📤 Enviar PDF
+        </h2>
+        <p className="mb-3 text-xs text-[var(--muted)]">
+          Envie o PDF do documento — o app lê número, validade e tipo, guarda o
+          arquivo e cria a etiqueta com o lembrete de renovação.
+        </p>
+        <label className={"btn btn-ghost inline-flex cursor-pointer items-center justify-center " + (uploading ? "opacity-60" : "")}>
+          {uploading ? "Lendo documento…" : "Escolher PDF"}
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => { onUpload(e.target.files?.[0] ?? null); e.target.value = ""; }}
+          />
+        </label>
+        {uploadMsg && <p className="mt-2 text-sm text-emerald-400">{uploadMsg}</p>}
+      </section>
+
       {list.length === 0 && (
-        <EmptyState icon="📄" title="Nenhum documento" hint="Guarde CR, filiação, apostilamentos e laudos abaixo — com validade e lembrete." />
+        <EmptyState icon="📄" title="Nenhum documento" hint="Envie um PDF acima ou cadastre manualmente — com validade e lembrete." />
       )}
 
       {byFolder.map(([folder, docs]) => (
@@ -159,11 +204,18 @@ export function Documents() {
                           Val. {br(d.expiration)}{t === "expired" ? " · vencido" : t === "soon" ? " · renovar" : ""}
                         </span>
                       )}
+                      {d.number && <span>· nº {d.number}</span>}
                       {d.file_url && (
                         <a href={d.file_url} target="_blank" rel="noreferrer"
                           className="rounded-full bg-[var(--panel-2)] px-2 py-0.5 text-[0.6rem] uppercase text-[var(--accent)]">
-                          📎 Arquivo
+                          📎 Link
                         </a>
+                      )}
+                      {d.has_file && (
+                        <button onClick={() => api.downloadDocumentFile(d.id, d.file_name)}
+                          className="rounded-full bg-[var(--panel-2)] px-2 py-0.5 text-[0.6rem] uppercase text-[var(--accent)]">
+                          📎 Baixar PDF
+                        </button>
                       )}
                       {d.notes && <span>· {d.notes}</span>}
                     </div>

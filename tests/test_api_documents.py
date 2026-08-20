@@ -1,11 +1,25 @@
 """Testes dos documentos do CAC (pastas, validade e lembretes)."""
 
 import importlib
+import io
 from datetime import date, timedelta
 
 import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
+
+
+def _pdf(lines: list[str]) -> bytes:
+    """Gera um PDF simples com texto selecionavel (para a leitura heuristica)."""
+    from reportlab.pdfgen import canvas
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf)
+    y = 800
+    for line in lines:
+        c.drawString(50, y, line)
+        y -= 20
+    c.save()
+    return buf.getvalue()
 
 
 @pytest.fixture()
@@ -116,3 +130,78 @@ class TestDocumentAlerts:
         })
         assert len(client.get("/api/documents/alerts", headers=ha).json()) == 1
         assert client.get("/api/documents/alerts", headers=hb).json() == []
+
+
+class TestHeuristicParser:
+    def test_identifies_craf_number_and_expiration(self):
+        from services.doc_extraction import parse_text_heuristic
+        r = parse_text_heuristic(
+            "CERTIFICADO DE REGISTRO DE ARMA DE FOGO (CRAF)\n"
+            "Número: 1234567\nEmissão: 10/05/2022\nValidade: 09/05/2032\n"
+        )
+        assert r["title"] == "CRAF"
+        assert r["folder"] == "Registro"
+        assert r["number"] == "1234567"
+        assert r["expiration"] == "2032-05-09"
+        assert r["issue_date"] == "2022-05-10"
+        assert r["source"] == "heuristica"
+
+    def test_empty_text_marks_source_vazio(self):
+        from services.doc_extraction import parse_text_heuristic
+        assert parse_text_heuristic("")["source"] == "vazio"
+
+    def test_unlabeled_dates_pick_latest_as_expiration(self):
+        from services.doc_extraction import parse_text_heuristic
+        r = parse_text_heuristic("Documento qualquer\n01/01/2020\n31/12/2030\n")
+        assert r["expiration"] == "2030-12-31"
+        assert r["issue_date"] == "2020-01-01"
+
+
+class TestUploadAndDownload:
+    def test_upload_reads_fields_stores_file_and_downloads(self, client):
+        h = _auth(client)
+        pdf = _pdf([
+            "GUIA DE TRAFEGO",
+            "Numero: GT-2024-987",
+            "Validade: 15/08/2028",
+        ])
+        r = client.post("/api/documents/upload", headers=h,
+                        files={"file": ("gt.pdf", pdf, "application/pdf")})
+        assert r.status_code == 201
+        body = r.json()
+        assert body["has_file"] is True
+        assert body["file_name"] == "gt.pdf"
+        assert body["folder"] == "Transporte"
+        assert body["expiration"] == "2028-08-15"
+        assert body["extraction_source"] == "heuristica"
+
+        did = body["id"]
+        #  aparece na listagem com flag de arquivo (sem os bytes).
+        listed = client.get("/api/documents", headers=h).json()
+        assert listed[0]["has_file"] is True and "file_data" not in listed[0]
+
+        #  download devolve o mesmo PDF.
+        dl = client.get(f"/api/documents/{did}/file", headers=h)
+        assert dl.status_code == 200
+        assert dl.headers["content-type"].startswith("application/pdf")
+        assert dl.content == pdf
+
+    def test_upload_rejects_non_pdf(self, client):
+        h = _auth(client)
+        r = client.post("/api/documents/upload", headers=h,
+                        files={"file": ("nota.txt", b"oi", "text/plain")})
+        assert r.status_code == 400
+
+    def test_download_requires_auth_and_isolation(self, client):
+        ha = _auth(client, "alice")
+        hb = _auth(client, "bob")
+        pdf = _pdf(["CR", "Validade: 01/01/2030"])
+        did = client.post("/api/documents/upload", headers=ha,
+                          files={"file": ("cr.pdf", pdf, "application/pdf")}).json()["id"]
+        assert client.get(f"/api/documents/{did}/file").status_code == 401
+        assert client.get(f"/api/documents/{did}/file", headers=hb).status_code == 404
+
+    def test_download_404_when_no_file(self, client):
+        h = _auth(client)
+        did = client.post("/api/documents", headers=h, json={"title": "Sem arquivo"}).json()["id"]
+        assert client.get(f"/api/documents/{did}/file", headers=h).status_code == 404

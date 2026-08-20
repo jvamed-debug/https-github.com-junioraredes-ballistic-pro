@@ -257,6 +257,13 @@ class DocumentIn(BaseModel):
 
 class DocumentOut(DocumentIn):
     id: int
+    has_file: bool = False
+    file_name: Optional[str] = None
+
+
+class DocumentUploadOut(DocumentOut):
+    #  De onde vieram os campos: "ia", "heuristica" ou "vazio".
+    extraction_source: str = "vazio"
 
 
 class DocumentAlert(BaseModel):
