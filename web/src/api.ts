@@ -137,6 +137,18 @@ export type ExpenseReport = {
   by_category: Array<{ category: string; total: number }>;
 };
 
+export type EventKind = "competicao" | "curso" | "prova" | "treino" | "outro";
+
+export type Event = {
+  id: number;
+  title: string;
+  date: string;
+  kind: EventKind;
+  location?: string | null;
+  url?: string | null;
+  notes?: string | null;
+};
+
 export type Advice = { content: string; provider: string; confidence: string };
 
 export type Insights = {
@@ -405,6 +417,16 @@ export const api = {
     request<void>(`/api/firearms/${id}`, { method: "DELETE" }),
   firearmAlerts: (days?: number) =>
     request<FirearmAlert[]>(`/api/firearms/alerts${days != null ? `?days=${days}` : ""}`),
+
+  // Eventos / competições
+  listEvents: (upcoming?: boolean) =>
+    request<Event[]>(`/api/events${upcoming ? "?upcoming=true" : ""}`),
+  createEvent: (body: Omit<Event, "id">) =>
+    request<Event>("/api/events", { method: "POST", body: JSON.stringify(body) }),
+  updateEvent: (id: number, body: Omit<Event, "id">) =>
+    request<Event>(`/api/events/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteEvent: (id: number) =>
+    request<void>(`/api/events/${id}`, { method: "DELETE" }),
 
   // Documentos
   listDocuments: () => request<Document[]>("/api/documents"),

@@ -7,6 +7,7 @@ import { Activities } from "./pages/Activities.tsx";
 import { Acervo } from "./pages/Acervo.tsx";
 import { Documents } from "./pages/Documents.tsx";
 import { Legislacao } from "./pages/Legislacao.tsx";
+import { Events } from "./pages/Events.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
 import { Reloading } from "./pages/Reloading.tsx";
@@ -21,6 +22,7 @@ import { Profile } from "./pages/Profile.tsx";
 const TABS = [
   { id: "painel", label: "📊 Painel" },
   { id: "hab", label: "📅 Habitualidades" },
+  { id: "eventos", label: "🏆 Eventos" },
   { id: "acervo", label: "🔫 Acervo" },
   { id: "docs", label: "📄 Documentos" },
   { id: "dope", label: "🎯 DOPE" },
@@ -117,6 +119,7 @@ export function App() {
       <main className="flex-1 p-4">
         {tab === "painel" && <Dashboard />}
         {tab === "hab" && <Activities />}
+        {tab === "eventos" && <Events />}
         {tab === "acervo" && <Acervo />}
         {tab === "docs" && <Documents />}
         {tab === "dope" && <Dope />}

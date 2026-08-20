@@ -346,6 +346,30 @@ class ExpenseReport(BaseModel):
     by_category: list[ExpenseCategory]
 
 
+_EVENT_KINDS = {"competicao", "curso", "prova", "treino", "outro"}
+
+
+class EventIn(BaseModel):
+    title: str = Field(..., min_length=1, max_length=120)
+    date: DateType
+    kind: str = "competicao"
+    location: Optional[str] = None
+    url: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator("kind")
+    @classmethod
+    def _kind_valido(cls, v: str) -> str:
+        v = (v or "competicao").strip().lower()
+        if v not in _EVENT_KINDS:
+            raise ValueError(f"kind deve ser um de {sorted(_EVENT_KINDS)}.")
+        return v
+
+
+class EventOut(EventIn):
+    id: int
+
+
 class DopeCardIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=80)
     firearm_id: Optional[int] = None
