@@ -160,6 +160,7 @@ class User(Base):
     dope_cards = relationship("DopeCard", back_populates="user", cascade="all, delete-orphan")
     activities = relationship("Activity", back_populates="user", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
+    events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -360,6 +361,28 @@ class Document(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="documents")
+
+
+class Event(Base):
+    """Evento/competicao de tiro na agenda do atirador.
+
+    Uma agenda simples: o que vem por ai (competicoes, cursos, provas de
+    nivel) com data e local, para nao perder inscricao nem prazo. Cada
+    usuario ve so os seus.
+    """
+    __tablename__ = 'events'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    title = Column(String, nullable=False)
+    date = Column(Date, nullable=False)
+    #  competicao | curso | prova | treino | outro
+    kind = Column(String, default="competicao")
+    location = Column(String)
+    url = Column(String)                      # link de inscricao/regulamento
+    notes = Column(Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="events")
 
 
 class WebAuthnCredential(Base):
