@@ -6,6 +6,7 @@ import { Login } from "./pages/Login.tsx";
 import { Activities } from "./pages/Activities.tsx";
 import { Acervo } from "./pages/Acervo.tsx";
 import { Documents } from "./pages/Documents.tsx";
+import { Legislacao } from "./pages/Legislacao.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Dope } from "./pages/Dope.tsx";
 import { Reloading } from "./pages/Reloading.tsx";
@@ -29,6 +30,7 @@ const TABS = [
   { id: "perf", label: "📈 Performance" },
   { id: "alvo", label: "🎯 Alvo" },
   { id: "cost", label: "💰 Custos" },
+  { id: "lei", label: "⚖️ Legislação" },
   { id: "ia", label: "🤖 IA" },
   { id: "profile", label: "👤 Perfil" },
 ] as const;
@@ -124,6 +126,7 @@ export function App() {
         {tab === "perf" && <Performance />}
         {tab === "alvo" && <Target />}
         {tab === "cost" && <Costs />}
+        {tab === "lei" && <Legislacao />}
         {tab === "ia" && <Advisor />}
         {tab === "profile" && <Profile user={user} onUpdated={setUser} />}
       </main>
