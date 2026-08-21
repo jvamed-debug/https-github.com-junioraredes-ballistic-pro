@@ -1,8 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type Insights } from "../api.ts";
 import { EmptyState, ErrorState, Loading } from "../ui.tsx";
+import { Pendencias } from "./Pendencias.tsx";
 
+//  Painel: as pendências do CAC (vencimentos + eventos) sempre no topo, e
+//  abaixo os insights de recarga/balística — que podem estar vazios para quem
+//  ainda não registrou sessões.
 export function Dashboard() {
+  return (
+    <div className="flex flex-col gap-4">
+      <Pendencias />
+      <ReloadInsights />
+    </div>
+  );
+}
+
+function ReloadInsights() {
   const [data, setData] = useState<Insights | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,8 +37,8 @@ export function Dashboard() {
     return (
       <EmptyState
         icon="📊"
-        title="Sem dados ainda"
-        hint="Registre sessões no Logbook e insumos no Inventário para o painel ganhar vida."
+        title="Sem dados de recarga ainda"
+        hint="Registre sessões no Logbook e insumos no Inventário para o painel de balística ganhar vida."
       />
     );
   }
