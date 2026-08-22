@@ -35,7 +35,7 @@ from core.auth import (
 )
 from core.models import User, managed_session
 from schemas import ProfileUpdate
-from services.mailer import app_base_url, send_password_reset
+from services.mailer import app_base_url, email_configured, send_password_reset
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -100,10 +100,15 @@ def forgot_password(req: ForgotPasswordRequest) -> ForgotPasswordResponse:
     if token:
         reset_url = f"{app_base_url()}/?reset={token}"
         sent = send_password_reset(email or "", reset_url)
-        #  Sem e-mail configurado/entregue: expoe o token so se explicitamente
-        #  autorizado (dev/teste). Em producao com SMTP, nunca vaza.
-        if not sent and os.getenv("AUTH_RESET_EXPOSE_TOKEN", "").lower() in ("1", "true", "yes"):
-            reset_token = token
+        if not sent:
+            #  E-mail nao saiu (SMTP ausente ou falhou). Registra o link no log
+            #  do servidor — visivel so para quem opera o deploy — para nao
+            #  travar a recuperacao durante o setup, sem expor token ao usuario.
+            reason = "e-mail nao configurado" if not email_configured() else "envio de e-mail falhou"
+            print(f"[AUTH] Link de redefinicao ({reason}): {reset_url}")
+            #  Exposicao ao cliente so com a flag explicita (dev/teste).
+            if os.getenv("AUTH_RESET_EXPOSE_TOKEN", "").lower() in ("1", "true", "yes"):
+                reset_token = token
     return ForgotPasswordResponse(detail=_FORGOT_MSG, reset_token=reset_token)
 
 

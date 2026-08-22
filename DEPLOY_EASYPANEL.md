@@ -125,8 +125,22 @@ arquivo é guardado no próprio banco (sem S3); PDFs vão até **8 MB**.
 #### Recuperação de senha por e-mail (SMTP) — opcional
 
 O link "Esqueci minha senha" (tela de login) gera um token de redefinição com
-validade de 1 hora, uso único. Para **enviar o link por e-mail**, configure no
-serviço `api`:
+validade de 1 hora, uso único. Para **enviar o link por e-mail**, há dois
+back-ends (a API tenta Resend primeiro, depois SMTP).
+
+**Opção recomendada — Resend (API HTTP, porta 443).** Mais confiável no
+EasyPanel, onde as portas de SMTP costumam estar bloqueadas mas o HTTPS passa:
+
+| Variável | Valor |
+|----------|-------|
+| `RESEND_API_KEY` | sua API key do Resend (`re_...`) |
+| `RESEND_FROM` | remetente **verificado** no Resend (ex.: `no-reply@seudominio.com`) |
+| `APP_BASE_URL` | URL pública do app (ex.: `https://urgent-md-ballistic-pro.3ezbbn.easypanel.host`) |
+
+Precisa liberar saída HTTPS para `api.resend.com`. O domínio do remetente
+precisa estar verificado no painel do Resend (senão a API recusa o envio).
+
+**Opção alternativa — SMTP:**
 
 | Variável | Valor |
 |----------|-------|
@@ -140,9 +154,12 @@ serviço `api`:
 
 Precisa que a **política de rede** libere saída para o host SMTP. A resposta ao
 pedido é **sempre genérica** (não revela se a conta existe). **Sem SMTP**
-configurado, nada é enviado; para testar o fluxo em desenvolvimento, defina
-`AUTH_RESET_EXPOSE_TOKEN=1` — aí o token volta na resposta e a própria tela
-oferece o botão "Redefinir senha agora". **Nunca** ligue essa flag em produção.
+configurado (ou se o envio falhar), o e-mail não sai — mas o **link de
+redefinição é registrado no log do serviço `api`** (`[AUTH] Link de redefinicao
+...`), então durante o setup você consegue pegá-lo direto nos logs do EasyPanel.
+Para testar pela própria tela, defina `AUTH_RESET_EXPOSE_TOKEN=1` — aí o token
+volta na resposta e aparece o botão "Redefinir senha agora". **Nunca** ligue
+essa flag em produção (qualquer um redefiniria a senha de qualquer conta).
 
 #### Clima automático no DOPE (Open-Meteo) — opcional
 

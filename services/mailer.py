@@ -1,9 +1,12 @@
-"""Envio de e-mail transacional (recuperacao de senha), opcional por SMTP.
+"""Envio de e-mail transacional (recuperacao de senha), opcional.
 
-Se as variaveis SMTP_* nao estiverem definidas, `send_email` apenas retorna
-False (nao envia) — o chamador decide o que fazer (ex.: logar o link). Assim a
-API funciona sem servidor de e-mail, e passa a enviar de verdade quando o
-ambiente for configurado. Nunca levanta excecao para o fluxo de auth.
+Dois back-ends, nesta ordem de preferencia:
+  1. Resend (API HTTP) — quando RESEND_API_KEY esta definido. Usa HTTPS (443),
+     que costuma passar mesmo onde as portas de SMTP estao bloqueadas.
+  2. SMTP — quando SMTP_HOST/SMTP_FROM estao definidos.
+
+Sem nenhum dos dois, `send_email` retorna False (nao envia) e o chamador decide
+o que fazer (ex.: logar o link). Nunca levanta excecao para o fluxo de auth.
 """
 
 from __future__ import annotations
@@ -14,8 +17,22 @@ import ssl
 from email.message import EmailMessage
 
 
+def _mail_from() -> str:
+    #  Remetente comum aos dois back-ends. RESEND_FROM tem prioridade; senao
+    #  cai para SMTP_FROM (ou o proprio usuario SMTP).
+    return os.getenv("RESEND_FROM") or os.getenv("SMTP_FROM") or os.getenv("SMTP_USER") or ""
+
+
+def resend_configured() -> bool:
+    return bool(os.getenv("RESEND_API_KEY") and _mail_from())
+
+
 def smtp_configured() -> bool:
     return bool(os.getenv("SMTP_HOST") and os.getenv("SMTP_FROM"))
+
+
+def email_configured() -> bool:
+    return resend_configured() or smtp_configured()
 
 
 def app_base_url() -> str:
@@ -23,11 +40,24 @@ def app_base_url() -> str:
     return os.getenv("APP_BASE_URL", "http://localhost:5173").rstrip("/")
 
 
-def send_email(to_email: str, subject: str, body: str) -> bool:
-    """Envia um e-mail de texto. Retorna True se enviou, False se SMTP nao
-    esta configurado ou se o envio falhou (sem levantar)."""
-    if not smtp_configured() or not to_email:
+def _send_resend(to_email: str, subject: str, body: str) -> bool:
+    try:
+        import requests
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {os.getenv('RESEND_API_KEY')}",
+                "Content-Type": "application/json",
+            },
+            json={"from": _mail_from(), "to": [to_email], "subject": subject, "text": body},
+            timeout=15,
+        )
+        return resp.status_code in (200, 201)
+    except Exception:
         return False
+
+
+def _send_smtp(to_email: str, subject: str, body: str) -> bool:
     host = os.getenv("SMTP_HOST", "")
     port = int(os.getenv("SMTP_PORT", "587"))
     user = os.getenv("SMTP_USER")
@@ -56,6 +86,18 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    """Envia um e-mail de texto. True se enviou; False se nao ha back-end
+    configurado ou se o envio falhou (sem levantar). Tenta Resend, depois SMTP."""
+    if not to_email:
+        return False
+    if resend_configured() and _send_resend(to_email, subject, body):
+        return True
+    if smtp_configured():
+        return _send_smtp(to_email, subject, body)
+    return False
 
 
 def send_password_reset(to_email: str, reset_url: str) -> bool:
