@@ -59,6 +59,13 @@ class TestForgotPassword:
         r = c.post("/api/auth/forgot-password", json={"identifier": "joao"})
         assert r.json()["reset_token"]
 
+    def test_logs_reset_url_when_no_smtp(self, client, capsys):
+        c, _ = client
+        _register(c)
+        c.post("/api/auth/forgot-password", json={"identifier": "joao@x.com"})
+        out = capsys.readouterr().out
+        assert "[AUTH] Link de redefinicao" in out and "?reset=" in out
+
 
 class TestResetPassword:
     def _token(self, c, ident="joao@x.com"):
