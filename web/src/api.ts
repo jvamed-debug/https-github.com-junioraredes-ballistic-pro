@@ -518,6 +518,8 @@ export const api = {
     downloadFile(`/api/logbook/${sessionId}/label`, `etiqueta_${sessionId}.pdf`),
   downloadInspectionReport: () =>
     downloadFile("/api/reports/inspection", "relatorio_acervo.pdf"),
+  downloadBackup: () =>
+    downloadFile("/api/backup/export", "ballistic-pro-backup.json"),
 
   // Análise de alvo por foto (visão computacional)
   analyzeTarget: async (file: File, p: TargetParams): Promise<TargetAnalysis> => {

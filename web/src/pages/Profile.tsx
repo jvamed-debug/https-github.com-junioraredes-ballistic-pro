@@ -45,6 +45,7 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
   const [passkeyOn, setPasskeyOn] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyMsg, setPasskeyMsg] = useState<string | null>(null);
@@ -88,6 +89,18 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
       setError(err instanceof Error ? err.message : "Falha ao gerar o relatório.");
     } finally {
       setReportBusy(false);
+    }
+  }
+
+  async function downloadBackup() {
+    setError(null);
+    setBackupBusy(true);
+    try {
+      await api.downloadBackup();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao gerar o backup.");
+    } finally {
+      setBackupBusy(false);
     }
   }
 
@@ -201,6 +214,20 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
         </p>
         <button className="btn btn-ghost" onClick={downloadReport} disabled={reportBusy}>
           {reportBusy ? "Gerando…" : "📄 Baixar relatório (PDF)"}
+        </button>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-[var(--muted)]">
+          Backup dos dados
+        </h2>
+        <p className="mb-3 text-xs text-[var(--muted)]">
+          Baixa um arquivo JSON com tudo — acervo, documentos, habitualidades,
+          eventos, locais e recargas. Guarde em local seguro: contém dados
+          sensíveis (série, CRAF, GTS, CPF).
+        </p>
+        <button className="btn btn-ghost" onClick={downloadBackup} disabled={backupBusy}>
+          {backupBusy ? "Gerando…" : "💾 Baixar backup (JSON)"}
         </button>
       </section>
 
