@@ -14,6 +14,7 @@ from api.routers import (
     activities,
     advisor,
     auth,
+    backup,
     ballistics,
     data,
     documents,
@@ -68,6 +69,7 @@ app.include_router(level.router)
 app.include_router(documents.router)
 app.include_router(events.router)
 app.include_router(places.router)
+app.include_router(backup.router)
 
 
 @app.get("/api/health", tags=["meta"])
