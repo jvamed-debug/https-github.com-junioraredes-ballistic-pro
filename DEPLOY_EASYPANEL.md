@@ -79,6 +79,14 @@ Anote a *Internal Connection URL* (algo como
 > exercitado. Ainda assim, defina `API_CORS_ORIGINS` com o seu domínio em vez
 > de `*` se um dia consumir a API de outra origem.
 
+> **Segurança do JWT (endurecido).** A API **recusa iniciar** em produção se não
+> houver segredo de assinatura — o segredo de desenvolvimento embutido **nunca**
+> é usado em produção. Defina sempre `JWT_SECRET`, **distinto da `FERNET_KEY`**.
+> Se apenas `FERNET_KEY` estiver presente, a API ainda assina com ela por
+> compatibilidade, mas emite um aviso de *reuso de chave* — definir `JWT_SECRET`
+> encerra esse reuso. Trocar o `JWT_SECRET` invalida as sessões ativas (todos
+> refazem login).
+
 Opcionais: `BLIND_INDEX_KEY` (deriva o índice cego; por padrão usa a
 `FERNET_KEY`), e `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `S3_BUCKET`
 para upload de imagens.

@@ -72,6 +72,15 @@ app.include_router(places.router)
 app.include_router(backup.router)
 
 
+@app.on_event("startup")
+def _validate_security_config() -> None:
+    """Falha cedo (no boot) se o segredo do JWT nao estiver configurado em
+    producao — em vez de servir requisicoes assinadas com um segredo inseguro.
+    Em desenvolvimento apenas emite aviso (nao derruba o boot)."""
+    from api.security import _secret
+    _secret()
+
+
 @app.get("/api/health", tags=["meta"])
 def health() -> dict:
     """Sonda de saude para o EasyPanel/healthcheck."""
