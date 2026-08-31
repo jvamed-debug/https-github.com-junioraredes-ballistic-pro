@@ -29,16 +29,46 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 _DEV_SECRET = "dev-insecure-jwt-secret-change-me"
 
 
+def _is_production() -> bool:
+    """Heuristica de producao, alinhada a core.models.get_encryption_suite:
+    ha FERNET_KEY definido ou o banco e Postgres."""
+    return bool(os.getenv("FERNET_KEY")) or os.getenv("DATABASE_URL", "").startswith("postgresql")
+
+
 def _secret() -> str:
-    secret = os.getenv("JWT_SECRET") or os.getenv("FERNET_KEY")
-    if not secret:
+    #  1) Caminho correto: segredo dedicado do JWT.
+    jwt_secret = os.getenv("JWT_SECRET")
+    if jwt_secret:
+        return jwt_secret
+
+    #  2) Transicao (compat): assina com a FERNET_KEY, mas ALERTA — reuso de
+    #     chave (F2 da auditoria). Mantido para nao derrubar deploys que ainda
+    #     nao definiram JWT_SECRET; defina JWT_SECRET para encerrar o reuso.
+    fernet = os.getenv("FERNET_KEY")
+    if fernet:
         warnings.warn(
-            "[SECURITY] JWT_SECRET/FERNET_KEY ausentes — usando segredo de "
-            "desenvolvimento. NAO use assim em producao.",
+            "[SECURITY] JWT_SECRET ausente — assinando o JWT com a FERNET_KEY "
+            "(reuso de chave). Defina JWT_SECRET, separado da chave de cifra.",
             stacklevel=2,
         )
-        return _DEV_SECRET
-    return secret
+        return fernet
+
+    #  3) Producao sem NENHUM segredo: recusa em vez de usar o valor de dev
+    #     (F1 da auditoria — o segredo embutido nunca vai a producao).
+    if _is_production():
+        raise RuntimeError(
+            "[SECURITY] JWT_SECRET ausente em producao. Configure JWT_SECRET "
+            "(recomendado) ou FERNET_KEY. O segredo de desenvolvimento nunca e "
+            "usado em producao."
+        )
+
+    #  4) Desenvolvimento/testes: segredo local, com aviso.
+    warnings.warn(
+        "[SECURITY] JWT_SECRET/FERNET_KEY ausentes — usando segredo de "
+        "desenvolvimento. NAO use assim em producao.",
+        stacklevel=2,
+    )
+    return _DEV_SECRET
 
 
 def create_access_token(user_id: int) -> str:
