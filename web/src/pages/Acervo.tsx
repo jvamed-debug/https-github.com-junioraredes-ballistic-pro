@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Firearm, type FirearmAlert } from "../api.ts";
 import { EmptyState, ErrorState, Loading } from "../ui.tsx";
+import { safeHref } from "../url.ts";
 
 const COLLECTIONS: Array<{ id: "pessoal" | "clube"; label: string }> = [
   { id: "pessoal", label: "Pessoal" },
@@ -161,13 +162,13 @@ export function Acervo() {
                         <DocBadge label="CRAF" iso={f.expiration} />
                         <DocBadge label="GTS" iso={f.gts_expiration} />
                         {f.craf_doc_url && (
-                          <a href={f.craf_doc_url} target="_blank" rel="noreferrer"
+                          <a href={safeHref(f.craf_doc_url)} target="_blank" rel="noreferrer"
                             className="rounded-full bg-[var(--panel-2)] px-2 py-0.5 text-[0.6rem] uppercase text-[var(--accent)]">
                             📎 CRAF
                           </a>
                         )}
                         {f.gts_doc_url && (
-                          <a href={f.gts_doc_url} target="_blank" rel="noreferrer"
+                          <a href={safeHref(f.gts_doc_url)} target="_blank" rel="noreferrer"
                             className="rounded-full bg-[var(--panel-2)] px-2 py-0.5 text-[0.6rem] uppercase text-[var(--accent)]">
                             📎 GTS
                           </a>

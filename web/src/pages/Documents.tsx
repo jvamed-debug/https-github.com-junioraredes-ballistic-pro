@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type Document, type DocumentAlert } from "../api.ts";
 import { EmptyState, ErrorState, Loading } from "../ui.tsx";
+import { safeHref } from "../url.ts";
 
 // Pastas sugeridas — o campo é livre, estas só facilitam a escolha.
 const FOLDERS = ["Registro", "Clube", "Apostilamento", "Laudo", "Pessoal", "Geral"];
@@ -206,7 +207,7 @@ export function Documents() {
                       )}
                       {d.number && <span>· nº {d.number}</span>}
                       {d.file_url && (
-                        <a href={d.file_url} target="_blank" rel="noreferrer"
+                        <a href={safeHref(d.file_url)} target="_blank" rel="noreferrer"
                           className="rounded-full bg-[var(--panel-2)] px-2 py-0.5 text-[0.6rem] uppercase text-[var(--accent)]">
                           📎 Link
                         </a>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type Event, type EventKind } from "../api.ts";
 import { EmptyState, ErrorState, Loading } from "../ui.tsx";
+import { safeHref } from "../url.ts";
 
 const KINDS: Array<{ id: EventKind; label: string; icon: string }> = [
   { id: "competicao", label: "Competição", icon: "🏆" },
@@ -109,7 +110,7 @@ export function Events() {
             )}
             {ev.location && <span>· {ev.location}</span>}
             {ev.url && (
-              <a href={ev.url} target="_blank" rel="noreferrer" className="text-[var(--accent)] underline">
+              <a href={safeHref(ev.url)} target="_blank" rel="noreferrer" className="text-[var(--accent)] underline">
                 · inscrição
               </a>
             )}

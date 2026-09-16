@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type Place, type PlaceKind } from "../api.ts";
 import { EmptyState, ErrorState, Loading } from "../ui.tsx";
+import { safeHref } from "../url.ts";
 
 const KINDS: Array<{ id: PlaceKind; label: string; icon: string }> = [
   { id: "clube", label: "Clube", icon: "🏛️" },
@@ -129,7 +130,7 @@ export function Places() {
                         <a href={`tel:${p.phone}`} className="text-xs text-[var(--accent)]">📞 {p.phone}</a>
                       )}
                       {p.url && (
-                        <a href={p.url} target="_blank" rel="noreferrer" className="text-xs text-[var(--accent)] underline">
+                        <a href={safeHref(p.url)} target="_blank" rel="noreferrer" className="text-xs text-[var(--accent)] underline">
                           🔗 site
                         </a>
                       )}
