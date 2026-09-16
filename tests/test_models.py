@@ -215,6 +215,30 @@ class TestCreateDbEngine:
             assert "sqlite" in str(engine.url)
 
 
+class TestBlindIndexKey:
+    """F3: o índice cego não pode cair no valor de desenvolvimento em produção."""
+
+    def test_production_without_key_raises(self):
+        import core.models as models
+        with patch.dict(os.environ, {"DATABASE_URL": "postgresql://u:p@h/db"}, clear=True):
+            with patch.object(models, "st", MagicMock(secrets=MagicMock(get=MagicMock(return_value=None)))):
+                with pytest.raises(RuntimeError, match="índice cego"):
+                    models._blind_index_key()
+
+    def test_uses_fernet_key_when_present(self):
+        import core.models as models
+        key = Fernet.generate_key().decode()
+        with patch.dict(os.environ, {"DATABASE_URL": "postgresql://u:p@h/db", "FERNET_KEY": key}, clear=True):
+            #  Não levanta e deriva a chave a partir da FERNET_KEY.
+            assert isinstance(models._blind_index_key(), bytes)
+
+    def test_dev_sqlite_still_uses_fallback(self):
+        import core.models as models
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(models, "st", MagicMock(secrets=MagicMock(get=MagicMock(return_value=None)))):
+                assert isinstance(models._blind_index_key(), bytes)  # não levanta em dev
+
+
 class TestInitDbIfEmpty:
     """The initial admin user is the only way into a fresh production deploy."""
 
@@ -254,12 +278,13 @@ class TestInitDbIfEmpty:
     def test_production_without_admin_password_creates_nobody(self):
         assert self._run({"DATABASE_URL": "postgresql://u:p@h/db"}) == []
 
-    def test_development_falls_back_to_default_password(self):
-        users = self._run({})
-        assert len(users) == 1
-        assert users[0].check_password("ballistic_admin_2025!")
+    def test_development_without_admin_password_creates_nobody(self):
+        #  F3 da auditoria: sem ADMIN_PASSWORD não se cria admin com senha
+        #  embutida — em nenhum modo. Antes, dev caía numa senha pública.
+        assert self._run({}) == []
 
-    def test_env_var_takes_priority_over_default(self):
+    def test_env_var_creates_admin_with_that_password(self):
         users = self._run({"ADMIN_PASSWORD": "sobrescreve-o-padrao"})
+        assert len(users) == 1
         assert users[0].check_password("sobrescreve-o-padrao")
         assert not users[0].check_password("ballistic_admin_2025!")

@@ -32,6 +32,13 @@ def _blind_index_key() -> bytes:
         except Exception:
             raw = None
     if not raw:
+        #  Em produção (Postgres) exigimos chave real: sem ela, o índice cego
+        #  seria previsível (F3 da auditoria). Recusa em vez de degradar.
+        if os.environ.get("DATABASE_URL", "").startswith("postgresql"):
+            raise RuntimeError(
+                "[SEGURANCA] BLIND_INDEX_KEY/FERNET_KEY ausentes em produção — "
+                "o índice cego não pode usar a chave de desenvolvimento."
+            )
         # Fallback de desenvolvimento: deterministico para os testes locais,
         # sem valor de seguranca (nao ha chave configurada nesse modo).
         raw = "ballistic-pro-dev-blind-index"
@@ -717,7 +724,11 @@ def init_db_if_empty():
                 return
 
             if not admin_pass:
-                admin_pass = "ballistic_admin_2025!"
+                #  Sem senha configurada não criamos admin com credencial
+                #  embutida (F3 da auditoria): a conta ficaria com senha pública.
+                #  Defina ADMIN_PASSWORD para provisionar o usuário inicial.
+                print("[SEGURANCA] Admin inicial não criado: defina ADMIN_PASSWORD para provisioná-lo.")
+                return
             
             admin = User(
                 username="atirador_pro",
