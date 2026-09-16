@@ -45,6 +45,17 @@ allow_origins = ["*"] if _origins.strip() == "*" else [
     o.strip() for o in _origins.split(",") if o.strip()
 ]
 
+#  Hardening (auditoria F5): '*' e conveniente em dev, mas em producao a API
+#  deve listar as origens confiaveis. Se detectarmos producao (Postgres ou
+#  FERNET_KEY) ainda com '*', avisamos alto no log — sem derrubar o boot, pois
+#  o web serve tudo na mesma origem (proxy /api) e o CORS quase nao e exercido.
+_is_prod = bool(os.getenv("FERNET_KEY")) or os.getenv("DATABASE_URL", "").startswith("postgresql")
+if _is_prod and _origins.strip() == "*":
+    print(
+        "[SEGURANCA] API_CORS_ORIGINS='*' em producao — defina as origens "
+        "confiaveis do frontend (ex.: https://app.seudominio.com)."
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
