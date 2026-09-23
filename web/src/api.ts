@@ -141,6 +141,13 @@ export type ExpenseReport = {
   by_category: Array<{ category: string; total: number }>;
 };
 
+export type BackupImportResult = {
+  imported: Record<string, number>;
+  skipped: Record<string, number>;
+  profile_filled: string[];
+  total_imported: number;
+};
+
 export type EventKind = "competicao" | "curso" | "prova" | "treino" | "outro";
 
 export type Event = {
@@ -520,6 +527,11 @@ export const api = {
     downloadFile("/api/reports/inspection", "relatorio_acervo.pdf"),
   downloadBackup: () =>
     downloadFile("/api/backup/export", "ballistic-pro-backup.json"),
+  importBackup: (payload: unknown) =>
+    request<BackupImportResult>("/api/backup/import", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   // Análise de alvo por foto (visão computacional)
   analyzeTarget: async (file: File, p: TargetParams): Promise<TargetAnalysis> => {

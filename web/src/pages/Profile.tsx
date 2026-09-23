@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type User } from "../api.ts";
 import { startRegistration, supportsWebAuthn } from "../webauthn.ts";
 import {
@@ -46,6 +46,9 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
   const [busy, setBusy] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  const restoreInput = useRef<HTMLInputElement>(null);
   const [passkeyOn, setPasskeyOn] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyMsg, setPasskeyMsg] = useState<string | null>(null);
@@ -101,6 +104,33 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
       setError(err instanceof Error ? err.message : "Falha ao gerar o backup.");
     } finally {
       setBackupBusy(false);
+    }
+  }
+
+  async function restoreBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite reimportar o mesmo arquivo
+    if (!file) return;
+    setError(null);
+    setRestoreMsg(null);
+    setRestoreBusy(true);
+    try {
+      const payload = JSON.parse(await file.text());
+      const r = await api.importBackup(payload);
+      const skipped = Object.values(r.skipped).reduce((a, b) => a + b, 0);
+      setRestoreMsg(
+        `Restaurado: ${r.total_imported} item(ns) importado(s)` +
+          (skipped > 0 ? `, ${skipped} já existiam (ignorados)` : "") +
+          (r.profile_filled.length > 0 ? `. Perfil completado: ${r.profile_filled.join(", ")}` : "") +
+          ". Recarregue as telas para ver os dados.",
+      );
+    } catch (err) {
+      const msg = err instanceof SyntaxError
+        ? "Arquivo inválido: não é um JSON de backup."
+        : err instanceof Error ? err.message : "Falha ao restaurar o backup.";
+      setError(msg);
+    } finally {
+      setRestoreBusy(false);
     }
   }
 
@@ -226,9 +256,30 @@ export function Profile({ user, onUpdated, layout, onLayoutChange }: {
           eventos, locais e recargas. Guarde em local seguro: contém dados
           sensíveis (série, CRAF, GTS, CPF).
         </p>
-        <button className="btn btn-ghost" onClick={downloadBackup} disabled={backupBusy}>
-          {backupBusy ? "Gerando…" : "💾 Baixar backup (JSON)"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button className="btn btn-ghost" onClick={downloadBackup} disabled={backupBusy}>
+            {backupBusy ? "Gerando…" : "💾 Baixar backup (JSON)"}
+          </button>
+          <button
+            className="btn btn-ghost"
+            onClick={() => restoreInput.current?.click()}
+            disabled={restoreBusy}
+          >
+            {restoreBusy ? "Restaurando…" : "♻️ Restaurar backup"}
+          </button>
+          <input
+            ref={restoreInput}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={restoreBackup}
+          />
+        </div>
+        <p className="mt-2 text-[0.65rem] text-[var(--muted)]">
+          Restaurar é aditivo: adiciona o que faltar e ignora o que já existe
+          (pode reimportar o mesmo arquivo sem duplicar). Não apaga nada.
+        </p>
+        {restoreMsg && <p className="mt-2 text-sm text-emerald-400">{restoreMsg}</p>}
       </section>
 
       {passkeyOn && (
