@@ -22,7 +22,7 @@ def client(tmp_path, monkeypatch):
     for mod in (
         "api.routers.auth", "api.routers.data", "api.routers.documents",
         "api.routers.activities", "api.routers.events", "api.routers.places",
-        "api.routers.backup", "api.main",
+        "api.routers.dope", "api.routers.backup", "api.main",
     ):
         importlib.reload(importlib.import_module(mod))
     import api.main as main
@@ -84,3 +84,91 @@ class TestBackupExport:
         bob = client.get("/api/backup/export", headers=hb).json()
         assert bob["counts"]["firearms"] == 0
         assert bob["firearms"] == []
+
+
+def _seed_and_export(client, h):
+    """Cria dados variados (inclusive um DOPE vinculado a arma) e devolve o
+    backup exportado, pronto para reimportar em outra conta."""
+    fid = client.post("/api/firearms", headers=h,
+                      json={"model": "Glock G25", "serial": "S1"}).json()["id"]
+    client.post("/api/documents", headers=h, json={"title": "CR", "number": "CR-9"})
+    client.post("/api/activities", headers=h, json={"category": "Pistola", "shots": 30})
+    client.post("/api/events", headers=h, json={"title": "Copa", "date": "2027-01-01"})
+    client.post("/api/places", headers=h, json={"name": "Clube X"})
+    client.post("/api/dope-cards", headers=h, json={"name": "Receita 1", "firearm_id": fid})
+    return client.get("/api/backup/export", headers=h).json()
+
+
+class TestBackupImport:
+    def test_requires_auth(self, client):
+        assert client.post("/api/backup/import", json={"version": 1}).status_code == 401
+
+    def test_rejects_wrong_version(self, client):
+        h = _auth(client)
+        r = client.post("/api/backup/import", headers=h, json={"version": 2})
+        assert r.status_code == 400
+
+    def test_roundtrip_into_fresh_account(self, client):
+        backup = _seed_and_export(client, _auth(client, "alice"))
+
+        hb = _auth(client, "bob")
+        r = client.post("/api/backup/import", headers=hb, json=backup)
+        assert r.status_code == 200
+        body = r.json()
+        assert body["total_imported"] == 6  # 1+1+1+1+1 + 1 dope
+        assert body["imported"]["firearms"] == 1
+        assert body["imported"]["dope_cards"] == 1
+
+        #  Bob agora tem os dados; o export de Bob bate com o de Alice.
+        bob = client.get("/api/backup/export", headers=hb).json()
+        assert bob["counts"]["firearms"] == 1
+        assert bob["firearms"][0]["serial"] == "S1"       # cifrado→claro→recifrado
+        assert bob["documents"][0]["number"] == "CR-9"
+
+    def test_dope_firearm_reference_is_remapped(self, client):
+        backup = _seed_and_export(client, _auth(client, "alice"))
+        hb = _auth(client, "bob")
+        client.post("/api/backup/import", headers=hb, json=backup)
+
+        guns = client.get("/api/firearms", headers=hb).json()
+        cards = client.get("/api/dope-cards", headers=hb).json()
+        #  O DOPE aponta para a arma recém-criada de Bob, não para o id de Alice.
+        assert cards[0]["firearm_id"] == guns[0]["id"]
+
+    def test_import_is_idempotent(self, client):
+        backup = _seed_and_export(client, _auth(client, "alice"))
+        hb = _auth(client, "bob")
+        client.post("/api/backup/import", headers=hb, json=backup)
+
+        r2 = client.post("/api/backup/import", headers=hb, json=backup)
+        body = r2.json()
+        assert body["total_imported"] == 0            # nada novo na 2ª vez
+        assert sum(body["skipped"].values()) == 6
+        #  Continua com uma cópia só de cada.
+        assert client.get("/api/backup/export", headers=hb).json()["counts"]["firearms"] == 1
+
+    def test_fills_only_empty_profile_fields(self, client):
+        ha = _auth(client, "alice")
+        client.put("/api/auth/me", headers=ha, json={"name": "Alice A", "cr_number": "CR-123"})
+        backup = client.get("/api/backup/export", headers=ha).json()
+
+        hb = _auth(client, "bob")
+        client.put("/api/auth/me", headers=hb, json={"name": "Bob B"})  # name já preenchido
+        r = client.post("/api/backup/import", headers=hb, json=backup)
+
+        filled = r.json()["profile_filled"]
+        assert "cr_number" in filled    # estava vazio → preenche
+        assert "name" not in filled     # já tinha → preserva
+        me = client.get("/api/auth/me", headers=hb).json()
+        assert me["name"] == "Bob B" and me["cr_number"] == "CR-123"
+
+    def test_isolation_import_only_affects_caller(self, client):
+        backup = _seed_and_export(client, _auth(client, "alice"))
+        hb = _auth(client, "bob")
+        client.post("/api/backup/import", headers=hb, json=backup)
+        #  Alice continua com exatamente o que tinha (não duplicou).
+        ha2 = client.post("/api/auth/login", json={
+            "username": "alice", "password": "senha1234"}).json()["access_token"]
+        alice = client.get("/api/backup/export",
+                          headers={"Authorization": f"Bearer {ha2}"}).json()
+        assert alice["counts"]["firearms"] == 1
